@@ -1,0 +1,17 @@
+{
+  "name": "nuernberg-google-bewertungen",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Collect public Google Maps review-removal notices and generate Nürnberg summary charts.",
+  "scripts": {
+    "setup": "npm install && npx playwright install chromium",
+    "scrape": "node scripts/scrape-google-maps.mjs",
+    "charts": "node scripts/generate-charts.mjs",
+    "dashboard": "node scripts/generate-dashboard.mjs",
+    "all": "npm run scrape -- --postcodes all && npm run charts -- --png && npm run dashboard"
+  },
+  "dependencies": {
+    "playwright": "^1.52.0"
+  }
+}

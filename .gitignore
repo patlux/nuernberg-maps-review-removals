@@ -1,0 +1,12 @@
+node_modules/
+debug/
+.DS_Store
+*.log
+*.pid
+
+# Runtime/helper files from local scrape runs
+output/*.log
+output/*.pid
+output/run-charts-after-scrape.sh
+output/places.before-*.json
+output/.DS_Store
