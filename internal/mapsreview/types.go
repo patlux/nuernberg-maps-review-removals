@@ -18,6 +18,8 @@ type Place struct {
 	Rating              *float64 `json:"rating"`
 	ReviewCount         *int     `json:"reviewCount"`
 	Category            *string  `json:"category"`
+	Lat                 *float64 `json:"lat,omitempty"`
+	Lng                 *float64 `json:"lng,omitempty"`
 	HasDefamationNotice bool     `json:"hasDefamationNotice"`
 	RemovedMin          *int     `json:"removedMin"`
 	RemovedMax          *int     `json:"removedMax"`

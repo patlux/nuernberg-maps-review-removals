@@ -27,6 +27,8 @@ type clientRow struct {
 	ID                 string   `json:"id"`
 	Name               string   `json:"name"`
 	Postcode           string   `json:"postcode"`
+	Lat                *float64 `json:"lat,omitempty"`
+	Lng                *float64 `json:"lng,omitempty"`
 	Rating             *float64 `json:"rating"`
 	ReviewCount        *int     `json:"reviewCount"`
 	Category           string   `json:"category"`
@@ -115,10 +117,20 @@ func makeClientRows(rows []mapsreview.Place) []clientRow {
 		if row.HasDefamationNotice {
 			removedEstimate = mapsreview.RemovedSortValue(row)
 		}
+		lat := row.Lat
+		lng := row.Lng
+		if lat == nil || lng == nil {
+			if coords := mapsreview.ExtractCoordinates(row.URL); coords != nil {
+				lat = mapsreview.FloatPtr(coords.Lat)
+				lng = mapsreview.FloatPtr(coords.Lng)
+			}
+		}
 		out = append(out, clientRow{
 			ID:                 row.ID,
 			Name:               row.Name,
 			Postcode:           mapsreview.StringValue(row.Postcode),
+			Lat:                lat,
+			Lng:                lng,
 			Rating:             row.Rating,
 			ReviewCount:        row.ReviewCount,
 			Category:           mapsreview.StringValue(row.Category),
@@ -163,6 +175,7 @@ func makeHTML(data []clientRow) string {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Nürnberg Google-Maps-Bewertungen Dashboard</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <style>
     :root {
       color-scheme: light;
@@ -195,7 +208,7 @@ func makeHTML(data []clientRow) string {
     .hero-title { width: min(760px, 100%); padding: 24px 28px; background: rgba(55,55,55,.78); color: #fff; font-size: clamp(32px, 4vw, 52px); line-height: 1.12; font-weight: 400; }
     .hero-subtitle { width: min(760px, 100%); margin-top: 14px; padding: 18px 22px; background: #fff; border-radius: 5px; box-shadow: var(--shadow); color: #777; font-size: 20px; line-height: 1.45; }
     main { width: min(1320px, calc(100vw - 32px)); margin: 0 auto 70px; }
-    .controls { position: sticky; top: 0; z-index: 10; display: grid; grid-template-columns: minmax(280px, 1fr) 140px 160px 170px 150px auto; gap: 12px; align-items: end; padding: 16px; margin: 0 0 24px; background: #fff; border: 1px solid var(--line); box-shadow: 0 2px 8px rgba(0,0,0,.12); }
+    .controls { position: sticky; top: 0; z-index: 2000; display: grid; grid-template-columns: minmax(280px, 1fr) 140px 160px 170px 150px auto; gap: 12px; align-items: end; padding: 16px; margin: 0 0 24px; background: #fff; border: 1px solid var(--line); box-shadow: 0 2px 8px rgba(0,0,0,.12); }
     label { display: block; margin-bottom: 6px; color: #666; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
     input, select, button { font: inherit; }
     input, select { width: 100%; height: 44px; padding: 0 12px; border: 1px solid #cfcfcf; border-radius: 5px; background: #fff; color: #333; outline: none; }
@@ -230,6 +243,17 @@ func makeHTML(data []clientRow) string {
     .dist-row { display: grid; grid-template-columns: 130px minmax(0, 1fr) 90px; gap: 12px; align-items: center; margin: 8px 0; font-size: 13px; }
     .dist-track { height: 12px; background: #e7e7e7; overflow: hidden; }
     .dist-fill { height: 100%; background: var(--red); }
+    .map-panel { margin-top: 18px; padding: 18px; }
+    .map-panel h2 { margin: 0 0 8px; color: #333; font-size: 22px; font-weight: 700; }
+    .map-panel p { margin: 0 0 16px; color: var(--muted); font-size: 13px; }
+    #placesMap { position: relative; z-index: 0; height: 520px; border: 1px solid var(--line); background: #f4f4f4; }
+    #placesMap.map-needs-key::after, #placesMap.map-active::after { position: absolute; left: 50%; top: 18px; z-index: 1000; transform: translateX(-50%); padding: 10px 14px; border-radius: 4px; background: rgba(51,51,51,.88); color: #fff; font-size: 13px; font-weight: 700; box-shadow: 0 2px 10px rgba(0,0,0,.22); pointer-events: none; }
+    #placesMap.map-needs-key::after { content: "Strg/⌘ halten, um mit dem Mausrad zu zoomen"; }
+    #placesMap.map-active::after { content: "Karten-Zoom aktiv"; }
+    @media (pointer: coarse) { #placesMap.map-needs-key::after { content: "Zwei Finger zum Zoomen und Bewegen der Karte"; } }
+    .map-empty { display: grid; place-items: center; height: 100%; padding: 20px; color: var(--muted); text-align: center; }
+    .map-legend { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 10px; color: var(--muted); font-size: 13px; }
+    .legend-dot { display: inline-block; width: 12px; height: 12px; margin-right: 6px; border-radius: 50%; vertical-align: -1px; }
     .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 22px 0 14px; }
     .tab { border: 1px solid var(--line); border-radius: 5px; padding: 10px 14px; background: #f6f6f6; color: #333; font-weight: 700; cursor: pointer; }
     .tab.active { background: var(--red); border-color: var(--red); color: #fff; }
@@ -303,6 +327,13 @@ func makeHTML(data []clientRow) string {
 
     <section class="card dist" aria-label="Verteilung"><h2>Verteilung der Lösch-Stufen</h2><div id="distribution"></div></section>
 
+    <section class="card map-panel" aria-label="Karte">
+      <h2>Karte der erfassten Orte</h2>
+      <p><span id="mapCount">–</span> Orte mit Koordinaten im aktuellen Filter. Marker anklicken, um den passenden Tabellenfilter zu wählen und den Eintrag zu markieren.</p>
+      <div id="placesMap"><div class="map-empty">Karte wird geladen …</div></div>
+      <div class="map-legend"><span><i class="legend-dot" style="background:#c9332c"></i>hohe Lösch-Quote</span><span><i class="legend-dot" style="background:#ef7d16"></i>sichtbarer Banner</span><span><i class="legend-dot" style="background:#2d7b3f"></i>kein sichtbarer Banner</span></div>
+    </section>
+
     <nav class="tabs" aria-label="Tabellen-Presets">
       <button class="tab" data-mode="removed">Meiste entfernt</button>
       <button class="tab active" data-mode="ratio">Höchste Lösch-Quote</button>
@@ -333,6 +364,7 @@ func makeHTML(data []clientRow) string {
     <footer>Quelle: Google Maps, öffentlich sichtbare Banner. „Kein Banner“ heißt nur: im Scrape war kein passender Hinweis sichtbar. Snapshot: __SNAPSHOT__.</footer>
   </main>
 
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script id="placesData" type="application/json">__DATA__</script>
   <script>
     const DATA = JSON.parse(document.getElementById('placesData').textContent);
@@ -342,9 +374,14 @@ func makeHTML(data []clientRow) string {
     const fmt2 = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 2, minimumFractionDigits: 2 });
     const state = { mode: 'ratio', sortKey: 'deletionRatioPct', sortDir: 'desc' };
     const els = {
-      search: document.getElementById('searchInput'), postcode: document.getElementById('postcodeFilter'), banner: document.getElementById('bannerFilter'), range: document.getElementById('rangeFilter'), minReviews: document.getElementById('minReviews'), reset: document.getElementById('resetFilters'), tbody: document.querySelector('#placesTable tbody'), resultCount: document.getElementById('resultCount'), tableTitle: document.getElementById('tableTitle')
+      search: document.getElementById('searchInput'), postcode: document.getElementById('postcodeFilter'), banner: document.getElementById('bannerFilter'), range: document.getElementById('rangeFilter'), minReviews: document.getElementById('minReviews'), reset: document.getElementById('resetFilters'), tbody: document.querySelector('#placesTable tbody'), resultCount: document.getElementById('resultCount'), tableTitle: document.getElementById('tableTitle'), mapCount: document.getElementById('mapCount')
     };
     const titles = { all: 'Alle Orte', removed: 'Meiste entfernte Bewertungen', ratio: 'Höchste Lösch-Quote', worst: 'Schlechtestes Worst-Case-Rating', clean: 'Beste saubere Orte' };
+    let placesMap = null;
+    let markerLayer = null;
+    let mapUnavailable = false;
+    let mapHintTimer = null;
+    const activeMapKeys = new Set();
 
     function pct(value) { return Number.isFinite(value) ? fmt1.format(value) + '%' : '–'; }
     function rating(value, digits = 1) { return Number.isFinite(value) ? (digits === 2 ? fmt2.format(value) : fmt1.format(value)) : '–'; }
@@ -402,6 +439,99 @@ func makeHTML(data []clientRow) string {
       document.getElementById('kpiRemoved').textContent = n(Math.round(removedSum));
       document.getElementById('kpiClean').textContent = n(clean.length);
     }
+    function hasCoords(row) { return Number.isFinite(row.lat) && Number.isFinite(row.lng); }
+    function markerColor(row) {
+      if (!row.hasBanner) return '#2d7b3f';
+      if ((row.deletionRatioPct || 0) >= 10) return '#c9332c';
+      return '#ef7d16';
+    }
+    function markerMode(row) { return row.hasBanner ? 'ratio' : 'clean'; }
+    function isMapModifier(event) { return event.ctrlKey || event.metaKey || event.altKey; }
+    function setMapScrollMode(enabled) {
+      if (!placesMap) return;
+      const root = document.getElementById('placesMap');
+      if (enabled) {
+        placesMap.scrollWheelZoom.enable();
+        root.classList.add('map-active');
+        root.classList.remove('map-needs-key');
+      } else {
+        placesMap.scrollWheelZoom.disable();
+        root.classList.remove('map-active');
+      }
+    }
+    function flashMapHint() {
+      const root = document.getElementById('placesMap');
+      if (!root || root.classList.contains('map-active')) return;
+      root.classList.add('map-needs-key');
+      window.clearTimeout(mapHintTimer);
+      mapHintTimer = window.setTimeout(() => root.classList.remove('map-needs-key'), 1300);
+    }
+    function setupMapGestureGate(root) {
+      root.addEventListener('wheel', event => {
+        if (isMapModifier(event)) {
+          event.preventDefault();
+          setMapScrollMode(true);
+        } else {
+          flashMapHint();
+        }
+      }, { capture: true, passive: false });
+      root.addEventListener('touchstart', event => {
+        if (event.touches && event.touches.length > 1) root.classList.add('map-active');
+        else flashMapHint();
+      }, { passive: true });
+      root.addEventListener('touchend', () => root.classList.remove('map-active'), { passive: true });
+      window.addEventListener('keydown', event => {
+        if (['Control', 'Meta', 'Alt'].includes(event.key)) {
+          activeMapKeys.add(event.key);
+          setMapScrollMode(true);
+        }
+      });
+      window.addEventListener('keyup', event => {
+        if (['Control', 'Meta', 'Alt'].includes(event.key)) activeMapKeys.delete(event.key);
+        if (activeMapKeys.size === 0) setMapScrollMode(false);
+      });
+      window.addEventListener('blur', () => {
+        activeMapKeys.clear();
+        setMapScrollMode(false);
+      });
+    }
+    function initMap() {
+      if (placesMap || mapUnavailable) return Boolean(placesMap);
+      const root = document.getElementById('placesMap');
+      if (typeof L === 'undefined') {
+        mapUnavailable = true;
+        root.innerHTML = '<div class="map-empty">Karte konnte nicht geladen werden. Internetzugriff auf Leaflet/OpenStreetMap prüfen.</div>';
+        return false;
+      }
+      root.innerHTML = '';
+      placesMap = L.map(root, { scrollWheelZoom: false, touchZoom: true }).setView([49.4521, 11.0767], 12);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap-Mitwirkende' }).addTo(placesMap);
+      markerLayer = L.layerGroup().addTo(placesMap);
+      setupMapGestureGate(root);
+      return true;
+    }
+    function renderMap(rows) {
+      if (!initMap()) return;
+      markerLayer.clearLayers();
+      const mapped = rows.filter(hasCoords);
+      els.mapCount.textContent = n(mapped.length) + ' von ' + n(rows.length);
+      for (const row of mapped) {
+        const marker = L.circleMarker([row.lat, row.lng], { radius: row.hasBanner ? 7 : 5, color: '#fff', weight: 1.5, fillColor: markerColor(row), fillOpacity: .9 });
+        marker.bindTooltip(row.name + (row.hasBanner ? ' · ' + row.removedRange : ''), { direction: 'top' });
+        marker.on('click', () => {
+          activateMode(markerMode(row));
+          render();
+          requestAnimationFrame(() => focusEntry(row.id));
+        });
+        marker.addTo(markerLayer);
+      }
+      if (mapped.length) {
+        const bounds = L.latLngBounds(mapped.map(row => [row.lat, row.lng]));
+        placesMap.fitBounds(bounds.pad(0.12), { maxZoom: 14, animate: false });
+      } else {
+        placesMap.setView([49.4521, 11.0767], 12);
+      }
+    }
     function renderBars(id, mode, rows, metric, label, color, maxValue) {
       const root = document.getElementById(id);
       const top = rows.slice(0, 8);
@@ -439,6 +569,7 @@ func makeHTML(data []clientRow) string {
       const rows = filtered();
       updateKpis(rows);
       updatePanels(rows);
+      renderMap(modeRows(rows));
       renderTable(rows);
     }
     function activateMode(mode) {

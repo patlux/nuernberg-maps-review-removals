@@ -86,7 +86,7 @@ make dashboard
 
 Outputs:
 
-- `output/charts/nuernberg_dashboard.html` — interactive app with KPIs, filters, sortable explorer table, and Google Maps links
+- `output/charts/nuernberg_dashboard.html` — interactive app with KPIs, filters, map, sortable explorer table, and Google Maps links
 - `output/charts/nuernberg_overall_summary.svg/.png`
 - `output/charts/nuernberg_90402_summary.svg/.png`
 - `output/charts/nuernberg_most_removed.csv`
@@ -94,6 +94,8 @@ Outputs:
 - `output/charts/nuernberg_most_removed.html`
 
 If `magick` is not installed, `--png` skips PNG files and still writes SVGs.
+
+The dashboard map uses Leaflet with OpenStreetMap tiles, so map tiles require internet access when opening the HTML file.
 
 ## Tests / checks
 

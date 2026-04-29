@@ -68,7 +68,7 @@ func WritePlacesCSV(file string, rows []Place) error {
 
 	w := csv.NewWriter(f)
 	columns := []string{
-		"id", "name", "postcode", "address", "rating", "reviewCount", "category",
+		"id", "name", "postcode", "address", "rating", "reviewCount", "category", "lat", "lng",
 		"hasDefamationNotice", "removedMin", "removedMax", "removedEstimate",
 		"deletionRatioPct", "realRatingAdjusted", "removedText", "url", "readAt",
 		"status", "error",
@@ -85,6 +85,8 @@ func WritePlacesCSV(file string, rows []Place) error {
 			floatCSV(row.Rating),
 			intCSV(row.ReviewCount),
 			StringValue(row.Category),
+			floatCSV(row.Lat),
+			floatCSV(row.Lng),
 			strconv.FormatBool(row.HasDefamationNotice),
 			intCSV(row.RemovedMin),
 			intCSV(row.RemovedMax),

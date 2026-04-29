@@ -245,6 +245,7 @@ func extractPlace(ctx context.Context, discovery mapsreview.Discovery) (mapsrevi
 	}
 	category := extractCategory(overview.Text)
 	notice := mapsreview.ParseNotice(rawText)
+	coords := mapsreview.ExtractCoordinates(discovery.URL)
 
 	row := mapsreview.Place{
 		ID:          discovery.ID,
@@ -257,6 +258,10 @@ func extractPlace(ctx context.Context, discovery mapsreview.Discovery) (mapsrevi
 		URL:         mapsreview.NormalizeURL(discovery.URL),
 		ReadAt:      mapsreview.NowISO(),
 		Status:      "success",
+	}
+	if coords != nil {
+		row.Lat = mapsreview.FloatPtr(coords.Lat)
+		row.Lng = mapsreview.FloatPtr(coords.Lng)
 	}
 	if notice != nil {
 		row.HasDefamationNotice = true

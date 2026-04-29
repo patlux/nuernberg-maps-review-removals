@@ -82,6 +82,22 @@ func TestParseGermanNumber(t *testing.T) {
 	}
 }
 
+func TestExtractCoordinates(t *testing.T) {
+	tests := []string{
+		"https://www.google.com/maps/place/Foo/data=!4m7!3m6!1sabc!8m2!3d49.4521!4d11.0767!16sbar",
+		"https://www.google.com/maps/place/Foo/@49.4521,11.0767,17z",
+	}
+	for _, input := range tests {
+		coords := ExtractCoordinates(input)
+		if coords == nil {
+			t.Fatalf("ExtractCoordinates(%q) = nil", input)
+		}
+		if coords.Lat != 49.4521 || coords.Lng != 11.0767 {
+			t.Fatalf("coords = %#v, want 49.4521/11.0767", coords)
+		}
+	}
+}
+
 func TestComputeMetrics(t *testing.T) {
 	row := Place{Rating: FloatPtr(4.5), ReviewCount: IntPtr(100), RemovedEstimate: FloatPtr(25)}
 	ComputeMetrics(&row)

@@ -37,6 +37,7 @@ func run(args args) error {
 
 	missingAddress := 0
 	missingStats := 0
+	missingCoords := 0
 	statusErrors := 0
 	outside := map[string]int{}
 	ids := map[string]int{}
@@ -63,6 +64,9 @@ func run(args args) error {
 			}
 			if row.Rating == nil || row.ReviewCount == nil {
 				missingStats++
+			}
+			if (row.Lat == nil || row.Lng == nil) && mapsreview.ExtractCoordinates(row.URL) == nil {
+				missingCoords++
 			}
 		}
 		if postcode := mapsreview.StringValue(row.Postcode); postcode != "" && !mapsreview.NurembergPostcodeSet[postcode] {
@@ -91,6 +95,9 @@ func run(args args) error {
 	}
 	if missingStats > 0 {
 		warnings = append(warnings, fmt.Sprintf("%d success rows are missing rating or review count", missingStats))
+	}
+	if missingCoords > 0 {
+		warnings = append(warnings, fmt.Sprintf("%d success rows are missing coordinates", missingCoords))
 	}
 	if len(outside) > 0 {
 		parts := make([]string, 0, len(outside))
