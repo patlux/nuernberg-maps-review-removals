@@ -38,6 +38,7 @@ func run(args args) error {
 	missingAddress := 0
 	missingStats := 0
 	missingCoords := 0
+	missingBezirk := 0
 	statusErrors := 0
 	outside := map[string]int{}
 	ids := map[string]int{}
@@ -67,6 +68,9 @@ func run(args args) error {
 			}
 			if (row.Lat == nil || row.Lng == nil) && mapsreview.ExtractCoordinates(row.URL) == nil {
 				missingCoords++
+			}
+			if mapsreview.NurembergPostcodeSet[mapsreview.StringValue(row.Postcode)] && (row.BezirkID == nil || row.BezirkName == nil) {
+				missingBezirk++
 			}
 		}
 		if postcode := mapsreview.StringValue(row.Postcode); postcode != "" && !mapsreview.NurembergPostcodeSet[postcode] {
@@ -98,6 +102,9 @@ func run(args args) error {
 	}
 	if missingCoords > 0 {
 		warnings = append(warnings, fmt.Sprintf("%d success rows are missing coordinates", missingCoords))
+	}
+	if missingBezirk > 0 {
+		warnings = append(warnings, fmt.Sprintf("%d Nürnberg success rows are missing statistical district assignment", missingBezirk))
 	}
 	if len(outside) > 0 {
 		parts := make([]string, 0, len(outside))

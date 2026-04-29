@@ -263,6 +263,7 @@ func extractPlace(ctx context.Context, discovery mapsreview.Discovery) (mapsrevi
 		row.Lat = mapsreview.FloatPtr(coords.Lat)
 		row.Lng = mapsreview.FloatPtr(coords.Lng)
 	}
+	mapsreview.EnrichPlaceLocation(&row)
 	if notice != nil {
 		row.HasDefamationNotice = true
 		row.RemovedMin = mapsreview.IntPtr(notice.Min)
@@ -351,6 +352,9 @@ func displayPlaceName(place mapsreview.Discovery) string {
 
 func saveRows(args args, rows map[string]mapsreview.Place) error {
 	out := mapValues(rows)
+	for i := range out {
+		mapsreview.EnrichPlaceLocation(&out[i])
+	}
 	mapsreview.SortPlaces(out)
 	if err := mapsreview.WriteJSON(args.Out, out); err != nil {
 		return err

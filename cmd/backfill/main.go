@@ -55,6 +55,9 @@ func run(args args) error {
 	found := 0
 
 	save := func() error {
+		for i := range rows {
+			mapsreview.EnrichPlaceLocation(&rows[i])
+		}
 		mapsreview.SortPlaces(rows)
 		if err := mapsreview.WriteJSON(args.Input, rows); err != nil {
 			return err
@@ -89,6 +92,7 @@ func run(args args) error {
 				if postcode := mapsreview.ExtractPostcode(address); postcode != nil {
 					row.Postcode = postcode
 				}
+				mapsreview.EnrichPlaceLocation(row)
 				found++
 			}
 			done++

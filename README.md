@@ -45,7 +45,7 @@ make scrape ARGS="--postcodes 90402 --queries restaurant,café --max-results 20 
 Outputs:
 
 - `output/discovery.json` — discovered Google Maps places
-- `output/places.json` — scraped data
+- `output/places.json` — scraped data, including coordinates and `bezirkId` / `bezirkName` where assignable
 - `output/places.csv` — spreadsheet-friendly export
 - `output/metadata.json` — scrape settings, counts, timestamp, and user agent
 
@@ -75,7 +75,7 @@ make validate
 go run ./cmd/validate --strict-nuremberg
 ```
 
-Validation reports missing addresses, missing rating/review counts, non-Nürnberg postcodes, duplicate URLs/IDs, and banner rows with parse issues.
+Validation reports missing addresses, missing rating/review counts, missing Nürnberg district assignments, non-Nürnberg postcodes, duplicate URLs/IDs, and banner rows with parse issues.
 
 ## 3) Generate charts and dashboard
 
@@ -95,7 +95,7 @@ Outputs:
 
 If `magick` is not installed, `--png` skips PNG files and still writes SVGs.
 
-The dashboard map uses Leaflet with OpenStreetMap tiles, so map tiles require internet access when opening the HTML file.
+The dashboard map uses Leaflet with OpenStreetMap tiles, so map tiles require internet access when opening the HTML file. The dashboard also groups, filters, and overlays entries by Nürnberg statistical district (`Bezirk`).
 
 ## Tests / checks
 
@@ -120,6 +120,10 @@ go run ./cmd/validate
 
 4. **Verteilung der Lösch-Stufen**  
    Counts places by Google’s visible removal ranges.
+
+## Nürnberg statistical districts / Bezirke
+
+Entries with coordinates are assigned to Nürnberg statistical districts using the official Bezirksatlas geometry from `online-service2.nuernberg.de/geoinf/ia_bezirksatlas/` (stored as `internal/mapsreview/data/nuernberg_statistische_bezirke.json`). Points on non-residential gaps in that source are assigned to the nearest statistical district only when the row has a Nürnberg postcode; non-Nürnberg postcodes stay unassigned.
 
 ## Nürnberg PLZ included by default
 

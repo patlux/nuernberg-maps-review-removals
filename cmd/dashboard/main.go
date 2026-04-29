@@ -29,6 +29,9 @@ type clientRow struct {
 	Postcode           string   `json:"postcode"`
 	Lat                *float64 `json:"lat,omitempty"`
 	Lng                *float64 `json:"lng,omitempty"`
+	BezirkID           string   `json:"bezirkId"`
+	BezirkName         string   `json:"bezirkName"`
+	BezirkLabel        string   `json:"bezirkLabel"`
 	Rating             *float64 `json:"rating"`
 	ReviewCount        *int     `json:"reviewCount"`
 	Category           string   `json:"category"`
@@ -113,17 +116,18 @@ func makeClientRows(rows []mapsreview.Place) []clientRow {
 		if row.Status != "success" || row.Name == "" {
 			continue
 		}
+		mapsreview.EnrichPlaceLocation(&row)
 		removedEstimate := 0.0
 		if row.HasDefamationNotice {
 			removedEstimate = mapsreview.RemovedSortValue(row)
 		}
 		lat := row.Lat
 		lng := row.Lng
-		if lat == nil || lng == nil {
-			if coords := mapsreview.ExtractCoordinates(row.URL); coords != nil {
-				lat = mapsreview.FloatPtr(coords.Lat)
-				lng = mapsreview.FloatPtr(coords.Lng)
-			}
+		bezirkID := mapsreview.StringValue(row.BezirkID)
+		bezirkName := mapsreview.StringValue(row.BezirkName)
+		bezirkLabel := ""
+		if bezirkID != "" && bezirkName != "" {
+			bezirkLabel = bezirkID + " " + bezirkName
 		}
 		out = append(out, clientRow{
 			ID:                 row.ID,
@@ -131,6 +135,9 @@ func makeClientRows(rows []mapsreview.Place) []clientRow {
 			Postcode:           mapsreview.StringValue(row.Postcode),
 			Lat:                lat,
 			Lng:                lng,
+			BezirkID:           bezirkID,
+			BezirkName:         bezirkName,
+			BezirkLabel:        bezirkLabel,
 			Rating:             row.Rating,
 			ReviewCount:        row.ReviewCount,
 			Category:           mapsreview.StringValue(row.Category),
@@ -151,16 +158,29 @@ func makeClientRows(rows []mapsreview.Place) []clientRow {
 
 func makeHTML(data []clientRow) string {
 	postcodes := uniqueSorted(data, func(row clientRow) string { return row.Postcode })
+	bezirke := allBezirkLabels()
+	if len(bezirke) == 0 {
+		bezirke = uniqueSorted(data, func(row clientRow) string { return row.BezirkLabel })
+	}
 	ranges := uniqueSorted(data, func(row clientRow) string { return row.RemovedRange })
 	sort.SliceStable(ranges, func(i, j int) bool {
 		return maxEstimateForRange(data, ranges[i]) > maxEstimateForRange(data, ranges[j])
 	})
 	jsonData, _ := json.Marshal(data)
 	jsonText := strings.ReplaceAll(string(jsonData), "<", "\\u003c")
+	jsonBezirke, _ := json.Marshal(mapsreview.BezirkBoundaries())
+	bezirkText := strings.ReplaceAll(string(jsonBezirke), "<", "\\u003c")
 
 	postcodeOptions := ""
 	for _, postcode := range postcodes {
 		postcodeOptions += fmt.Sprintf(`<option value="%s">%s</option>`, escAttr(postcode), esc(postcode))
+	}
+	bezirkOptions := ""
+	if countRows(data, func(row clientRow) bool { return row.BezirkLabel == "" }) > 0 {
+		bezirkOptions += `<option value="__none__">Ohne Bezirk</option>`
+	}
+	for _, bezirk := range bezirke {
+		bezirkOptions += fmt.Sprintf(`<option value="%s">%s</option>`, escAttr(bezirk), esc(bezirk))
 	}
 	rangeOptions := ""
 	for _, r := range ranges {
@@ -208,7 +228,7 @@ func makeHTML(data []clientRow) string {
     .hero-title { width: min(760px, 100%); padding: 24px 28px; background: rgba(55,55,55,.78); color: #fff; font-size: clamp(32px, 4vw, 52px); line-height: 1.12; font-weight: 400; }
     .hero-subtitle { width: min(760px, 100%); margin-top: 14px; padding: 18px 22px; background: #fff; border-radius: 5px; box-shadow: var(--shadow); color: #777; font-size: 20px; line-height: 1.45; }
     main { width: min(1320px, calc(100vw - 32px)); margin: 0 auto 70px; }
-    .controls { position: sticky; top: 0; z-index: 2000; display: grid; grid-template-columns: minmax(280px, 1fr) 140px 160px 170px 150px auto; gap: 12px; align-items: end; padding: 16px; margin: 0 0 24px; background: #fff; border: 1px solid var(--line); box-shadow: 0 2px 8px rgba(0,0,0,.12); }
+    .controls { position: sticky; top: 0; z-index: 2000; display: grid; grid-template-columns: minmax(260px, 1fr) 120px 190px 150px 160px 140px auto; gap: 12px; align-items: end; padding: 16px; margin: 0 0 24px; background: #fff; border: 1px solid var(--line); box-shadow: 0 2px 8px rgba(0,0,0,.12); }
     label { display: block; margin-bottom: 6px; color: #666; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
     input, select, button { font: inherit; }
     input, select { width: 100%; height: 44px; padding: 0 12px; border: 1px solid #cfcfcf; border-radius: 5px; background: #fff; color: #333; outline: none; }
@@ -241,6 +261,14 @@ func makeHTML(data []clientRow) string {
     .fill.green { background: var(--green); }
     .dist { padding: 18px; margin-top: 18px; }
     .dist-row { display: grid; grid-template-columns: 130px minmax(0, 1fr) 90px; gap: 12px; align-items: center; margin: 8px 0; font-size: 13px; }
+    .bezirk-summary { padding: 18px; margin-top: 18px; }
+    .bezirk-summary h2 { margin: 0 0 8px; color: #333; font-size: 22px; font-weight: 700; }
+    .bezirk-summary p { margin: 0 0 14px; color: var(--muted); font-size: 13px; }
+    .bezirk-list { display: grid; gap: 8px; }
+    .bezirk-row { display: grid; grid-template-columns: minmax(0, 1fr) 76px 80px 86px; gap: 12px; align-items: center; width: 100%; padding: 10px 12px; border: 1px solid #e5e5e5; background: #fff; color: #333; text-align: left; cursor: pointer; }
+    .bezirk-row:hover, .bezirk-row:focus { border-color: var(--red); background: #fff4f2; outline: none; }
+    .bezirk-row strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .bezirk-row span { color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; }
     .dist-track { height: 12px; background: #e7e7e7; overflow: hidden; }
     .dist-fill { height: 100%; background: var(--red); }
     .map-panel { margin-top: 18px; padding: 18px; }
@@ -254,6 +282,7 @@ func makeHTML(data []clientRow) string {
     .map-empty { display: grid; place-items: center; height: 100%; padding: 20px; color: var(--muted); text-align: center; }
     .map-legend { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 10px; color: var(--muted); font-size: 13px; }
     .legend-dot { display: inline-block; width: 12px; height: 12px; margin-right: 6px; border-radius: 50%; vertical-align: -1px; }
+    .legend-area { display: inline-block; width: 16px; height: 12px; margin-right: 6px; border: 2px solid var(--red); background: rgba(207,42,27,.12); vertical-align: -2px; }
     .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 22px 0 14px; }
     .tab { border: 1px solid var(--line); border-radius: 5px; padding: 10px 14px; background: #f6f6f6; color: #333; font-weight: 700; cursor: pointer; }
     .tab.active { background: var(--red); border-color: var(--red); color: #fff; }
@@ -261,7 +290,7 @@ func makeHTML(data []clientRow) string {
     .table-head strong { color: #333; font-size: 22px; }
     .table-wrap { overflow: auto; background: #fff; border: 1px solid var(--line); }
     table { width: 100%; min-width: 1440px; border-collapse: collapse; table-layout: fixed; }
-    col.rank { width: 70px; } col.name { width: 360px; } col.plz { width: 90px; } col.rating { width: 95px; } col.reviews { width: 125px; } col.banner { width: 100px; } col.removed { width: 120px; } col.estimate { width: 125px; } col.ratio { width: 120px; } col.real { width: 160px; } col.category { width: 175px; }
+    col.rank { width: 70px; } col.name { width: 360px; } col.bezirk { width: 210px; } col.plz { width: 90px; } col.rating { width: 95px; } col.reviews { width: 125px; } col.banner { width: 100px; } col.removed { width: 120px; } col.estimate { width: 125px; } col.ratio { width: 120px; } col.real { width: 160px; } col.category { width: 175px; }
     th { position: sticky; top: 0; z-index: 2; padding: 0; background: #f3f3f3; border-bottom: 2px solid #cfcfcf; color: #333; font-size: 13px; text-align: left; }
     th button { display: flex; align-items: center; gap: 5px; width: 100%; min-height: 44px; padding: 12px; border: 0; background: transparent; color: inherit; font: inherit; font-weight: 700; text-align: inherit; cursor: pointer; }
     th.num button, th.rank button { justify-content: flex-end; text-align: right; }
@@ -304,6 +333,7 @@ func makeHTML(data []clientRow) string {
     <section class="controls" aria-label="Dashboard-Filter">
       <div class="control search"><label for="searchInput">Suche</label><input id="searchInput" type="search" placeholder="Name, PLZ, Kategorie, Löschbereich …" autocomplete="off"></div>
       <div class="control"><label for="postcodeFilter">PLZ</label><select id="postcodeFilter"><option value="">Alle PLZ</option>__POSTCODE_OPTIONS__</select></div>
+      <div class="control"><label for="bezirkFilter">Bezirk</label><select id="bezirkFilter"><option value="">Alle Bezirke</option>__BEZIRK_OPTIONS__</select></div>
       <div class="control"><label for="bannerFilter">Banner</label><select id="bannerFilter"><option value="all">Alle</option><option value="banner">Mit Banner</option><option value="clean">Ohne Banner</option></select></div>
       <div class="control"><label for="rangeFilter">Gelöscht</label><select id="rangeFilter"><option value="">Alle Bereiche</option>__RANGE_OPTIONS__</select></div>
       <div class="control"><label for="minReviews">Min. Rezensionen</label><input id="minReviews" type="number" min="0" step="1" value="0"></div>
@@ -327,11 +357,13 @@ func makeHTML(data []clientRow) string {
 
     <section class="card dist" aria-label="Verteilung"><h2>Verteilung der Lösch-Stufen</h2><div id="distribution"></div></section>
 
+    <section class="card bezirk-summary" aria-label="Bezirks-Gruppen"><h2>Gruppierung nach statistischem Bezirk</h2><p>Top-Bezirke im aktuellen Filter, sortiert nach Banner-Anteil. Anklicken setzt den Bezirksfilter.</p><div class="bezirk-list" id="bezirkSummary"></div></section>
+
     <section class="card map-panel" aria-label="Karte">
       <h2>Karte der erfassten Orte</h2>
-      <p><span id="mapCount">–</span> Orte mit Koordinaten im aktuellen Filter. Marker anklicken, um den passenden Tabellenfilter zu wählen und den Eintrag zu markieren.</p>
+      <p><span id="mapCount">–</span> Orte mit Koordinaten im aktuellen Filter. Marker anklicken markiert Einträge; Bezirksflächen anklicken setzt den Bezirkfilter.</p>
       <div id="placesMap"><div class="map-empty">Karte wird geladen …</div></div>
-      <div class="map-legend"><span><i class="legend-dot" style="background:#c9332c"></i>hohe Lösch-Quote</span><span><i class="legend-dot" style="background:#ef7d16"></i>sichtbarer Banner</span><span><i class="legend-dot" style="background:#2d7b3f"></i>kein sichtbarer Banner</span></div>
+      <div class="map-legend"><span><i class="legend-area"></i>Bezirk, klickbar</span><span><i class="legend-dot" style="background:#c9332c"></i>hohe Lösch-Quote</span><span><i class="legend-dot" style="background:#ef7d16"></i>sichtbarer Banner</span><span><i class="legend-dot" style="background:#2d7b3f"></i>kein sichtbarer Banner</span></div>
     </section>
 
     <nav class="tabs" aria-label="Tabellen-Presets">
@@ -344,10 +376,11 @@ func makeHTML(data []clientRow) string {
     <div class="table-head"><strong id="tableTitle">Höchste Lösch-Quote</strong><span id="resultCount">–</span></div>
     <section class="table-wrap" aria-label="Daten-Explorer">
       <table id="placesTable">
-        <colgroup><col class="rank"><col class="name"><col class="plz"><col class="rating"><col class="reviews"><col class="banner"><col class="removed"><col class="estimate"><col class="ratio"><col class="real"><col class="category"></colgroup>
+        <colgroup><col class="rank"><col class="name"><col class="bezirk"><col class="plz"><col class="rating"><col class="reviews"><col class="banner"><col class="removed"><col class="estimate"><col class="ratio"><col class="real"><col class="category"></colgroup>
         <thead><tr>
           <th class="rank"><button data-sort="rank">Rang <span class="arrow"></span></button></th>
           <th><button data-sort="name">Name / Google Maps <span class="arrow"></span></button></th>
+          <th><button data-sort="bezirkLabel">Bezirk <span class="arrow"></span></button></th>
           <th><button data-sort="postcode">PLZ <span class="arrow"></span></button></th>
           <th class="num"><button data-sort="rating">Rating <span class="arrow"></span></button></th>
           <th class="num"><button data-sort="reviewCount">Rezensionen <span class="arrow"></span></button></th>
@@ -366,18 +399,21 @@ func makeHTML(data []clientRow) string {
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script id="placesData" type="application/json">__DATA__</script>
+  <script id="bezirkData" type="application/json">__BEZIRK_DATA__</script>
   <script>
     const DATA = JSON.parse(document.getElementById('placesData').textContent);
+    const BEZIRKE = JSON.parse(document.getElementById('bezirkData').textContent);
     const valid = DATA.filter(row => Number.isFinite(row.rating) && Number.isFinite(row.reviewCount));
     const fmt = new Intl.NumberFormat('de-DE');
     const fmt1 = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 1, minimumFractionDigits: 1 });
     const fmt2 = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 2, minimumFractionDigits: 2 });
     const state = { mode: 'ratio', sortKey: 'deletionRatioPct', sortDir: 'desc' };
     const els = {
-      search: document.getElementById('searchInput'), postcode: document.getElementById('postcodeFilter'), banner: document.getElementById('bannerFilter'), range: document.getElementById('rangeFilter'), minReviews: document.getElementById('minReviews'), reset: document.getElementById('resetFilters'), tbody: document.querySelector('#placesTable tbody'), resultCount: document.getElementById('resultCount'), tableTitle: document.getElementById('tableTitle'), mapCount: document.getElementById('mapCount')
+      search: document.getElementById('searchInput'), postcode: document.getElementById('postcodeFilter'), bezirk: document.getElementById('bezirkFilter'), banner: document.getElementById('bannerFilter'), range: document.getElementById('rangeFilter'), minReviews: document.getElementById('minReviews'), reset: document.getElementById('resetFilters'), tbody: document.querySelector('#placesTable tbody'), resultCount: document.getElementById('resultCount'), tableTitle: document.getElementById('tableTitle'), mapCount: document.getElementById('mapCount')
     };
     const titles = { all: 'Alle Orte', removed: 'Meiste entfernte Bewertungen', ratio: 'Höchste Lösch-Quote', worst: 'Schlechtestes Worst-Case-Rating', clean: 'Beste saubere Orte' };
     let placesMap = null;
+    let bezirkLayer = null;
     let markerLayer = null;
     let mapUnavailable = false;
     let mapHintTimer = null;
@@ -387,11 +423,13 @@ func makeHTML(data []clientRow) string {
     function rating(value, digits = 1) { return Number.isFinite(value) ? (digits === 2 ? fmt2.format(value) : fmt1.format(value)) : '–'; }
     function n(value) { return Number.isFinite(value) ? fmt.format(value) : '–'; }
     function esc(s) { return String(s ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
-    function searchText(row) { return [row.name, row.postcode, row.category, row.removedRange, row.removedText, row.address].join(' ').toLowerCase(); }
+    function searchText(row) { return [row.name, row.postcode, row.bezirkLabel, row.category, row.removedRange, row.removedText, row.address].join(' ').toLowerCase(); }
     function matches(row) {
       const q = els.search.value.trim().toLowerCase();
       if (q && !searchText(row).includes(q)) return false;
       if (els.postcode.value && row.postcode !== els.postcode.value) return false;
+      if (els.bezirk.value === '__none__' && row.bezirkLabel) return false;
+      if (els.bezirk.value && els.bezirk.value !== '__none__' && row.bezirkLabel !== els.bezirk.value) return false;
       if (els.banner.value === 'banner' && !row.hasBanner) return false;
       if (els.banner.value === 'clean' && row.hasBanner) return false;
       if (els.range.value && row.removedRange !== els.range.value) return false;
@@ -505,19 +543,83 @@ func makeHTML(data []clientRow) string {
       }
       root.innerHTML = '';
       placesMap = L.map(root, { scrollWheelZoom: false, touchZoom: true }).setView([49.4521, 11.0767], 12);
+      placesMap.createPane('bezirkPane');
+      placesMap.getPane('bezirkPane').style.zIndex = 350;
+      placesMap.createPane('placeMarkerPane');
+      placesMap.getPane('placeMarkerPane').style.zIndex = 650;
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap-Mitwirkende' }).addTo(placesMap);
+      bezirkLayer = L.layerGroup().addTo(placesMap);
       markerLayer = L.layerGroup().addTo(placesMap);
       setupMapGestureGate(root);
       return true;
     }
-    function renderMap(rows) {
+    function selectedBezirkLabel() {
+      return els.bezirk.value && els.bezirk.value !== '__none__' ? els.bezirk.value : '';
+    }
+    function bezirkStats(rows) {
+      const stats = new Map();
+      for (const row of rows) {
+        if (!row.bezirkLabel) continue;
+        if (!stats.has(row.bezirkLabel)) stats.set(row.bezirkLabel, { rows: 0, banners: 0 });
+        const stat = stats.get(row.bezirkLabel);
+        stat.rows += 1;
+        if (row.hasBanner) stat.banners += 1;
+      }
+      return stats;
+    }
+    function bezirkBounds(label) {
+      if (!label || !placesMap) return null;
+      const district = BEZIRKE.find(item => item.label === label);
+      if (!district) return null;
+      const bounds = L.latLngBounds([]);
+      for (const polygon of district.polygons) {
+        for (const point of polygon) bounds.extend(point);
+      }
+      return bounds.isValid() ? bounds : null;
+    }
+    function renderBezirkLayer(rows) {
+      if (!bezirkLayer) return;
+      bezirkLayer.clearLayers();
+      const stats = bezirkStats(rows);
+      const selected = selectedBezirkLabel();
+      for (const district of BEZIRKE) {
+        const stat = stats.get(district.label) || { rows: 0, banners: 0 };
+        const ratio = stat.banners / Math.max(stat.rows, 1) * 100;
+        const isSelected = district.label === selected;
+        const hasRows = stat.rows > 0;
+        const style = {
+          pane: 'bezirkPane',
+          color: isSelected ? '#cf2a1b' : (hasRows ? '#8c4139' : '#777'),
+          weight: isSelected ? 3 : 1,
+          opacity: isSelected ? .95 : .58,
+          dashArray: hasRows ? '' : '4 4',
+          fillColor: isSelected ? '#cf2a1b' : (ratio >= 15 ? '#cf2a1b' : ratio >= 8 ? '#ef7d16' : '#1f6f8b'),
+          fillOpacity: isSelected ? .18 : (hasRows ? Math.min(.16, .035 + ratio / 120) : .018),
+          interactive: true
+        };
+        const tooltip = '<strong>' + esc(district.label) + '</strong><br>' + n(stat.rows) + ' Orte · ' + n(stat.banners) + ' Banner · ' + pct(ratio);
+        for (const polygon of district.polygons) {
+          const layer = L.polygon(polygon, style);
+          layer.bindTooltip(tooltip, { sticky: true, direction: 'top' });
+          layer.on('mouseover', () => layer.setStyle({ weight: Math.max(style.weight, 3), color: '#cf2a1b', fillOpacity: Math.max(style.fillOpacity, .14) }));
+          layer.on('mouseout', () => layer.setStyle(style));
+          layer.on('click', () => {
+            els.bezirk.value = district.label;
+            render();
+          });
+          layer.addTo(bezirkLayer);
+        }
+      }
+    }
+    function renderMap(rows, allFilteredRows) {
       if (!initMap()) return;
+      renderBezirkLayer(allFilteredRows || rows);
       markerLayer.clearLayers();
       const mapped = rows.filter(hasCoords);
       els.mapCount.textContent = n(mapped.length) + ' von ' + n(rows.length);
       for (const row of mapped) {
-        const marker = L.circleMarker([row.lat, row.lng], { radius: row.hasBanner ? 7 : 5, color: '#fff', weight: 1.5, fillColor: markerColor(row), fillOpacity: .9 });
-        marker.bindTooltip(row.name + (row.hasBanner ? ' · ' + row.removedRange : ''), { direction: 'top' });
+        const marker = L.circleMarker([row.lat, row.lng], { pane: 'placeMarkerPane', radius: row.hasBanner ? 7 : 5, color: '#fff', weight: 1.5, fillColor: markerColor(row), fillOpacity: .9 });
+        marker.bindTooltip(row.name + (row.bezirkLabel ? ' · ' + row.bezirkLabel : '') + (row.hasBanner ? ' · ' + row.removedRange : ''), { direction: 'top' });
         marker.on('click', () => {
           activateMode(markerMode(row));
           render();
@@ -529,7 +631,9 @@ func makeHTML(data []clientRow) string {
         const bounds = L.latLngBounds(mapped.map(row => [row.lat, row.lng]));
         placesMap.fitBounds(bounds.pad(0.12), { maxZoom: 14, animate: false });
       } else {
-        placesMap.setView([49.4521, 11.0767], 12);
+        const districtBounds = bezirkBounds(selectedBezirkLabel());
+        if (districtBounds) placesMap.fitBounds(districtBounds.pad(0.18), { maxZoom: 14, animate: false });
+        else placesMap.setView([49.4521, 11.0767], 12);
       }
     }
     function renderBars(id, mode, rows, metric, label, color, maxValue) {
@@ -545,6 +649,21 @@ func makeHTML(data []clientRow) string {
       const max = Math.max(1, ...counts.map(item => item.count));
       document.getElementById('distribution').innerHTML = counts.map(item => '<div class="dist-row"><strong>' + esc(item.bin) + '</strong><div class="dist-track"><div class="dist-fill" style="width:' + (item.count / max * 100) + '%"></div></div><span>' + n(item.count) + '</span></div>').join('') || '<p>Keine Banner im Filter.</p>';
     }
+    function renderBezirkSummary(rows) {
+      const groups = new Map();
+      for (const row of rows) {
+        const label = row.bezirkLabel || 'Ohne Bezirk';
+        if (!groups.has(label)) groups.set(label, { label, rows: 0, banners: 0, removed: 0 });
+        const group = groups.get(label);
+        group.rows += 1;
+        if (row.hasBanner) {
+          group.banners += 1;
+          group.removed += row.removedEstimate || 0;
+        }
+      }
+      const items = [...groups.values()].sort((a, b) => (a.label === 'Ohne Bezirk') - (b.label === 'Ohne Bezirk') || (b.banners / Math.max(b.rows, 1)) - (a.banners / Math.max(a.rows, 1)) || b.banners - a.banners || b.rows - a.rows).slice(0, 12);
+      document.getElementById('bezirkSummary').innerHTML = items.map(item => '<button type="button" class="bezirk-row" data-bezirk="' + esc(item.label) + '"><strong>' + esc(item.label) + '</strong><span>' + n(item.rows) + ' Orte</span><span>' + n(item.banners) + ' Banner</span><span>' + pct(item.banners / Math.max(item.rows, 1) * 100) + '</span></button>').join('') || '<p>Keine Bezirksdaten im Filter.</p>';
+    }
     function updatePanels(rows) {
       const banners = bannerRows(rows);
       renderBars('barsRemoved', 'removed', [...banners].sort((a,b) => b.removedEstimate - a.removedEstimate), row => row.removedEstimate, row => row.removedRange + ' · ' + n(row.removedEstimate), '', 300);
@@ -558,7 +677,7 @@ func makeHTML(data []clientRow) string {
       const sorted = sortRows(scoped);
       els.resultCount.textContent = n(sorted.length) + ' von ' + n(rows.length) + ' Orten im aktuellen Filter';
       els.tableTitle.textContent = titles[state.mode];
-      els.tbody.innerHTML = sorted.map((row, index) => '<tr data-entry-id="' + esc(row.id) + '"><td class="rank">' + (index + 1) + '</td><td class="name"><a href="' + esc(row.url) + '" target="_blank" rel="noopener noreferrer">' + esc(row.name) + '</a>' + (row.address ? '<span class="entry-address">' + esc(row.address) + '</span>' : '') + '</td><td>' + esc(row.postcode) + '</td><td class="num">' + rating(row.rating) + '</td><td class="num">' + n(row.reviewCount) + '</td><td>' + (row.hasBanner ? '<span class="pill bad">Banner</span>' : '<span class="pill">sauber</span>') + '</td><td class="num">' + (row.hasBanner ? esc(row.removedRange) : '–') + '</td><td class="num">' + (row.hasBanner ? rating(row.removedEstimate) : '–') + '</td><td class="num">' + pct(row.deletionRatioPct) + '</td><td class="num">' + rating(row.realRatingAdjusted, 2) + '</td><td>' + esc(row.category) + '</td></tr>').join('');
+      els.tbody.innerHTML = sorted.map((row, index) => '<tr data-entry-id="' + esc(row.id) + '"><td class="rank">' + (index + 1) + '</td><td class="name"><a href="' + esc(row.url) + '" target="_blank" rel="noopener noreferrer">' + esc(row.name) + '</a>' + (row.address ? '<span class="entry-address">' + esc(row.address) + '</span>' : '') + '</td><td>' + esc(row.bezirkLabel || '–') + '</td><td>' + esc(row.postcode) + '</td><td class="num">' + rating(row.rating) + '</td><td class="num">' + n(row.reviewCount) + '</td><td>' + (row.hasBanner ? '<span class="pill bad">Banner</span>' : '<span class="pill">sauber</span>') + '</td><td class="num">' + (row.hasBanner ? esc(row.removedRange) : '–') + '</td><td class="num">' + (row.hasBanner ? rating(row.removedEstimate) : '–') + '</td><td class="num">' + pct(row.deletionRatioPct) + '</td><td class="num">' + rating(row.realRatingAdjusted, 2) + '</td><td>' + esc(row.category) + '</td></tr>').join('');
       document.querySelectorAll('th button[data-sort]').forEach(button => {
         const active = button.dataset.sort === state.sortKey;
         button.classList.toggle('active', active);
@@ -569,7 +688,8 @@ func makeHTML(data []clientRow) string {
       const rows = filtered();
       updateKpis(rows);
       updatePanels(rows);
-      renderMap(modeRows(rows));
+      renderBezirkSummary(rows);
+      renderMap(modeRows(rows), rows);
       renderTable(rows);
     }
     function activateMode(mode) {
@@ -593,6 +713,13 @@ func makeHTML(data []clientRow) string {
       render();
       requestAnimationFrame(() => focusEntry(link.dataset.entryId));
     }));
+    document.getElementById('bezirkSummary').addEventListener('click', event => {
+      const row = event.target.closest('.bezirk-row');
+      if (!row) return;
+      els.bezirk.value = row.dataset.bezirk === 'Ohne Bezirk' ? '__none__' : row.dataset.bezirk;
+      render();
+      document.getElementById('placesTable').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
     document.querySelectorAll('.tab').forEach(button => button.addEventListener('click', () => {
       activateMode(button.dataset.mode);
       render();
@@ -600,12 +727,12 @@ func makeHTML(data []clientRow) string {
     document.querySelectorAll('th button[data-sort]').forEach(button => button.addEventListener('click', () => {
       const next = button.dataset.sort;
       if (next === state.sortKey) state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
-      else { state.sortKey = next; state.sortDir = ['name','postcode','category','rank'].includes(next) ? 'asc' : 'desc'; }
+      else { state.sortKey = next; state.sortDir = ['name','postcode','bezirkLabel','category','rank'].includes(next) ? 'asc' : 'desc'; }
       renderTable(filtered());
     }));
-    [els.search, els.postcode, els.banner, els.range, els.minReviews].forEach(input => input.addEventListener('input', render));
+    [els.search, els.postcode, els.bezirk, els.banner, els.range, els.minReviews].forEach(input => input.addEventListener('input', render));
     els.reset.addEventListener('click', () => {
-      els.search.value = ''; els.postcode.value = ''; els.banner.value = 'all'; els.range.value = ''; els.minReviews.value = 0;
+      els.search.value = ''; els.postcode.value = ''; els.bezirk.value = ''; els.banner.value = 'all'; els.range.value = ''; els.minReviews.value = 0;
       activateMode('ratio');
       render();
     });
@@ -616,10 +743,22 @@ func makeHTML(data []clientRow) string {
 
 	return strings.NewReplacer(
 		"__POSTCODE_OPTIONS__", postcodeOptions,
+		"__BEZIRK_OPTIONS__", bezirkOptions,
 		"__RANGE_OPTIONS__", rangeOptions,
 		"__SNAPSHOT__", time.Now().Format("02.01.2006"),
 		"__DATA__", jsonText,
+		"__BEZIRK_DATA__", bezirkText,
 	).Replace(page)
+}
+
+func allBezirkLabels() []string {
+	bezirke := mapsreview.AllBezirke()
+	out := make([]string, 0, len(bezirke))
+	for _, bezirk := range bezirke {
+		out = append(out, bezirk.ID+" "+bezirk.Name)
+	}
+	sort.Strings(out)
+	return out
 }
 
 func uniqueSorted(data []clientRow, value func(clientRow) string) []string {
@@ -636,6 +775,16 @@ func uniqueSorted(data []clientRow, value func(clientRow) string) []string {
 	}
 	sort.Strings(out)
 	return out
+}
+
+func countRows(data []clientRow, keep func(clientRow) bool) int {
+	count := 0
+	for _, row := range data {
+		if keep(row) {
+			count++
+		}
+	}
+	return count
 }
 
 func maxEstimateForRange(data []clientRow, r string) float64 {

@@ -20,6 +20,8 @@ type Place struct {
 	Category            *string  `json:"category"`
 	Lat                 *float64 `json:"lat,omitempty"`
 	Lng                 *float64 `json:"lng,omitempty"`
+	BezirkID            *string  `json:"bezirkId,omitempty"`
+	BezirkName          *string  `json:"bezirkName,omitempty"`
 	HasDefamationNotice bool     `json:"hasDefamationNotice"`
 	RemovedMin          *int     `json:"removedMin"`
 	RemovedMax          *int     `json:"removedMax"`
