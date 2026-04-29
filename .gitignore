@@ -1,8 +1,10 @@
-node_modules/
 debug/
+.playwright-mcp/
 .DS_Store
 *.log
 *.pid
+coverage.out
+bin/
 
 # Runtime/helper files from local scrape runs
 output/*.log

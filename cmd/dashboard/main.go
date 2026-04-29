@@ -1,81 +1,163 @@
-#!/usr/bin/env node
-import fs from 'node:fs';
-import path from 'node:path';
+package main
 
-const DEFAULT_INPUT = 'output/places.json';
-const DEFAULT_OUTPUT = 'output/charts/nuernberg_dashboard.html';
+import (
+	"encoding/json"
+	"fmt"
+	"html"
+	"os"
+	"path/filepath"
+	"sort"
+	"strings"
+	"time"
 
-function parseArgs(argv) {
-  const args = { input: DEFAULT_INPUT, output: DEFAULT_OUTPUT };
-  for (let i = 0; i < argv.length; i += 1) {
-    const arg = argv[i];
-    const [key, inline] = arg.split('=');
-    const next = inline ?? argv[i + 1];
-    const consume = inline === undefined && next && !next.startsWith('--');
-    switch (key) {
-      case '--input': args.input = next; if (consume) i += 1; break;
-      case '--output': args.output = next; if (consume) i += 1; break;
-      case '--help':
-        console.log(`Usage:\n  npm run dashboard\n  node scripts/generate-dashboard.mjs --input output/places.json --output output/charts/nuernberg_dashboard.html`);
-        process.exit(0);
-      default: throw new Error(`Unknown argument: ${arg}`);
-    }
-  }
-  return args;
+	"nuernberg-maps-review-removals/internal/mapsreview"
+)
+
+const (
+	defaultInput  = mapsreview.ResultsJSON
+	defaultOutput = "output/charts/nuernberg_dashboard.html"
+)
+
+type args struct {
+	Input  string
+	Output string
 }
 
-function removedRange(row) {
-  if (!row.hasDefamationNotice) return '';
-  if (row.removedMax === null || row.removedMax === undefined) return `über ${row.removedMin}`;
-  if (row.removedMin === row.removedMax) return String(row.removedMin);
-  return `${row.removedMin}–${row.removedMax}`;
+type clientRow struct {
+	ID                 string   `json:"id"`
+	Name               string   `json:"name"`
+	Postcode           string   `json:"postcode"`
+	Rating             *float64 `json:"rating"`
+	ReviewCount        *int     `json:"reviewCount"`
+	Category           string   `json:"category"`
+	HasBanner          bool     `json:"hasBanner"`
+	RemovedRange       string   `json:"removedRange"`
+	RemovedMin         *int     `json:"removedMin"`
+	RemovedMax         *int     `json:"removedMax"`
+	RemovedEstimate    float64  `json:"removedEstimate"`
+	DeletionRatioPct   *float64 `json:"deletionRatioPct"`
+	RealRatingAdjusted *float64 `json:"realRatingAdjusted"`
+	RemovedText        string   `json:"removedText"`
+	URL                string   `json:"url"`
+	Address            string   `json:"address"`
 }
 
-function removedEstimate(row) {
-  if (row.removedEstimate !== null && row.removedEstimate !== undefined) return row.removedEstimate;
-  if (row.removedMax === null || row.removedMax === undefined) return (row.removedMin ?? 0) + 50;
-  return ((row.removedMin ?? 0) + row.removedMax) / 2;
+func main() {
+	args, err := parseArgs(os.Args[1:])
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(2)
+	}
+	if err := run(args); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
 }
 
-function escapeScriptJson(value) {
-  return JSON.stringify(value).replaceAll('<', '\\u003c');
+func run(args args) error {
+	rows, err := mapsreview.ReadJSON(args.Input, []mapsreview.Place{})
+	if err != nil {
+		return err
+	}
+	data := makeClientRows(rows)
+	if err := os.MkdirAll(filepath.Dir(args.Output), 0o755); err != nil {
+		return err
+	}
+	if err := os.WriteFile(args.Output, []byte(makeHTML(data)), 0o644); err != nil {
+		return err
+	}
+	fmt.Printf("wrote %s\n", args.Output)
+	return nil
 }
 
-function makeClientRows(rows) {
-  return rows
-    .filter(row => row.status === 'success' && row.name)
-    .map(row => ({
-      name: row.name,
-      postcode: row.postcode || '',
-      rating: row.rating,
-      reviewCount: row.reviewCount,
-      category: row.category || '',
-      hasBanner: Boolean(row.hasDefamationNotice),
-      removedRange: removedRange(row),
-      removedMin: row.removedMin,
-      removedMax: row.removedMax,
-      removedEstimate: row.hasDefamationNotice ? removedEstimate(row) : 0,
-      deletionRatioPct: row.deletionRatioPct,
-      realRatingAdjusted: row.realRatingAdjusted,
-      removedText: row.removedText || '',
-      url: row.url,
-      address: row.address || ''
-    }));
+func parseArgs(argv []string) (args, error) {
+	out := args{Input: defaultInput, Output: defaultOutput}
+	for i := 0; i < len(argv); i++ {
+		key, value, consume := splitArg(argv, i)
+		switch key {
+		case "--input":
+			out.Input = value
+		case "--output":
+			out.Output = value
+		case "--help", "-h":
+			fmt.Println(`Usage:
+  go run ./cmd/dashboard
+  go run ./cmd/dashboard --input output/places.json --output output/charts/nuernberg_dashboard.html`)
+			os.Exit(0)
+		default:
+			return out, fmt.Errorf("unknown argument: %s", argv[i])
+		}
+		if consume {
+			i++
+		}
+	}
+	return out, nil
 }
 
-function makeHtml(data) {
-  const postcodes = [...new Set(data.map(row => row.postcode).filter(Boolean))].sort();
-  const ranges = [...new Set(data.map(row => row.removedRange).filter(Boolean))]
-    .sort((a, b) => {
-      const av = Math.max(...data.filter(row => row.removedRange === a).map(row => row.removedEstimate));
-      const bv = Math.max(...data.filter(row => row.removedRange === b).map(row => row.removedEstimate));
-      return bv - av;
-    });
-  const validRows = data.filter(row => Number.isFinite(row.rating) && Number.isFinite(row.reviewCount));
-  const bannerCount = validRows.filter(row => row.hasBanner).length;
-  const bannerPct = ((bannerCount / Math.max(validRows.length, 1)) * 100).toLocaleString('de-DE', { maximumFractionDigits: 1, minimumFractionDigits: 1 });
+func splitArg(argv []string, index int) (key string, value string, consume bool) {
+	arg := argv[index]
+	if before, after, ok := strings.Cut(arg, "="); ok {
+		return before, after, false
+	}
+	if index+1 < len(argv) && !strings.HasPrefix(argv[index+1], "--") {
+		return arg, argv[index+1], true
+	}
+	return arg, "", false
+}
 
-  return `<!doctype html>
+func makeClientRows(rows []mapsreview.Place) []clientRow {
+	out := make([]clientRow, 0, len(rows))
+	for _, row := range rows {
+		if row.Status != "success" || row.Name == "" {
+			continue
+		}
+		removedEstimate := 0.0
+		if row.HasDefamationNotice {
+			removedEstimate = mapsreview.RemovedSortValue(row)
+		}
+		out = append(out, clientRow{
+			ID:                 row.ID,
+			Name:               row.Name,
+			Postcode:           mapsreview.StringValue(row.Postcode),
+			Rating:             row.Rating,
+			ReviewCount:        row.ReviewCount,
+			Category:           mapsreview.StringValue(row.Category),
+			HasBanner:          row.HasDefamationNotice,
+			RemovedRange:       mapsreview.RemovedRange(row),
+			RemovedMin:         row.RemovedMin,
+			RemovedMax:         row.RemovedMax,
+			RemovedEstimate:    removedEstimate,
+			DeletionRatioPct:   row.DeletionRatioPct,
+			RealRatingAdjusted: row.RealRatingAdjusted,
+			RemovedText:        mapsreview.StringValue(row.RemovedText),
+			URL:                row.URL,
+			Address:            mapsreview.StringValue(row.Address),
+		})
+	}
+	return out
+}
+
+func makeHTML(data []clientRow) string {
+	postcodes := uniqueSorted(data, func(row clientRow) string { return row.Postcode })
+	ranges := uniqueSorted(data, func(row clientRow) string { return row.RemovedRange })
+	sort.SliceStable(ranges, func(i, j int) bool {
+		return maxEstimateForRange(data, ranges[i]) > maxEstimateForRange(data, ranges[j])
+	})
+	jsonData, _ := json.Marshal(data)
+	jsonText := strings.ReplaceAll(string(jsonData), "<", "\\u003c")
+
+	postcodeOptions := ""
+	for _, postcode := range postcodes {
+		postcodeOptions += fmt.Sprintf(`<option value="%s">%s</option>`, escAttr(postcode), esc(postcode))
+	}
+	rangeOptions := ""
+	for _, r := range ranges {
+		if r != "" {
+			rangeOptions += fmt.Sprintf(`<option value="%s">%s</option>`, escAttr(r), esc(r))
+		}
+	}
+
+	page := `<!doctype html>
 <html lang="de">
 <head>
   <meta charset="utf-8">
@@ -113,10 +195,6 @@ function makeHtml(data) {
     .hero-title { width: min(760px, 100%); padding: 24px 28px; background: rgba(55,55,55,.78); color: #fff; font-size: clamp(32px, 4vw, 52px); line-height: 1.12; font-weight: 400; }
     .hero-subtitle { width: min(760px, 100%); margin-top: 14px; padding: 18px 22px; background: #fff; border-radius: 5px; box-shadow: var(--shadow); color: #777; font-size: 20px; line-height: 1.45; }
     main { width: min(1320px, calc(100vw - 32px)); margin: 0 auto 70px; }
-    .summary-strip { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 0 0 24px; }
-    .stamp { padding: 18px 20px; background: #fff; border: 1px solid var(--line); border-left: 8px solid var(--red); }
-    .stamp strong { display: block; color: #333; font-size: 34px; line-height: 1; font-weight: 700; }
-    .stamp span { display: block; margin-top: 8px; color: var(--muted); font-size: 15px; }
     .controls { position: sticky; top: 0; z-index: 10; display: grid; grid-template-columns: minmax(280px, 1fr) 140px 160px 170px 150px auto; gap: 12px; align-items: end; padding: 16px; margin: 0 0 24px; background: #fff; border: 1px solid var(--line); box-shadow: 0 2px 8px rgba(0,0,0,.12); }
     label { display: block; margin-bottom: 6px; color: #666; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
     input, select, button { font: inherit; }
@@ -139,6 +217,9 @@ function makeHtml(data) {
     .panel p { margin: 0 0 16px; color: var(--muted); font-size: 13px; }
     .bars { display: grid; gap: 10px; }
     .bar-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 7px 10px; align-items: center; font-size: 12px; }
+    .bar-link { width: 100%; padding: 0; border: 0; background: transparent; color: inherit; text-align: left; text-decoration: none; cursor: pointer; }
+    .bar-link:hover .bar-name, .bar-link:focus .bar-name { color: var(--red); text-decoration: underline; }
+    .bar-link:focus { outline: 2px solid rgba(207,42,27,.35); outline-offset: 3px; }
     .bar-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
     .bar-value { color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
     .track { grid-column: 1 / -1; height: 8px; background: #e7e7e7; overflow: hidden; }
@@ -166,6 +247,7 @@ function makeHtml(data) {
     td { padding: 12px; border-bottom: 1px solid #e5e5e5; vertical-align: top; font-size: 14px; }
     tbody tr:nth-child(even) { background: #fafafa; }
     tbody tr:hover { background: #fff4f2; }
+    tbody tr.target-row { background: #fff0cc; box-shadow: inset 5px 0 0 var(--red); }
     td.num, td.rank { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
     td.name { overflow-wrap: anywhere; font-weight: 700; }
     .entry-address { display: block; margin-top: 4px; color: var(--muted); font-size: 12px; font-weight: 400; line-height: 1.35; }
@@ -174,8 +256,8 @@ function makeHtml(data) {
     .pill { display: inline-flex; align-items: center; border-radius: 3px; padding: 3px 7px; background: #e8f2ea; color: var(--green); font-weight: 700; font-size: 12px; }
     .pill.bad { background: #fde6e2; color: var(--red); }
     footer { margin-top: 18px; color: var(--muted); font-size: 13px; }
-    @media (max-width: 1200px) { .summary-strip, .kpis, .panel-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .controls { grid-template-columns: 1fr 1fr 1fr; } .search { grid-column: 1 / -1; } .n-logo { position: static; height: 76px; width: 150px; margin-left: auto; padding-top: 48px; } .n-logo::before { top: 40px; } .n-logo::after { top: 4px; } }
-    @media (max-width: 720px) { .sitebar-inner, main, .hero-inner { width: min(100vw - 20px, 1320px); } .top-icons { display: none; } .summary-strip, .kpis, .panel-grid, .controls { grid-template-columns: 1fr; } .hero { min-height: 300px; } .hero-inner { padding-top: 92px; } .hero-title { font-size: 32px; padding: 18px; } .hero-subtitle { font-size: 16px; } }
+    @media (max-width: 1200px) { .kpis, .panel-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .controls { grid-template-columns: 1fr 1fr 1fr; } .search { grid-column: 1 / -1; } .n-logo { position: static; height: 76px; width: 150px; margin-left: auto; padding-top: 48px; } .n-logo::before { top: 40px; } .n-logo::after { top: 4px; } }
+    @media (max-width: 720px) { .sitebar-inner, main, .hero-inner { width: min(100vw - 20px, 1320px); } .top-icons { display: none; } .kpis, .panel-grid, .controls { grid-template-columns: 1fr; } .hero { min-height: 300px; } .hero-inner { padding-top: 92px; } .hero-title { font-size: 32px; padding: 18px; } .hero-subtitle { font-size: 16px; } }
   </style>
 </head>
 <body>
@@ -197,9 +279,9 @@ function makeHtml(data) {
   <main>
     <section class="controls" aria-label="Dashboard-Filter">
       <div class="control search"><label for="searchInput">Suche</label><input id="searchInput" type="search" placeholder="Name, PLZ, Kategorie, Löschbereich …" autocomplete="off"></div>
-      <div class="control"><label for="postcodeFilter">PLZ</label><select id="postcodeFilter"><option value="">Alle PLZ</option>${postcodes.map(postcode => `<option value="${postcode}">${postcode}</option>`).join('')}</select></div>
+      <div class="control"><label for="postcodeFilter">PLZ</label><select id="postcodeFilter"><option value="">Alle PLZ</option>__POSTCODE_OPTIONS__</select></div>
       <div class="control"><label for="bannerFilter">Banner</label><select id="bannerFilter"><option value="all">Alle</option><option value="banner">Mit Banner</option><option value="clean">Ohne Banner</option></select></div>
-      <div class="control"><label for="rangeFilter">Gelöscht</label><select id="rangeFilter"><option value="">Alle Bereiche</option>${ranges.map(range => `<option value="${range}">${range}</option>`).join('')}</select></div>
+      <div class="control"><label for="rangeFilter">Gelöscht</label><select id="rangeFilter"><option value="">Alle Bereiche</option>__RANGE_OPTIONS__</select></div>
       <div class="control"><label for="minReviews">Min. Rezensionen</label><input id="minReviews" type="number" min="0" step="1" value="0"></div>
       <button class="reset" id="resetFilters" type="button">Reset</button>
     </section>
@@ -222,14 +304,13 @@ function makeHtml(data) {
     <section class="card dist" aria-label="Verteilung"><h2>Verteilung der Lösch-Stufen</h2><div id="distribution"></div></section>
 
     <nav class="tabs" aria-label="Tabellen-Presets">
-      <button class="tab active" data-mode="all">Alle Orte</button>
       <button class="tab" data-mode="removed">Meiste entfernt</button>
-      <button class="tab" data-mode="ratio">Höchste Lösch-Quote</button>
+      <button class="tab active" data-mode="ratio">Höchste Lösch-Quote</button>
       <button class="tab" data-mode="worst">Worst-Case-Rating</button>
       <button class="tab" data-mode="clean">Beste saubere Orte</button>
     </nav>
 
-    <div class="table-head"><strong id="tableTitle">Alle Orte</strong><span id="resultCount">–</span></div>
+    <div class="table-head"><strong id="tableTitle">Höchste Lösch-Quote</strong><span id="resultCount">–</span></div>
     <section class="table-wrap" aria-label="Daten-Explorer">
       <table id="placesTable">
         <colgroup><col class="rank"><col class="name"><col class="plz"><col class="rating"><col class="reviews"><col class="banner"><col class="removed"><col class="estimate"><col class="ratio"><col class="real"><col class="category"></colgroup>
@@ -249,17 +330,17 @@ function makeHtml(data) {
         <tbody></tbody>
       </table>
     </section>
-    <footer>Quelle: Google Maps, öffentlich sichtbare Banner. „Kein Banner“ heißt nur: im Scrape war kein passender Hinweis sichtbar. Snapshot: ${new Date().toLocaleDateString('de-DE')}.</footer>
+    <footer>Quelle: Google Maps, öffentlich sichtbare Banner. „Kein Banner“ heißt nur: im Scrape war kein passender Hinweis sichtbar. Snapshot: __SNAPSHOT__.</footer>
   </main>
 
-  <script id="placesData" type="application/json">${escapeScriptJson(data)}</script>
+  <script id="placesData" type="application/json">__DATA__</script>
   <script>
     const DATA = JSON.parse(document.getElementById('placesData').textContent);
     const valid = DATA.filter(row => Number.isFinite(row.rating) && Number.isFinite(row.reviewCount));
     const fmt = new Intl.NumberFormat('de-DE');
     const fmt1 = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 1, minimumFractionDigits: 1 });
     const fmt2 = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 2, minimumFractionDigits: 2 });
-    const state = { mode: 'all', sortKey: 'rank', sortDir: 'asc' };
+    const state = { mode: 'ratio', sortKey: 'deletionRatioPct', sortDir: 'desc' };
     const els = {
       search: document.getElementById('searchInput'), postcode: document.getElementById('postcodeFilter'), banner: document.getElementById('bannerFilter'), range: document.getElementById('rangeFilter'), minReviews: document.getElementById('minReviews'), reset: document.getElementById('resetFilters'), tbody: document.querySelector('#placesTable tbody'), resultCount: document.getElementById('resultCount'), tableTitle: document.getElementById('tableTitle')
     };
@@ -321,11 +402,11 @@ function makeHtml(data) {
       document.getElementById('kpiRemoved').textContent = n(Math.round(removedSum));
       document.getElementById('kpiClean').textContent = n(clean.length);
     }
-    function renderBars(id, rows, metric, label, color, maxValue) {
+    function renderBars(id, mode, rows, metric, label, color, maxValue) {
       const root = document.getElementById(id);
       const top = rows.slice(0, 8);
       const max = maxValue ?? Math.max(1, ...top.map(metric));
-      root.innerHTML = top.map(row => '<div class="bar-row"><div class="bar-name" title="' + esc(row.name) + '">' + esc(row.name) + '</div><div class="bar-value">' + label(row) + '</div><div class="track"><div class="fill ' + color + '" style="width:' + Math.max(2, Math.min(100, metric(row) / max * 100)) + '%"></div></div></div>').join('') || '<p>Keine Daten im Filter.</p>';
+      root.innerHTML = top.map(row => '<a class="bar-row bar-link" href="#placesTable" data-mode="' + mode + '" data-entry-id="' + esc(row.id) + '"><div class="bar-name" title="' + esc(row.name) + '">' + esc(row.name) + '</div><div class="bar-value">' + label(row) + '</div><div class="track"><div class="fill ' + color + '" style="width:' + Math.max(2, Math.min(100, metric(row) / max * 100)) + '%"></div></div></a>').join('') || '<p>Keine Daten im Filter.</p>';
     }
     function renderDistribution(rows) {
       const banners = bannerRows(rows);
@@ -336,10 +417,10 @@ function makeHtml(data) {
     }
     function updatePanels(rows) {
       const banners = bannerRows(rows);
-      renderBars('barsRemoved', [...banners].sort((a,b) => b.removedEstimate - a.removedEstimate), row => row.removedEstimate, row => row.removedRange + ' · ' + n(row.removedEstimate), '', 300);
-      renderBars('barsRatio', [...banners].sort((a,b) => (b.deletionRatioPct ?? -1) - (a.deletionRatioPct ?? -1)), row => row.deletionRatioPct || 0, row => pct(row.deletionRatioPct), '', Math.max(10, ...banners.map(row => row.deletionRatioPct || 0)));
-      renderBars('barsWorst', [...banners].filter(row => Number.isFinite(row.realRatingAdjusted)).sort((a,b) => a.realRatingAdjusted - b.realRatingAdjusted), row => 5 - row.realRatingAdjusted, row => rating(row.realRatingAdjusted, 2), 'orange', 4);
-      renderBars('barsClean', [...cleanRows(rows)].sort((a,b) => b.rating - a.rating || b.reviewCount - a.reviewCount), row => row.rating, row => rating(row.rating) + ' · ' + n(row.reviewCount), 'green', 5);
+      renderBars('barsRemoved', 'removed', [...banners].sort((a,b) => b.removedEstimate - a.removedEstimate), row => row.removedEstimate, row => row.removedRange + ' · ' + n(row.removedEstimate), '', 300);
+      renderBars('barsRatio', 'ratio', [...banners].sort((a,b) => (b.deletionRatioPct ?? -1) - (a.deletionRatioPct ?? -1)), row => row.deletionRatioPct || 0, row => pct(row.deletionRatioPct), '', Math.max(10, ...banners.map(row => row.deletionRatioPct || 0)));
+      renderBars('barsWorst', 'worst', [...banners].filter(row => Number.isFinite(row.realRatingAdjusted)).sort((a,b) => a.realRatingAdjusted - b.realRatingAdjusted), row => 5 - row.realRatingAdjusted, row => rating(row.rating) + '★ → ' + rating(row.realRatingAdjusted, 2) + '★', 'orange', 4);
+      renderBars('barsClean', 'clean', [...cleanRows(rows)].sort((a,b) => b.rating - a.rating || b.reviewCount - a.reviewCount), row => row.rating, row => rating(row.rating) + ' · ' + n(row.reviewCount), 'green', 5);
       renderDistribution(rows);
     }
     function renderTable(rows) {
@@ -347,7 +428,7 @@ function makeHtml(data) {
       const sorted = sortRows(scoped);
       els.resultCount.textContent = n(sorted.length) + ' von ' + n(rows.length) + ' Orten im aktuellen Filter';
       els.tableTitle.textContent = titles[state.mode];
-      els.tbody.innerHTML = sorted.map((row, index) => '<tr><td class="rank">' + (index + 1) + '</td><td class="name"><a href="' + esc(row.url) + '" target="_blank" rel="noopener noreferrer">' + esc(row.name) + '</a>' + (row.address ? '<span class="entry-address">' + esc(row.address) + '</span>' : '') + '</td><td>' + esc(row.postcode) + '</td><td class="num">' + rating(row.rating) + '</td><td class="num">' + n(row.reviewCount) + '</td><td>' + (row.hasBanner ? '<span class="pill bad">Banner</span>' : '<span class="pill">sauber</span>') + '</td><td class="num">' + (row.hasBanner ? esc(row.removedRange) : '–') + '</td><td class="num">' + (row.hasBanner ? rating(row.removedEstimate) : '–') + '</td><td class="num">' + pct(row.deletionRatioPct) + '</td><td class="num">' + rating(row.realRatingAdjusted, 2) + '</td><td>' + esc(row.category) + '</td></tr>').join('');
+      els.tbody.innerHTML = sorted.map((row, index) => '<tr data-entry-id="' + esc(row.id) + '"><td class="rank">' + (index + 1) + '</td><td class="name"><a href="' + esc(row.url) + '" target="_blank" rel="noopener noreferrer">' + esc(row.name) + '</a>' + (row.address ? '<span class="entry-address">' + esc(row.address) + '</span>' : '') + '</td><td>' + esc(row.postcode) + '</td><td class="num">' + rating(row.rating) + '</td><td class="num">' + n(row.reviewCount) + '</td><td>' + (row.hasBanner ? '<span class="pill bad">Banner</span>' : '<span class="pill">sauber</span>') + '</td><td class="num">' + (row.hasBanner ? esc(row.removedRange) : '–') + '</td><td class="num">' + (row.hasBanner ? rating(row.removedEstimate) : '–') + '</td><td class="num">' + pct(row.deletionRatioPct) + '</td><td class="num">' + rating(row.realRatingAdjusted, 2) + '</td><td>' + esc(row.category) + '</td></tr>').join('');
       document.querySelectorAll('th button[data-sort]').forEach(button => {
         const active = button.dataset.sort === state.sortKey;
         button.classList.toggle('active', active);
@@ -360,11 +441,29 @@ function makeHtml(data) {
       updatePanels(rows);
       renderTable(rows);
     }
+    function activateMode(mode) {
+      state.mode = mode;
+      [state.sortKey, state.sortDir] = defaultSortFor(mode);
+      document.querySelectorAll('.tab').forEach(tab => tab.classList.toggle('active', tab.dataset.mode === mode));
+    }
+    function focusEntry(entryId) {
+      const row = Array.from(els.tbody.rows).find(tr => tr.dataset.entryId === entryId);
+      if (!row) return;
+      document.querySelectorAll('tbody tr.target-row').forEach(tr => tr.classList.remove('target-row'));
+      row.classList.add('target-row');
+      row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      window.setTimeout(() => row.classList.remove('target-row'), 2800);
+    }
+    document.querySelectorAll('.bars').forEach(root => root.addEventListener('click', event => {
+      const link = event.target.closest('.bar-link');
+      if (!link) return;
+      event.preventDefault();
+      activateMode(link.dataset.mode);
+      render();
+      requestAnimationFrame(() => focusEntry(link.dataset.entryId));
+    }));
     document.querySelectorAll('.tab').forEach(button => button.addEventListener('click', () => {
-      document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-      button.classList.add('active');
-      state.mode = button.dataset.mode;
-      [state.sortKey, state.sortDir] = defaultSortFor(state.mode);
+      activateMode(button.dataset.mode);
       render();
     }));
     document.querySelectorAll('th button[data-sort]').forEach(button => button.addEventListener('click', () => {
@@ -376,24 +475,47 @@ function makeHtml(data) {
     [els.search, els.postcode, els.banner, els.range, els.minReviews].forEach(input => input.addEventListener('input', render));
     els.reset.addEventListener('click', () => {
       els.search.value = ''; els.postcode.value = ''; els.banner.value = 'all'; els.range.value = ''; els.minReviews.value = 0;
-      state.mode = 'all'; [state.sortKey, state.sortDir] = defaultSortFor('all');
-      document.querySelectorAll('.tab').forEach(tab => tab.classList.toggle('active', tab.dataset.mode === 'all'));
+      activateMode('ratio');
       render();
     });
     render();
   </script>
 </body>
-</html>`;
+</html>`
+
+	return strings.NewReplacer(
+		"__POSTCODE_OPTIONS__", postcodeOptions,
+		"__RANGE_OPTIONS__", rangeOptions,
+		"__SNAPSHOT__", time.Now().Format("02.01.2006"),
+		"__DATA__", jsonText,
+	).Replace(page)
 }
 
-function main() {
-  const args = parseArgs(process.argv.slice(2));
-  if (!fs.existsSync(args.input)) throw new Error(`Input not found: ${args.input}`);
-  const rows = JSON.parse(fs.readFileSync(args.input, 'utf8'));
-  const data = makeClientRows(rows);
-  fs.mkdirSync(path.dirname(args.output), { recursive: true });
-  fs.writeFileSync(args.output, makeHtml(data));
-  console.log(`wrote ${args.output}`);
+func uniqueSorted(data []clientRow, value func(clientRow) string) []string {
+	set := map[string]bool{}
+	for _, row := range data {
+		v := value(row)
+		if v != "" {
+			set[v] = true
+		}
+	}
+	out := make([]string, 0, len(set))
+	for v := range set {
+		out = append(out, v)
+	}
+	sort.Strings(out)
+	return out
 }
 
-main();
+func maxEstimateForRange(data []clientRow, r string) float64 {
+	max := 0.0
+	for _, row := range data {
+		if row.RemovedRange == r && row.RemovedEstimate > max {
+			max = row.RemovedEstimate
+		}
+	}
+	return max
+}
+
+func esc(value string) string     { return html.EscapeString(value) }
+func escAttr(value string) string { return html.EscapeString(value) }
