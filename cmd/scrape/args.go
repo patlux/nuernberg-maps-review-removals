@@ -21,6 +21,7 @@ type args struct {
 	AllowBannerClears bool
 	ScrapeStart       int
 	ScrapeLimit       int
+	SaveEvery         int
 	DelayMin          int
 	DelayMax          int
 	Out               string
@@ -35,6 +36,7 @@ func parseArgs(argv []string) (args, error) {
 		Headless:    false,
 		DelayMin:    2500,
 		DelayMax:    6000,
+		SaveEvery:   1,
 		Out:         mapsreview.ResultsJSON,
 		CSV:         mapsreview.ResultsCSV,
 		MaxResults:  0,
@@ -72,6 +74,8 @@ func parseArgs(argv []string) (args, error) {
 			out.ScrapeStart = max(1, atoi(value))
 		case "--scrape-limit":
 			out.ScrapeLimit = max(0, atoi(value))
+		case "--save-every":
+			out.SaveEvery = max(1, atoi(value))
 		case "--delay-min":
 			out.DelayMin = atoi(value)
 		case "--delay-max":
@@ -114,6 +118,7 @@ Options:
   --scrape-start <n>        Start scraping at 1-based position within the todo list. Default: 1.
   --resume-from <n>         Alias for --scrape-start.
   --scrape-limit <n>        Scrape at most n todo rows. 0 = unlimited.
+  --save-every <n>          Persist results every n changed rows. Default: 1.
   --delay-min <ms>          Minimum delay between place pages. Default: 2500.
   --delay-max <ms>          Maximum delay between place pages. Default: 6000.
   --out <path>              Results JSON path. Default: output/places.json.

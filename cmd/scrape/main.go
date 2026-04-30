@@ -80,6 +80,7 @@ type metadata struct {
 	AllowBannerClears bool     `json:"allowBannerClears"`
 	ScrapeStart       int      `json:"scrapeStart"`
 	ScrapeLimit       int      `json:"scrapeLimit"`
+	SaveEvery         int      `json:"saveEvery"`
 	DelayMin          int      `json:"delayMin"`
 	DelayMax          int      `json:"delayMax"`
 	Output            string   `json:"output"`
@@ -104,6 +105,7 @@ func writeMetadata(args args, discoveries []mapsreview.Discovery, rows []mapsrev
 		AllowBannerClears: args.AllowBannerClears,
 		ScrapeStart:       args.ScrapeStart,
 		ScrapeLimit:       args.ScrapeLimit,
+		SaveEvery:         args.SaveEvery,
 		DelayMin:          args.DelayMin,
 		DelayMax:          args.DelayMax,
 		Output:            args.Out,
@@ -214,7 +216,9 @@ func extractPlace(ctx context.Context, discovery mapsreview.Discovery) (mapsrevi
 		return mapsreview.Place{}, err
 	}
 	_ = acceptConsent(ctx)
-	sleep(2500)
+	if err := waitForPlacePanel(ctx); err != nil {
+		return mapsreview.Place{}, err
+	}
 	overview, err := readMapText(ctx)
 	if err != nil {
 		return mapsreview.Place{}, err
@@ -343,6 +347,19 @@ func scrapePlaces(ctx context.Context, discoveries []mapsreview.Discovery, args 
 	}
 	fmt.Println()
 
+	changedSinceSave := 0
+	saveEvery := max(1, args.SaveEvery)
+	saveIfNeeded := func(force bool) error {
+		if changedSinceSave == 0 || (!force && changedSinceSave < saveEvery) {
+			return nil
+		}
+		if err := saveRows(args, rows); err != nil {
+			return err
+		}
+		changedSinceSave = 0
+		return nil
+	}
+
 	for i, place := range todo {
 		fmt.Printf("[%d/%d] %s\n", i+1, len(todo), displayPlaceName(place))
 		previousRow, hadPreviousRow := rows[place.ID]
@@ -352,12 +369,18 @@ func scrapePlaces(ctx context.Context, discoveries []mapsreview.Discovery, args 
 			if hadPreviousRow && previousRow.Status == "success" {
 				fmt.Printf("  ERROR: %s; keeping existing success row\n", errorText)
 				if errors.Is(err, context.Canceled) {
+					if saveErr := saveIfNeeded(true); saveErr != nil {
+						return nil, saveErr
+					}
 					return mapValues(rows), err
 				}
-				sleep(randomDelay(args.DelayMin, args.DelayMax))
+				sleepBetweenPlaces(i, len(todo), args)
 				continue
 			}
 			if errors.Is(err, context.Canceled) {
+				if saveErr := saveIfNeeded(true); saveErr != nil {
+					return nil, saveErr
+				}
 				return mapValues(rows), err
 			}
 			row = mapsreview.Place{
@@ -374,7 +397,7 @@ func scrapePlaces(ctx context.Context, discoveries []mapsreview.Discovery, args 
 		} else {
 			if keep, reason := shouldKeepPreviousRow(previousRow, row, hadPreviousRow, args); keep {
 				fmt.Printf("  SKIP: %s; keeping existing success row\n", reason)
-				sleep(randomDelay(args.DelayMin, args.DelayMax))
+				sleepBetweenPlaces(i, len(todo), args)
 				continue
 			}
 			removed := "none"
@@ -384,10 +407,14 @@ func scrapePlaces(ctx context.Context, discoveries []mapsreview.Discovery, args 
 			fmt.Printf("  %s★ %s reviews; removed=%s\n", mapsreview.FormatPtrFloat(row.Rating, 1), mapsreview.FormatPtrInt(row.ReviewCount), removed)
 		}
 		rows[row.ID] = row
-		if err := saveRows(args, rows); err != nil {
+		changedSinceSave++
+		if err := saveIfNeeded(false); err != nil {
 			return nil, err
 		}
-		sleep(randomDelay(args.DelayMin, args.DelayMax))
+		sleepBetweenPlaces(i, len(todo), args)
+	}
+	if err := saveIfNeeded(true); err != nil {
+		return nil, err
 	}
 	out := mapValues(rows)
 	mapsreview.SortPlaces(out)
@@ -444,6 +471,13 @@ func mapValues(rows map[string]mapsreview.Place) []mapsreview.Place {
 		return out[i].Name < out[j].Name
 	})
 	return out
+}
+
+func sleepBetweenPlaces(index, total int, args args) {
+	if index+1 >= total {
+		return
+	}
+	sleep(randomDelay(args.DelayMin, args.DelayMax))
 }
 
 func randomDelay(min, max int) int {

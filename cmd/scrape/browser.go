@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"net/url"
 	"os"
 	"regexp"
@@ -31,6 +32,22 @@ func navigate(ctx context.Context, rawURL string, timeout time.Duration) error {
 		chromedp.Navigate(rawURL),
 		chromedp.WaitReady("body", chromedp.ByQuery),
 	)
+}
+
+func waitForPlacePanel(ctx context.Context) error {
+	var ready bool
+	err := mapsreview.RunWithTimeout(ctx, 12*time.Second, chromedp.Poll(`(() => {
+  const text = document.body?.innerText || '';
+  const hasTitle = Boolean(document.querySelector('h1')?.textContent?.trim()) || /Google Maps/i.test(document.title || '');
+  return hasTitle && text.length > 500;
+})()`, &ready, chromedp.WithPollingInterval(150*time.Millisecond), chromedp.WithPollingTimeout(10*time.Second)))
+	if err != nil {
+		return err
+	}
+	if !ready {
+		return errors.New("place panel did not become ready")
+	}
+	return nil
 }
 
 func acceptConsent(ctx context.Context) error {
@@ -104,9 +121,17 @@ func clickReviewsTab(ctx context.Context) bool {
   return true;
 })()`, &clicked))
 	if clicked {
-		sleep(2000)
+		_ = waitForReviewsPanel(ctx)
 	}
 	return clicked
+}
+
+func waitForReviewsPanel(ctx context.Context) error {
+	var ready bool
+	return mapsreview.RunWithTimeout(ctx, 2500*time.Millisecond, chromedp.Poll(`(() => {
+  const text = document.body?.innerText || '';
+  return /Sortieren|Weitere Rezensionen|Rezensionen werden nicht überprüft|Reviews are not verified|Ansicht ist beschränkt|limited view/i.test(text);
+})()`, &ready, chromedp.WithPollingInterval(100*time.Millisecond), chromedp.WithPollingTimeout(2*time.Second)))
 }
 
 func screenshot(ctx context.Context, file string) error {

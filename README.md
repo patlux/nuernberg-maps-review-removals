@@ -131,7 +131,7 @@ Der Workflow `.github/workflows/refresh-and-deploy.yml` baut und veröffentlicht
 Ein Daten-Refresh läuft bewusst nur manuell über **Actions → Refresh data and deploy site → Run workflow** mit aktivierter Option `refresh_data`. Standardmäßig wird dann der vorhandene Discovery-Snapshot komplett neu gescrapt:
 
 ```bash
---scrape-only --rescrape-all --delay-min 4000 --delay-max 9000 --headless=true
+--scrape-only --rescrape-all --save-every 25 --delay-min 4000 --delay-max 9000 --headless=true
 ```
 
 Falls Google ein CAPTCHA oder eine eingeschränkte Ansicht ausliefert, kann der Action-Lauf fehlschlagen oder unvollständige Daten liefern; dann lokal mit sichtbarem Browser neu laufen lassen. Zuvor erkannte Löschbanner werden bei automatischen Re-Scrapes standardmäßig nicht entfernt; dafür ist nach manueller Prüfung `--allow-banner-clears` nötig.

@@ -22,6 +22,16 @@ func TestIsRestrictedMapsView(t *testing.T) {
 	}
 }
 
+func TestParseArgsSaveEvery(t *testing.T) {
+	args, err := parseArgs([]string{"--save-every", "25"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if args.SaveEvery != 25 {
+		t.Fatalf("SaveEvery = %d, want 25", args.SaveEvery)
+	}
+}
+
 func TestShouldKeepPreviousRowPreventsBannerClearByDefault(t *testing.T) {
 	previous := successPlace()
 	previous.HasDefamationNotice = true

@@ -14,7 +14,7 @@ on:
         description: "Arguments passed to make scrape ARGS=... when refresh_data is enabled"
         required: false
         type: string
-        default: "--scrape-only --rescrape-all --delay-min 4000 --delay-max 9000 --headless=true"
+        default: "--scrape-only --rescrape-all --save-every 25 --delay-min 4000 --delay-max 9000 --headless=true"
 
 permissions:
   contents: write

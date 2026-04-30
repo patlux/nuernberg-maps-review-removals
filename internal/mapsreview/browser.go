@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/chromedp"
 )
 
@@ -14,6 +15,7 @@ func NewBrowserContext(headless bool) (context.Context, context.CancelFunc) {
 	opts := append(chromedp.DefaultExecAllocatorOptions[:],
 		chromedp.Flag("headless", headless),
 		chromedp.Flag("lang", "de-DE"),
+		chromedp.Flag("blink-settings", "imagesEnabled=false"),
 		chromedp.UserAgent(UserAgent),
 		chromedp.WindowSize(1440, 1100),
 	)
@@ -22,7 +24,14 @@ func NewBrowserContext(headless bool) (context.Context, context.CancelFunc) {
 	}
 	allocCtx, allocCancel := chromedp.NewExecAllocator(context.Background(), opts...)
 	browserCtx, browserCancel := chromedp.NewContext(allocCtx)
-	_ = chromedp.Run(browserCtx)
+	_ = chromedp.Run(browserCtx,
+		network.Enable(),
+		network.SetBlockedURLs([]string{
+			"*.png*", "*.jpg*", "*.jpeg*", "*.gif*", "*.webp*", "*.avif*", "*.ico*",
+			"*.woff*", "*.woff2*", "*.ttf*", "*.otf*",
+			"*.mp4*", "*.webm*", "*.m4s*", "*.mp3*",
+		}),
+	)
 	return browserCtx, func() {
 		browserCancel()
 		allocCancel()
