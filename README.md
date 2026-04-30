@@ -106,6 +106,8 @@ Die Dashboard-Karte nutzt Leaflet mit CARTO-Kartenkacheln auf Basis von OpenStre
 
 GitHub Pages ist auf den Branch `gh-pages` konfiguriert. Der Branch enthält nur das generierte `public/`-Artefakt; die Quell- und Snapshot-Dateien bleiben auf `main`.
 
+Öffentliche URL: <https://nuernberg-maps-review-removals.patwoz.dev/>
+
 Lokale Vorschau des Veröffentlichungs-Artefakts:
 
 ```bash

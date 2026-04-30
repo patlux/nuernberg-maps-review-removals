@@ -29,6 +29,7 @@ site: charts dashboard
 	rm -rf public
 	mkdir -p public/charts public/data
 	touch public/.nojekyll
+	echo "nuernberg-maps-review-removals.patwoz.dev" > public/CNAME
 	cp output/charts/nuernberg_dashboard.html public/index.html
 	cp output/charts/* public/charts/
 	cp output/metadata.json output/places.csv public/data/
