@@ -230,6 +230,7 @@ func makeHTML(data []clientRow) string {
     .hero-subtitle { width: min(760px, 100%); margin-top: 14px; padding: 18px 22px; background: #fff; border-radius: 5px; box-shadow: var(--shadow); color: #777; font-size: 20px; line-height: 1.45; }
     main { width: min(1320px, calc(100vw - 32px)); margin: 0 auto 70px; }
     .controls { position: sticky; top: 0; z-index: 2000; display: grid; grid-template-columns: minmax(260px, 1fr) 120px 190px 150px 160px 140px auto; gap: 12px; align-items: end; padding: 16px; margin: 0 0 24px; background: #fff; border: 1px solid var(--line); box-shadow: 0 2px 8px rgba(0,0,0,.12); }
+    .filter-toggle { display: none; }
     label { display: block; margin-bottom: 6px; color: #666; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
     input, select, button { font: inherit; }
     input, select { width: 100%; height: 44px; padding: 0 12px; border: 1px solid #cfcfcf; border-radius: 5px; background: #fff; color: #333; outline: none; }
@@ -313,7 +314,26 @@ func makeHTML(data []clientRow) string {
     .footer-credit { margin-top: 6px; }
     .footer-credit a { font-weight: 700; }
     @media (max-width: 1200px) { .kpis, .panel-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .controls { grid-template-columns: 1fr 1fr 1fr; } .search { grid-column: 1 / -1; } .n-logo { position: static; height: 76px; width: 150px; margin-left: auto; padding-top: 48px; } .n-logo::before { top: 40px; } .n-logo::after { top: 4px; } }
-    @media (max-width: 720px) { .sitebar-inner, main, .hero-inner { width: min(100vw - 20px, 1320px); } .top-icons { display: none; } .kpis, .panel-grid, .controls { grid-template-columns: 1fr; } .hero { min-height: 300px; } .hero-inner { padding-top: 92px; } .hero-title { font-size: 32px; padding: 18px; } .hero-subtitle { font-size: 16px; } }
+    @media (max-width: 720px) {
+      .sitebar-inner, main, .hero-inner { width: min(100vw - 20px, 1320px); }
+      .top-icons { display: none; }
+      .kpis, .panel-grid { grid-template-columns: 1fr; }
+      .controls { position: sticky; top: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px 10px; padding: 10px; margin-bottom: 14px; }
+      .filter-toggle { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 42px; padding: 8px 12px; border: 0; border-radius: 5px; background: #333; color: #fff; text-align: left; cursor: pointer; }
+      .filter-toggle strong { display: block; font-size: 15px; line-height: 1.1; }
+      .filter-summary { display: block; max-width: 380px; overflow: hidden; color: rgba(255,255,255,.78); font-size: 12px; font-weight: 400; line-height: 1.3; text-overflow: ellipsis; white-space: nowrap; }
+      .filter-toggle-icon { font-size: 16px; transition: transform .18s ease; }
+      .controls:not(.is-collapsed) .filter-toggle-icon { transform: rotate(180deg); }
+      .controls.is-collapsed .control, .controls.is-collapsed .reset { display: none; }
+      .search { grid-column: 1 / -1; }
+      label { margin-bottom: 4px; font-size: 10px; letter-spacing: .04em; }
+      input, select { height: 38px; padding: 0 9px; font-size: 15px; }
+      .reset { height: 38px; padding: 0 12px; font-size: 15px; }
+      .hero { min-height: 300px; }
+      .hero-inner { padding-top: 92px; }
+      .hero-title { font-size: 32px; padding: 18px; }
+      .hero-subtitle { font-size: 16px; }
+    }
   </style>
 </head>
 <body>
@@ -333,7 +353,8 @@ func makeHTML(data []clientRow) string {
   </section>
 
   <main>
-    <section class="controls" aria-label="Dashboard-Filter">
+    <section class="controls is-collapsed" id="dashboardFilterControls" aria-label="Dashboard-Filter">
+      <button class="filter-toggle" id="filterToggle" type="button" aria-expanded="false" aria-controls="dashboardFilterControls"><span><strong>Filter</strong><span class="filter-summary" id="filterSummary">Keine aktiven Filter</span></span><span class="filter-toggle-icon" aria-hidden="true">▾</span></button>
       <div class="control search"><label for="searchInput">Suche</label><input id="searchInput" type="search" placeholder="Name, PLZ, Kategorie, Löschbereich …" autocomplete="off"></div>
       <div class="control"><label for="postcodeFilter">PLZ</label><select id="postcodeFilter"><option value="">Alle PLZ</option>__POSTCODE_OPTIONS__</select></div>
       <div class="control"><label for="bezirkFilter">Bezirk</label><select id="bezirkFilter"><option value="">Alle Bezirke</option>__BEZIRK_OPTIONS__</select></div>
@@ -415,7 +436,7 @@ func makeHTML(data []clientRow) string {
     const fmt2 = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 2, minimumFractionDigits: 2 });
     const state = { mode: 'ratio', sortKey: 'deletionRatioPct', sortDir: 'desc' };
     const els = {
-      search: document.getElementById('searchInput'), postcode: document.getElementById('postcodeFilter'), bezirk: document.getElementById('bezirkFilter'), banner: document.getElementById('bannerFilter'), range: document.getElementById('rangeFilter'), minReviews: document.getElementById('minReviews'), reset: document.getElementById('resetFilters'), tbody: document.querySelector('#placesTable tbody'), resultCount: document.getElementById('resultCount'), tableTitle: document.getElementById('tableTitle'), mapCount: document.getElementById('mapCount')
+      controls: document.getElementById('dashboardFilterControls'), filterToggle: document.getElementById('filterToggle'), filterSummary: document.getElementById('filterSummary'), search: document.getElementById('searchInput'), postcode: document.getElementById('postcodeFilter'), bezirk: document.getElementById('bezirkFilter'), banner: document.getElementById('bannerFilter'), range: document.getElementById('rangeFilter'), minReviews: document.getElementById('minReviews'), reset: document.getElementById('resetFilters'), tbody: document.querySelector('#placesTable tbody'), resultCount: document.getElementById('resultCount'), tableTitle: document.getElementById('tableTitle'), mapCount: document.getElementById('mapCount')
     };
     const titles = { all: 'Alle Orte', removed: 'Meiste entfernte Bewertungen', ratio: 'Höchste Lösch-Quote', worst: 'Schlechtestes Worst-Case-Rating', clean: 'Beste saubere Orte' };
     let placesMap = null;
@@ -443,6 +464,21 @@ func makeHTML(data []clientRow) string {
       return true;
     }
     function filtered() { return valid.filter(matches); }
+    function selectedOptionLabel(select) { return select.selectedOptions && select.selectedOptions[0] ? select.selectedOptions[0].textContent : select.value; }
+    function activeFilterSummary() {
+      const parts = [];
+      if (els.search.value.trim()) parts.push('Suche');
+      if (els.postcode.value) parts.push(els.postcode.value);
+      if (els.bezirk.value) parts.push(els.bezirk.value === '__none__' ? 'Ohne Bezirk' : selectedOptionLabel(els.bezirk));
+      if (els.banner.value !== 'all') parts.push(selectedOptionLabel(els.banner));
+      if (els.range.value) parts.push(els.range.value);
+      if (Number(els.minReviews.value || 0) > 0) parts.push('ab ' + n(Number(els.minReviews.value)) + ' Rezensionen');
+      return parts.length ? parts.join(' · ') : 'Keine aktiven Filter';
+    }
+    function updateFilterToggle() {
+      els.filterToggle.setAttribute('aria-expanded', String(!els.controls.classList.contains('is-collapsed')));
+      els.filterSummary.textContent = activeFilterSummary();
+    }
     function bannerRows(rows) { return rows.filter(row => row.hasBanner && Number.isFinite(row.removedEstimate)); }
     function cleanRows(rows) { return rows.filter(row => !row.hasBanner); }
     function defaultSortFor(mode) {
@@ -697,6 +733,7 @@ func makeHTML(data []clientRow) string {
       renderBezirkSummary(rows);
       renderMap(modeRows(rows), rows);
       renderTable(rows);
+      updateFilterToggle();
     }
     function activateMode(mode) {
       state.mode = mode;
@@ -736,7 +773,14 @@ func makeHTML(data []clientRow) string {
       else { state.sortKey = next; state.sortDir = ['name','postcode','bezirkLabel','category','rank'].includes(next) ? 'asc' : 'desc'; }
       renderTable(filtered());
     }));
-    [els.search, els.postcode, els.bezirk, els.banner, els.range, els.minReviews].forEach(input => input.addEventListener('input', render));
+    els.filterToggle.addEventListener('click', () => {
+      els.controls.classList.toggle('is-collapsed');
+      updateFilterToggle();
+    });
+    [els.search, els.postcode, els.bezirk, els.banner, els.range, els.minReviews].forEach(input => {
+      input.addEventListener('input', render);
+      input.addEventListener('change', render);
+    });
     els.reset.addEventListener('click', () => {
       els.search.value = ''; els.postcode.value = ''; els.bezirk.value = ''; els.banner.value = 'all'; els.range.value = ''; els.minReviews.value = 0;
       activateMode('ratio');
