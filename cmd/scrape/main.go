@@ -232,8 +232,7 @@ func extractPlace(ctx context.Context, discovery mapsreview.Discovery) (mapsrevi
 	if err != nil {
 		return mapsreview.Place{}, err
 	}
-	clickReviewsTab(ctx)
-	reviews, err := readMapText(ctx)
+	reviews, err := extractReviewsDirectWithRetry(ctx, discovery)
 	if err != nil {
 		return mapsreview.Place{}, err
 	}
@@ -246,26 +245,12 @@ func extractPlace(ctx context.Context, discovery mapsreview.Discovery) (mapsrevi
 	if rawH1 == "" {
 		rawH1 = overview.H1
 	}
-	rawText := overview.Text + "\n" + reviews.Text
+	rawText := combinedMapText(overview, reviews)
 	if isConsentPage(rawText) {
 		return mapsreview.Place{}, errors.New("Google consent page still visible")
 	}
-	if isRestrictedMapsView(rawText) {
-		directReviews, err := extractReviewsDirect(ctx, discovery)
-		if err != nil {
-			return mapsreview.Place{}, err
-		}
-		reviews = directReviews
-		overview = directReviews
-		rawTitle = directReviews.Title
-		rawH1 = directReviews.H1
-		rawText = directReviews.Text
-		if isConsentPage(rawText) {
-			return mapsreview.Place{}, errors.New("Google consent page still visible")
-		}
-		if isRestrictedMapsView(rawText) {
-			return mapsreview.Place{}, errors.New("restricted Google Maps view")
-		}
+	if isRestrictedMapsView(reviews.Text) {
+		return mapsreview.Place{}, errors.New("restricted Google Maps view")
 	}
 	name := rawH1
 	if name == "" {
@@ -276,7 +261,17 @@ func extractPlace(ctx context.Context, discovery mapsreview.Discovery) (mapsrevi
 		name = strings.TrimSpace(name)
 	}
 
-	stats := mapsreview.ParsePlaceStats(rawText)
+	statsText := reviews.Text
+	stats := mapsreview.ParsePlaceStats(statsText)
+	if stats.Rating == nil || stats.ReviewCount == nil {
+		fallbackStats := mapsreview.ParsePlaceStats(rawText)
+		if stats.Rating == nil {
+			stats.Rating = fallbackStats.Rating
+		}
+		if stats.ReviewCount == nil {
+			stats.ReviewCount = fallbackStats.ReviewCount
+		}
+	}
 	address := mapsreview.ExtractAddress(overview.Text)
 	postcode := mapsreview.StringPtr(discovery.DiscoveredPostcode)
 	if address != nil {
@@ -285,7 +280,7 @@ func extractPlace(ctx context.Context, discovery mapsreview.Discovery) (mapsrevi
 		}
 	}
 	category := extractCategory(overview.Text)
-	notice := mapsreview.ParseNotice(rawText)
+	notice := mapsreview.ParseNotice(statsText)
 	coords := mapsreview.ExtractCoordinates(discovery.URL)
 
 	row := mapsreview.Place{
@@ -317,6 +312,24 @@ func extractPlace(ctx context.Context, discovery mapsreview.Discovery) (mapsrevi
 	return row, nil
 }
 
+func combinedMapText(overview, reviews mapText) string {
+	return overview.Text + "\n" + reviews.Text
+}
+
+func extractReviewsDirectWithRetry(ctx context.Context, discovery mapsreview.Discovery) (mapText, error) {
+	reviews, err := extractReviewsDirect(ctx, discovery)
+	if err == nil || errors.Is(err, context.Canceled) {
+		return reviews, err
+	}
+	firstErr := err
+	sleep(500)
+	reviews, err = extractReviewsDirect(ctx, discovery)
+	if err != nil {
+		return mapText{}, fmt.Errorf("direct reviews failed after retry: %v; first error: %v", err, firstErr)
+	}
+	return reviews, nil
+}
+
 func extractReviewsDirect(ctx context.Context, discovery mapsreview.Discovery) (mapText, error) {
 	reviewsURL := mapsreview.ReviewsURLFromURL(discovery.URL)
 	if reviewsURL == mapsreview.NormalizeURL(discovery.URL) {
@@ -326,7 +339,7 @@ func extractReviewsDirect(ctx context.Context, discovery mapsreview.Discovery) (
 		return mapText{}, err
 	}
 	_ = acceptConsent(ctx)
-	if err := waitForPlacePanel(ctx); err != nil {
+	if err := waitForDirectReviewsPanel(ctx); err != nil {
 		return mapText{}, err
 	}
 	return readMapText(ctx)

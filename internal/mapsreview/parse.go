@@ -21,7 +21,7 @@ func NormalizeURL(raw string) string {
 func ReviewsURLFromURL(raw string) string {
 	base, query, hasQuery := strings.Cut(NormalizeURL(raw), "?")
 	if !strings.Contains(base, "!9m1!1b1") {
-		base = strings.Replace(base, "!4m7!3m6", "!4m8!3m7", 1)
+		base = incrementMapsDataCounts(base)
 		base = strings.Replace(base, "!16s", "!9m1!1b1!16s", 1)
 	}
 	base = regexp.MustCompile(`!19s[^!/?]+`).ReplaceAllString(base, "")
@@ -29,6 +29,19 @@ func ReviewsURLFromURL(raw string) string {
 		return base + "?" + query
 	}
 	return base
+}
+
+func incrementMapsDataCounts(base string) string {
+	match := regexp.MustCompile(`!4m(\d+)!3m(\d+)`).FindStringSubmatch(base)
+	if len(match) != 3 {
+		return base
+	}
+	outer, outerErr := strconv.Atoi(match[1])
+	inner, innerErr := strconv.Atoi(match[2])
+	if outerErr != nil || innerErr != nil {
+		return base
+	}
+	return strings.Replace(base, match[0], "!4m"+strconv.Itoa(outer+1)+"!3m"+strconv.Itoa(inner+1), 1)
 }
 
 func PlaceIDFromURL(raw string) string {
@@ -159,11 +172,11 @@ func ParsePlaceStats(text string) PlaceStats {
 	var reviewCount *int
 	compactRatingReviewRe := regexp.MustCompile(`(?i)([1-5][,.][0-9])([0-9][0-9.]*)[\s\x{00a0}]*(?:Rezensionen|Berichte)\b`)
 	if match := compactRatingReviewRe.FindStringSubmatch(text); len(match) > 2 {
-		if n, ok := ParseGermanNumber(match[1]); ok {
+		if n, ok := ParseGermanNumber(match[1]); ok && n >= 1 && n <= 5 {
 			rating = FloatPtr(n)
-		}
-		if n, ok := ParseGermanNumber(match[2]); ok && n >= 0 {
-			reviewCount = IntPtr(int(n))
+			if count, ok := ParseGermanNumber(match[2]); ok && count >= 0 {
+				reviewCount = IntPtr(int(count))
+			}
 		}
 	}
 	reviewPatterns := []*regexp.Regexp{

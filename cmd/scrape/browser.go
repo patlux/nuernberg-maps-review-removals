@@ -112,27 +112,12 @@ func readMapText(ctx context.Context) (mapText, error) {
 	return out, err
 }
 
-func clickReviewsTab(ctx context.Context) bool {
-	var clicked bool
-	_ = mapsreview.RunWithTimeout(ctx, 5*time.Second, chromedp.Evaluate(`(() => {
-  const candidates = Array.from(document.querySelectorAll('button, [role="tab"], [role="button"]'));
-  const el = candidates.find(el => /Rezensionen|Reviews/i.test(el.innerText || el.textContent || el.getAttribute('aria-label') || ''));
-  if (!el) return false;
-  el.click();
-  return true;
-})()`, &clicked))
-	if clicked {
-		_ = waitForReviewsPanel(ctx)
-	}
-	return clicked
-}
-
-func waitForReviewsPanel(ctx context.Context) error {
+func waitForDirectReviewsPanel(ctx context.Context) error {
 	var ready bool
-	return mapsreview.RunWithTimeout(ctx, 2500*time.Millisecond, chromedp.Poll(`(() => {
+	return mapsreview.RunWithTimeout(ctx, 15*time.Second, chromedp.Poll(`(() => {
   const text = document.body?.innerText || '';
-  return /Sortieren|Weitere Rezensionen|Rezensionen werden nicht überprüft|Reviews are not verified|Ansicht ist beschränkt|limited view/i.test(text);
-})()`, &ready, chromedp.WithPollingInterval(100*time.Millisecond), chromedp.WithPollingTimeout(2*time.Second)))
+  return /Sortieren|In Rezensionen suchen|Berichte|Bewertungen aufgrund|Diffamierung|No reviews|Noch keine Rezensionen|Bevor Sie zu Google weitergehen|Before you go to Google/i.test(text);
+})()`, &ready, chromedp.WithPollingInterval(150*time.Millisecond), chromedp.WithPollingTimeout(12*time.Second)))
 }
 
 func screenshot(ctx context.Context, file string) error {

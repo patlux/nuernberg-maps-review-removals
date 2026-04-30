@@ -11,10 +11,16 @@ import (
 
 const UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36"
 
+var blockedResourceURLs = []string{
+	"*.png*", "*.jpg*", "*.jpeg*", "*.gif*", "*.webp*", "*.avif*", "*.ico*",
+	"*.woff*", "*.woff2*", "*.ttf*", "*.otf*",
+	"*.mp4*", "*.webm*", "*.m4s*", "*.mp3*",
+}
+
 func NewRemoteBrowserContext(cdpURL string) (context.Context, context.CancelFunc) {
 	allocCtx, allocCancel := chromedp.NewRemoteAllocator(context.Background(), cdpURL)
 	browserCtx, browserCancel := chromedp.NewContext(allocCtx)
-	_ = chromedp.Run(browserCtx)
+	_ = chromedp.Run(browserCtx, chromedp.EmulateViewport(1440, 1100))
 	return browserCtx, func() {
 		browserCancel()
 		allocCancel()
@@ -36,11 +42,7 @@ func NewBrowserContext(headless bool) (context.Context, context.CancelFunc) {
 	browserCtx, browserCancel := chromedp.NewContext(allocCtx)
 	_ = chromedp.Run(browserCtx,
 		network.Enable(),
-		network.SetBlockedURLs([]string{
-			"*.png*", "*.jpg*", "*.jpeg*", "*.gif*", "*.webp*", "*.avif*", "*.ico*",
-			"*.woff*", "*.woff2*", "*.ttf*", "*.otf*",
-			"*.mp4*", "*.webm*", "*.m4s*", "*.mp3*",
-		}),
+		network.SetBlockedURLs(blockedResourceURLs),
 	)
 	return browserCtx, func() {
 		browserCancel()

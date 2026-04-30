@@ -113,8 +113,8 @@ Options:
   --postcodes <all|csv>     Nürnberg PLZ list. Default: all known Nürnberg PLZ.
   --queries <csv>           Google Maps search terms. Default: %s.
   --max-results <n>         Stop after n discovered places. 0 = unlimited.
-  --headless <true|false>   Headless browser. Default: false; safer for consent/CAPTCHA.
-  --cdp-url <ws-url>        Connect to an existing CDP browser, e.g. Lightpanda serve on ws://127.0.0.1:9333.
+  --headless <true|false>   Chrome headless mode. Default: false; safer for consent/CAPTCHA.
+  --cdp-url <ws-url>        Experimental: use an existing CDP browser instead of Chrome, e.g. Lightpanda on ws://127.0.0.1:9333.
   --discovery-only          Only create/update output/discovery.json.
   --scrape-only             Skip discovery; scrape output/discovery.json.
   --rescrape-all, --all     Re-read every discovered place, including existing success rows.

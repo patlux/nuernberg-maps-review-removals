@@ -20,6 +20,7 @@ Voraussetzungen:
 
 - Go 1.25+
 - Chrome oder Chromium im `PATH` oder an einem Standard-Installationsort
+- Optional als experimentelles CDP-Backend: Lightpanda
 - Optional für PNG-Export: ImageMagick `magick`
 
 ```bash
@@ -29,6 +30,8 @@ go mod download
 ```
 
 ## 1) Daten sammeln
+
+Standardmäßig nutzt der Scraper Chrome. Er liest die normale Google-Maps-Seite für Metadaten und die direkte Rezensionen-URL für Rating, Rezensionszahl und Löschbanner, weil die normale Maps-Ansicht Löschbanner teils nicht im DOM enthält.
 
 Vollständiger Nürnberg-Lauf:
 
@@ -64,14 +67,14 @@ Nützliche Optionen:
 --out output/places.json --csv output/places.csv
 ```
 
-Optional kann der Scraper über CDP auch gegen einen bereits laufenden Browser wie Lightpanda laufen:
+Optional kann der Scraper über CDP gegen einen bereits laufenden Browser wie Lightpanda laufen. Das ist experimentell; Chrome bleibt der Standard und war in Stichproben schneller:
 
 ```bash
 LIGHTPANDA_DISABLE_TELEMETRY=true lightpanda serve --host 127.0.0.1 --port 9333
 make scrape ARGS="--scrape-only --rescrape-all --cdp-url ws://127.0.0.1:9333 --save-every 25 --delay-min 4000 --delay-max 9000"
 ```
 
-Lightpanda ist experimentell für dieses Projekt: Es kann den Desktop-Rezensionstab inklusive Löschbanner auslesen, sollte aber erst weiter mit Stichproben geprüft werden, bevor es Chrome als Standard ersetzt.
+Lightpanda ist als Vergleichs- oder Fallback-Backend nützlich, sollte aber mit Stichproben gegen Chrome geprüft werden, bevor seine Ergebnisse übernommen werden.
 
 ## 2) Datenqualität verbessern
 

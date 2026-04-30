@@ -108,6 +108,16 @@ func TestParsePlaceStatsFromCompactLightpandaReviewsText(t *testing.T) {
 	}
 }
 
+func TestParsePlaceStatsDoesNotTreatReviewCountAsCompactRating(t *testing.T) {
+	stats := ParsePlaceStats("4,8\n2.336 Berichte Rezensionen werden nicht überprüft")
+	if stats.Rating == nil || *stats.Rating != 4.8 {
+		t.Fatalf("rating = %v, want 4.8", stats.Rating)
+	}
+	if stats.ReviewCount == nil || *stats.ReviewCount != 2336 {
+		t.Fatalf("reviewCount = %v, want 2336", stats.ReviewCount)
+	}
+}
+
 func TestParseGermanNumber(t *testing.T) {
 	tests := map[string]float64{
 		"1.234": 1234,
@@ -133,6 +143,17 @@ func TestReviewsURLFromURL(t *testing.T) {
 	}
 	if !strings.Contains(got, "hl=de") {
 		t.Fatalf("reviews URL %q lost query", got)
+	}
+}
+
+func TestReviewsURLFromURLIncrementsExistingDataCounts(t *testing.T) {
+	raw := "https://www.google.com/maps/place/Das+Steichele/data=!4m10!3m9!1s0x479f57a9a65ab759:0x123dd70a4e8f0ed0!5m2!4m1!1i2!8m2!3d49.449225!4d11.071107!16s%2Fg%2F126122ghp!19sSearchResult?authuser=0&hl=de&rclk=1"
+	got := ReviewsURLFromURL(raw)
+	if !strings.Contains(got, "!4m11!3m10") {
+		t.Fatalf("reviews URL %q did not increment data counts", got)
+	}
+	if !strings.Contains(got, "!9m1!1b1!16s") {
+		t.Fatalf("reviews URL %q does not contain reviews tab marker", got)
 	}
 }
 

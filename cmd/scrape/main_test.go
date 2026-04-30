@@ -51,6 +51,22 @@ func TestParseArgsCDPURL(t *testing.T) {
 	}
 }
 
+func TestDirectReviewsTextCanBeParsedWithoutRestrictedOverview(t *testing.T) {
+	overview := mapText{Text: "Die Ansicht ist beschränkt und du siehst nur einen Teil der Google Maps-Daten. Route 1,5 km"}
+	reviews := mapText{Text: "543214,82.336 Berichte\n21 bis 50 Bewertungen aufgrund von Beschwerden wegen Diffamierung entfernt."}
+	if !isRestrictedMapsView(combinedMapText(overview, reviews)) {
+		t.Fatal("test fixture should include restricted overview text")
+	}
+
+	got := reviews.Text
+	if isRestrictedMapsView(got) {
+		t.Fatal("direct reviews text includes restricted overview text")
+	}
+	if notice := mapsreview.ParseNotice(got); notice == nil || notice.Min != 21 {
+		t.Fatalf("ParseNotice(%q) = %#v, want deletion banner", got, notice)
+	}
+}
+
 func TestPreservePreviousMetadata(t *testing.T) {
 	previous := successPlace()
 	previous.Address = mapsreview.StringPtr("Gostenhofer Hauptstraße 20, 90443 Nürnberg")
