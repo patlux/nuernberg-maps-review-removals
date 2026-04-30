@@ -215,7 +215,7 @@ func makeChart(rows []mapsreview.Place, scope string, args args) string {
 		},
 		"Punkte unter 5★",
 	))
-	b.WriteString(drawBarChart(1250, 230, 470, "3. Beste „saubere“ Orte", fmt.Sprintf("kein sichtbarer Banner — ab %d Rezensionen", args.MinCleanReviews), cleanRanking, green,
+	b.WriteString(drawBarChart(1250, 230, 470, "3. Beste Orte ohne Löschbanner", fmt.Sprintf("kein sichtbarer Diffamierungs-Löschbanner — ab %d Rezensionen", args.MinCleanReviews), cleanRanking, green,
 		func(row mapsreview.Place) float64 { return mapsreview.FloatValue(row.Rating) },
 		5,
 		func(row mapsreview.Place) string {

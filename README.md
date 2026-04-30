@@ -153,7 +153,7 @@ go run ./cmd/validate
 2. **Schlechtestes „echtes“ Rating**  
    Annahme: Jede entfernte Bewertung war eine 1-Stern-Bewertung.
 
-3. **Beste „saubere“ Orte**  
+3. **Beste Orte ohne Löschbanner**  
    Ohne sichtbaren Diffamierungs-Löschbanner, sortiert nach Rating und danach Rezensionszahl.
 
 4. **Verteilung der Lösch-Stufen**  

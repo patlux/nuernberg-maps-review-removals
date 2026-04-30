@@ -232,6 +232,9 @@ func extractPlace(ctx context.Context, discovery mapsreview.Discovery) (mapsrevi
 		rawH1 = overview.H1
 	}
 	rawText := overview.Text + "\n" + reviews.Text
+	if isRestrictedMapsView(rawText) {
+		return mapsreview.Place{}, errors.New("restricted Google Maps view")
+	}
 	name := rawH1
 	if name == "" {
 		name = discovery.Name
@@ -280,6 +283,11 @@ func extractPlace(ctx context.Context, discovery mapsreview.Discovery) (mapsrevi
 	mapsreview.ApplyPlaceOverrides(&row)
 	mapsreview.ComputeMetrics(&row)
 	return row, nil
+}
+
+func isRestrictedMapsView(text string) bool {
+	compact := strings.ToLower(strings.Join(strings.Fields(text), " "))
+	return strings.Contains(compact, "ansicht ist beschränkt") || strings.Contains(compact, "limited view")
 }
 
 func extractCategory(text string) *string {
