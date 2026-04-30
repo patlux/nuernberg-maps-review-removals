@@ -38,6 +38,7 @@
     .hero-subtitle { width: min(760px, 100%); margin-top: 14px; padding: 18px 22px; background: #fff; border-radius: 5px; box-shadow: var(--shadow); color: #777; font-size: 20px; line-height: 1.45; }
     main { width: min(1320px, calc(100vw - 32px)); margin: 0 auto 70px; }
     .controls { position: sticky; top: 0; z-index: 2000; display: grid; grid-template-columns: minmax(260px, 1fr) 120px 190px 150px 160px 140px auto; gap: 12px; align-items: end; padding: 16px; margin: 0 0 24px; background: #fff; border: 1px solid var(--line); box-shadow: 0 2px 8px rgba(0,0,0,.12); }
+    .filter-toggle { display: none; }
     label { display: block; margin-bottom: 6px; color: #666; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
     input, select, button { font: inherit; }
     input, select { width: 100%; height: 44px; padding: 0 12px; border: 1px solid #cfcfcf; border-radius: 5px; background: #fff; color: #333; outline: none; }
@@ -121,7 +122,26 @@
     .footer-credit { margin-top: 6px; }
     .footer-credit a { font-weight: 700; }
     @media (max-width: 1200px) { .kpis, .panel-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .controls { grid-template-columns: 1fr 1fr 1fr; } .search { grid-column: 1 / -1; } .n-logo { position: static; height: 76px; width: 150px; margin-left: auto; padding-top: 48px; } .n-logo::before { top: 40px; } .n-logo::after { top: 4px; } }
-    @media (max-width: 720px) { .sitebar-inner, main, .hero-inner { width: min(100vw - 20px, 1320px); } .top-icons { display: none; } .kpis, .panel-grid, .controls { grid-template-columns: 1fr; } .hero { min-height: 300px; } .hero-inner { padding-top: 92px; } .hero-title { font-size: 32px; padding: 18px; } .hero-subtitle { font-size: 16px; } }
+    @media (max-width: 720px) {
+      .sitebar-inner, main, .hero-inner { width: min(100vw - 20px, 1320px); }
+      .top-icons { display: none; }
+      .kpis, .panel-grid { grid-template-columns: 1fr; }
+      .controls { position: sticky; top: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px 10px; padding: 10px; margin-bottom: 14px; }
+      .filter-toggle { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 42px; padding: 8px 12px; border: 0; border-radius: 5px; background: #333; color: #fff; text-align: left; cursor: pointer; }
+      .filter-toggle strong { display: block; font-size: 15px; line-height: 1.1; }
+      .filter-summary { display: block; max-width: 380px; overflow: hidden; color: rgba(255,255,255,.78); font-size: 12px; font-weight: 400; line-height: 1.3; text-overflow: ellipsis; white-space: nowrap; }
+      .filter-toggle-icon { font-size: 16px; transition: transform .18s ease; }
+      .controls:not(.is-collapsed) .filter-toggle-icon { transform: rotate(180deg); }
+      .controls.is-collapsed .control, .controls.is-collapsed .reset { display: none; }
+      .search { grid-column: 1 / -1; }
+      label { margin-bottom: 4px; font-size: 10px; letter-spacing: .04em; }
+      input, select { height: 38px; padding: 0 9px; font-size: 15px; }
+      .reset { height: 38px; padding: 0 12px; font-size: 15px; }
+      .hero { min-height: 300px; }
+      .hero-inner { padding-top: 92px; }
+      .hero-title { font-size: 32px; padding: 18px; }
+      .hero-subtitle { font-size: 16px; }
+    }
   </style>
 </head>
 <body>
@@ -141,7 +161,8 @@
   </section>
 
   <main>
-    <section class="controls" aria-label="Dashboard-Filter">
+    <section class="controls is-collapsed" id="dashboardFilterControls" aria-label="Dashboard-Filter">
+      <button class="filter-toggle" id="filterToggle" type="button" aria-expanded="false" aria-controls="dashboardFilterControls"><span><strong>Filter</strong><span class="filter-summary" id="filterSummary">Keine aktiven Filter</span></span><span class="filter-toggle-icon" aria-hidden="true">▾</span></button>
       <div class="control search"><label for="searchInput">Suche</label><input id="searchInput" type="search" placeholder="Name, PLZ, Kategorie, Löschbereich …" autocomplete="off"></div>
       <div class="control"><label for="postcodeFilter">PLZ</label><select id="postcodeFilter"><option value="">Alle PLZ</option><option value="90402">90402</option><option value="90403">90403</option><option value="90408">90408</option><option value="90409">90409</option><option value="90411">90411</option><option value="90419">90419</option><option value="90425">90425</option><option value="90427">90427</option><option value="90429">90429</option><option value="90431">90431</option><option value="90439">90439</option><option value="90441">90441</option><option value="90443">90443</option><option value="90449">90449</option><option value="90451">90451</option><option value="90453">90453</option><option value="90455">90455</option><option value="90459">90459</option><option value="90461">90461</option><option value="90469">90469</option><option value="90471">90471</option><option value="90473">90473</option><option value="90475">90475</option><option value="90478">90478</option><option value="90480">90480</option><option value="90482">90482</option><option value="90489">90489</option><option value="90491">90491</option><option value="90522">90522</option><option value="90530">90530</option><option value="90547">90547</option><option value="90762">90762</option><option value="90763">90763</option><option value="90765">90765</option><option value="90766">90766</option><option value="91126">91126</option></select></div>
       <div class="control"><label for="bezirkFilter">Bezirk</label><select id="bezirkFilter"><option value="">Alle Bezirke</option><option value="__none__">Ohne Bezirk</option><option value="01 Altstadt, St. Lorenz">01 Altstadt, St. Lorenz</option><option value="02 Marienvorstadt">02 Marienvorstadt</option><option value="03 Tafelhof">03 Tafelhof</option><option value="04 Gostenhof">04 Gostenhof</option><option value="05 Himpfelshof">05 Himpfelshof</option><option value="06 Altstadt, St. Sebald">06 Altstadt, St. Sebald</option><option value="07 St. Johannis">07 St. Johannis</option><option value="08 Pirckheimerstraße">08 Pirckheimerstraße</option><option value="09 Wöhrd">09 Wöhrd</option><option value="10 Ludwigsfeld">10 Ludwigsfeld</option><option value="11 Glockenhof">11 Glockenhof</option><option value="12 Guntherstraße">12 Guntherstraße</option><option value="13 Galgenhof">13 Galgenhof</option><option value="14 Hummelstein">14 Hummelstein</option><option value="15 Gugelstraße">15 Gugelstraße</option><option value="16 Steinbühl">16 Steinbühl</option><option value="17 Gibitzenhof">17 Gibitzenhof</option><option value="18 Sandreuth">18 Sandreuth</option><option value="19 Schweinau">19 Schweinau</option><option value="20 St. Leonhard">20 St. Leonhard</option><option value="21 Sündersbühl">21 Sündersbühl</option><option value="22 Bärenschanze">22 Bärenschanze</option><option value="23 Sandberg">23 Sandberg</option><option value="24 Bielingplatz">24 Bielingplatz</option><option value="25 Uhlandstraße">25 Uhlandstraße</option><option value="26 Maxfeld">26 Maxfeld</option><option value="27 Veilhof">27 Veilhof</option><option value="28 Tullnau">28 Tullnau</option><option value="29 Gleißhammer">29 Gleißhammer</option><option value="30 Dutzendteich">30 Dutzendteich</option><option value="31 Rangierbahnhof-Siedlung">31 Rangierbahnhof-Siedlung</option><option value="32 Langwasser Nordwest">32 Langwasser Nordwest</option><option value="33 Langwasser Nordost">33 Langwasser Nordost</option><option value="35 Altenfurt Nord">35 Altenfurt Nord</option><option value="36 Langwasser Südost">36 Langwasser Südost</option><option value="37 Langwasser Südwest">37 Langwasser Südwest</option><option value="38 Altenfurt, Moorenbrunn">38 Altenfurt, Moorenbrunn</option><option value="39 Gewerbepark Nürnberg-Feucht">39 Gewerbepark Nürnberg-Feucht</option><option value="40 Hasenbuck">40 Hasenbuck</option><option value="41 Rangierbahnhof">41 Rangierbahnhof</option><option value="42 Katzwanger Straße">42 Katzwanger Straße</option><option value="43 Dianastraße">43 Dianastraße</option><option value="44 Trierer Straße">44 Trierer Straße</option><option value="45 Gartenstadt">45 Gartenstadt</option><option value="46 Werderau">46 Werderau</option><option value="47 Maiach">47 Maiach</option><option value="48 Katzwang, Reichelsdorf Ost, Reichelsdorfer Keller">48 Katzwang, Reichelsdorf Ost, Reichelsdorfer Keller</option><option value="49 Kornburg, Worzeldorf">49 Kornburg, Worzeldorf</option><option value="50 Hohe Marter">50 Hohe Marter</option><option value="51 Röthenbach West">51 Röthenbach West</option><option value="52 Röthenbach Ost">52 Röthenbach Ost</option><option value="53 Eibach">53 Eibach</option><option value="54 Reichelsdorf">54 Reichelsdorf</option><option value="55 Krottenbach, Mühlhof">55 Krottenbach, Mühlhof</option><option value="60 Großreuth b. Schweinau">60 Großreuth b. Schweinau</option><option value="61 Gebersdorf">61 Gebersdorf</option><option value="62 Gaismannshof">62 Gaismannshof</option><option value="63 Höfen">63 Höfen</option><option value="64 Eberhardshof">64 Eberhardshof</option><option value="65 Muggenhof">65 Muggenhof</option><option value="70 Westfriedhof">70 Westfriedhof</option><option value="71 Schniegling">71 Schniegling</option><option value="72 Wetzendorf">72 Wetzendorf</option><option value="73 Buch">73 Buch</option><option value="74 Thon">74 Thon</option><option value="75 Almoshof">75 Almoshof</option><option value="76 Kraftshof">76 Kraftshof</option><option value="77 Neunhof">77 Neunhof</option><option value="78 Boxdorf">78 Boxdorf</option><option value="79 Großgründlach">79 Großgründlach</option><option value="80 Schleifweg">80 Schleifweg</option><option value="81 Schoppershof">81 Schoppershof</option><option value="82 Schafhof">82 Schafhof</option><option value="83 Marienberg">83 Marienberg</option><option value="84 Ziegelstein">84 Ziegelstein</option><option value="85 Mooshof">85 Mooshof</option><option value="86 Buchenbühl">86 Buchenbühl</option><option value="90 St. Jobst">90 St. Jobst</option><option value="91 Erlenstegen">91 Erlenstegen</option><option value="92 Mögeldorf">92 Mögeldorf</option><option value="93 Schmausenbuckstraße">93 Schmausenbuckstraße</option><option value="94 Laufamholz">94 Laufamholz</option><option value="95 Zerzabelshof">95 Zerzabelshof</option><option value="96 Fischbach">96 Fischbach</option><option value="97 Brunn">97 Brunn</option></select></div>
@@ -223,7 +244,7 @@
     const fmt2 = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 2, minimumFractionDigits: 2 });
     const state = { mode: 'ratio', sortKey: 'deletionRatioPct', sortDir: 'desc' };
     const els = {
-      search: document.getElementById('searchInput'), postcode: document.getElementById('postcodeFilter'), bezirk: document.getElementById('bezirkFilter'), banner: document.getElementById('bannerFilter'), range: document.getElementById('rangeFilter'), minReviews: document.getElementById('minReviews'), reset: document.getElementById('resetFilters'), tbody: document.querySelector('#placesTable tbody'), resultCount: document.getElementById('resultCount'), tableTitle: document.getElementById('tableTitle'), mapCount: document.getElementById('mapCount')
+      controls: document.getElementById('dashboardFilterControls'), filterToggle: document.getElementById('filterToggle'), filterSummary: document.getElementById('filterSummary'), search: document.getElementById('searchInput'), postcode: document.getElementById('postcodeFilter'), bezirk: document.getElementById('bezirkFilter'), banner: document.getElementById('bannerFilter'), range: document.getElementById('rangeFilter'), minReviews: document.getElementById('minReviews'), reset: document.getElementById('resetFilters'), tbody: document.querySelector('#placesTable tbody'), resultCount: document.getElementById('resultCount'), tableTitle: document.getElementById('tableTitle'), mapCount: document.getElementById('mapCount')
     };
     const titles = { all: 'Alle Orte', removed: 'Meiste entfernte Bewertungen', ratio: 'Höchste Lösch-Quote', worst: 'Schlechtestes Worst-Case-Rating', clean: 'Beste saubere Orte' };
     let placesMap = null;
@@ -251,6 +272,21 @@
       return true;
     }
     function filtered() { return valid.filter(matches); }
+    function selectedOptionLabel(select) { return select.selectedOptions && select.selectedOptions[0] ? select.selectedOptions[0].textContent : select.value; }
+    function activeFilterSummary() {
+      const parts = [];
+      if (els.search.value.trim()) parts.push('Suche');
+      if (els.postcode.value) parts.push(els.postcode.value);
+      if (els.bezirk.value) parts.push(els.bezirk.value === '__none__' ? 'Ohne Bezirk' : selectedOptionLabel(els.bezirk));
+      if (els.banner.value !== 'all') parts.push(selectedOptionLabel(els.banner));
+      if (els.range.value) parts.push(els.range.value);
+      if (Number(els.minReviews.value || 0) > 0) parts.push('ab ' + n(Number(els.minReviews.value)) + ' Rezensionen');
+      return parts.length ? parts.join(' · ') : 'Keine aktiven Filter';
+    }
+    function updateFilterToggle() {
+      els.filterToggle.setAttribute('aria-expanded', String(!els.controls.classList.contains('is-collapsed')));
+      els.filterSummary.textContent = activeFilterSummary();
+    }
     function bannerRows(rows) { return rows.filter(row => row.hasBanner && Number.isFinite(row.removedEstimate)); }
     function cleanRows(rows) { return rows.filter(row => !row.hasBanner); }
     function defaultSortFor(mode) {
@@ -505,6 +541,7 @@
       renderBezirkSummary(rows);
       renderMap(modeRows(rows), rows);
       renderTable(rows);
+      updateFilterToggle();
     }
     function activateMode(mode) {
       state.mode = mode;
@@ -544,7 +581,14 @@
       else { state.sortKey = next; state.sortDir = ['name','postcode','bezirkLabel','category','rank'].includes(next) ? 'asc' : 'desc'; }
       renderTable(filtered());
     }));
-    [els.search, els.postcode, els.bezirk, els.banner, els.range, els.minReviews].forEach(input => input.addEventListener('input', render));
+    els.filterToggle.addEventListener('click', () => {
+      els.controls.classList.toggle('is-collapsed');
+      updateFilterToggle();
+    });
+    [els.search, els.postcode, els.bezirk, els.banner, els.range, els.minReviews].forEach(input => {
+      input.addEventListener('input', render);
+      input.addEventListener('change', render);
+    });
     els.reset.addEventListener('click', () => {
       els.search.value = ''; els.postcode.value = ''; els.bezirk.value = ''; els.banner.value = 'all'; els.range.value = ''; els.minReviews.value = 0;
       activateMode('ratio');
