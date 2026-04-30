@@ -74,4 +74,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
           DEPLOY_REMOTE="https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" make deploy-pages
