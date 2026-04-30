@@ -4,7 +4,7 @@ Quelle: Google Maps, öffentlich sichtbare Diffamierungs-Banner. Snapshot: 30.04
 
 Sortierung: geschätzter Mittelpunkt der Google-Bereiche absteigend. „Über 250“ wird als 300 geschätzt.
 
-Einträge mit Banner: 220
+Einträge mit Banner: 221
 
 | Rang | Name | PLZ | Rating | Rezensionen | Gelöscht | Schätzwert | Löschquote | Worst-Case-Rating |
 |---:|---|---:|---:|---:|---:|---:|---:|---:|
@@ -137,94 +137,95 @@ Einträge mit Banner: 220
 | 127 | Pizzeria Paesana | 90461 | 5,0 | 225 | 11–20 | 15,5 | 6,4% | 4,74 |
 | 128 | CULINA | 90409 | 4,6 | 180 | 11–20 | 15,5 | 7,9% | 4,32 |
 | 129 | Orko | 90403 | 4,6 | 180 | 11–20 | 15,5 | 7,9% | 4,32 |
-| 130 | Pronto Pizza | 90431 | 3,6 | 165 | 11–20 | 15,5 | 8,6% | 3,38 |
-| 131 | Balū • Breakfast & Brunch | 90402 | 4,8 | 154 | 11–20 | 15,5 | 9,1% | 4,45 |
-| 132 | Lange Kante 16 | 90403 | 4,9 | 152 | 11–20 | 15,5 | 9,2% | 4,54 |
-| 133 | FoodHouse | 90425 | 4,8 | 143 | 11–20 | 15,5 | 9,8% | 4,43 |
-| 134 | ADA Simit Haus | 90459 | 4,8 | 140 | 11–20 | 15,5 | 10,0% | 4,42 |
-| 135 | Howe Wurstwaren KG | 90451 | 4,2 | 125 | 11–20 | 15,5 | 11,0% | 3,85 |
-| 136 | Kral Internetcafe | 90441 | 4,9 | 78 | 11–20 | 15,5 | 16,6% | 4,25 |
-| 137 | Bäcker Drexler | 90480 | 4,1 | 30 | 11–20 | 15,5 | 34,1% | 3,04 |
-| 138 | Bäckerei Drexler | 90461 | 4,5 | 23 | 11–20 | 15,5 | 40,3% | 3,09 |
-| 139 | Indisches Restaurant NAMASTE Nürnberg | 90403 | 4,9 | 4.781 | 6–10 | 8,0 | 0,2% | 4,89 |
-| 140 | BASECOFFEE® Nürnberg | 90402 | 4,7 | 1.934 | 6–10 | 8,0 | 0,4% | 4,68 |
-| 141 | Mercato Di Dio Feinkost | 90425 | 4,6 | 1.898 | 6–10 | 8,0 | 0,4% | 4,58 |
-| 142 | Indisches Restaurant Ganesha Nürnberg | 90403 | 4,8 | 1.814 | 6–10 | 8,0 | 0,4% | 4,78 |
-| 143 | Süss Dealer - Nürnberg | 90443 | 4,8 | 1.785 | 6–10 | 8,0 | 0,5% | 4,78 |
-| 144 | O.sha Thai Restaurant Nürnberg | 90402 | 4,6 | 1.394 | 6–10 | 8,0 | 0,6% | 4,58 |
-| 145 | Golden Club Lounge Hookah & Drink * | 90402 | 4,9 | 1.314 | 6–10 | 8,0 | 0,6% | 4,88 |
-| 146 | PINSANO café-restaurant-bar | 90402 | 4,8 | 999 | 6–10 | 8,0 | 0,8% | 4,77 |
-| 147 | Waldrestaurant Schiesshaus | 90491 | 4,6 | 957 | 6–10 | 8,0 | 0,8% | 4,57 |
-| 148 | Kebap Sarayi | 90441 | 4,8 | 921 | 6–10 | 8,0 | 0,9% | 4,77 |
-| 149 | Taqueria Cantina la Lucha city | 90403 | 4,6 | 870 | 6–10 | 8,0 | 0,9% | 4,57 |
-| 150 | dieroteBar | 90403 | 4,5 | 779 | 6–10 | 8,0 | 1,0% | 4,46 |
-| 151 | Quo Vadis | 90491 | 4,7 | 738 | 6–10 | 8,0 | 1,1% | 4,66 |
-| 152 | Chiba 小食光 | 90402 | 4,6 | 701 | 6–10 | 8,0 | 1,1% | 4,56 |
-| 153 | Altes Spital Historisches Restaurant | 90547 | 4,8 | 690 | 6–10 | 8,0 | 1,1% | 4,76 |
-| 154 | Würzhaus Restaurant Nürnberg | 90419 | 4,8 | 626 | 6–10 | 8,0 | 1,3% | 4,75 |
-| 155 | Chickenz Fried Chicken | 90443 | 4,8 | 612 | 6–10 | 8,0 | 1,3% | 4,75 |
-| 156 | Cigköftem Nürnberg Plärrer | 90443 | 5,0 | 593 | 6–10 | 8,0 | 1,3% | 4,95 |
-| 157 | SUNDAYS | 90409 | 4,6 | 553 | 6–10 | 8,0 | 1,4% | 4,55 |
-| 158 | Bit Stop Burger | 90489 | 4,6 | 514 | 6–10 | 8,0 | 1,5% | 4,54 |
-| 159 | Café in der 12 - Nürnberg | 90402 | 4,7 | 499 | 6–10 | 8,0 | 1,6% | 4,64 |
-| 160 | SUNDAYS | 90429 | 4,5 | 344 | 6–10 | 8,0 | 2,3% | 4,42 |
-| 161 | Metzgerei Freyberger KG | 90461 | 4,9 | 330 | 6–10 | 8,0 | 2,4% | 4,81 |
-| 162 | Eiscafé Sirena | 90402 | 4,7 | 320 | 6–10 | 8,0 | 2,4% | 4,61 |
-| 163 | Döppi Restaurant | 90459 | 4,8 | 279 | 6–10 | 8,0 | 2,8% | 4,69 |
-| 164 | Grünes Zentrum Krottenbach Baumschule & Gartencenter | 90453 | 4,8 | 148 | 6–10 | 8,0 | 5,1% | 4,61 |
-| 165 | PIZZAPIRATEN | 90482 | 4,8 | 138 | 6–10 | 8,0 | 5,5% | 4,59 |
-| 166 | Pizza Pasta 0911 | 90419 | 4,5 | 137 | 6–10 | 8,0 | 5,5% | 4,31 |
-| 167 | cia‘s | 90403 | 4,7 | 130 | 6–10 | 8,0 | 5,8% | 4,49 |
-| 168 | Bäckerei Drexler | 90475 | 4,8 | 84 | 6–10 | 8,0 | 8,7% | 4,47 |
-| 169 | BRÜTZEL - Döner geht immer | 90429 | 4,5 | 73 | 6–10 | 8,0 | 9,9% | 4,15 |
-| 170 | Pizza Zulù UG | 90402 | 4,6 | 56 | 6–10 | 8,0 | 12,5% | 4,15 |
-| 171 | La Pasta Cosi am Dutzendteich | 90478 | 4,8 | 55 | 6–10 | 8,0 | 12,7% | 4,32 |
-| 172 | Bäckerei Drexler | 90471 | 4,8 | 40 | 6–10 | 8,0 | 16,7% | 4,17 |
-| 173 | Fatos Imbiss | 90459 | 4,7 | 37 | 6–10 | 8,0 | 17,8% | 4,04 |
-| 174 | Bratwurst Röslein | 90403 | 4,1 | 10.144 | 2–5 | 3,5 | 0,0% | 4,10 |
-| 175 | Karl August - a Neighborhood Hotel | 90403 | 4,7 | 1.252 | 2–5 | 3,5 | 0,3% | 4,69 |
-| 176 | Q-bap - Qualitäts-Kebap | 90441 | 4,7 | 1.056 | 2–5 | 3,5 | 0,3% | 4,69 |
-| 177 | Landgasthof Hotel Gentner | 90475 | 4,7 | 1.028 | 2–5 | 3,5 | 0,3% | 4,69 |
-| 178 | Restaurant Thalassa Nürnberg | 90441 | 4,8 | 996 | 2–5 | 3,5 | 0,3% | 4,79 |
-| 179 | Kohinoor Indisches Restaurant | 90402 | 4,9 | 964 | 2–5 | 3,5 | 0,4% | 4,89 |
-| 180 | BARDOLINO Fine.Food.Hotel | 90443 | 4,8 | 633 | 2–5 | 3,5 | 0,6% | 4,78 |
-| 181 | XOCO Café | 90402 | 4,7 | 633 | 2–5 | 3,5 | 0,6% | 4,68 |
-| 182 | EDEKA Gass - Nürnberg | 90408 | 4,4 | 570 | 2–5 | 3,5 | 0,6% | 4,38 |
-| 183 | EDEKA | 90411 | 4,4 | 518 | 2–5 | 3,5 | 0,7% | 4,38 |
-| 184 | Gusto Natural Steakrestaurant Nürnberg | 90482 | 4,8 | 503 | 2–5 | 3,5 | 0,7% | 4,77 |
-| 185 | Caf(f)e Centrale Constantine | 90403 | 4,8 | 408 | 2–5 | 3,5 | 0,8% | 4,77 |
-| 186 | MANO | 90489 | 4,8 | 398 | 2–5 | 3,5 | 0,9% | 4,77 |
-| 187 | Woitinek Lebküchnerei Lebkuchen Fabrikverkauf und Lebkuchen aus Nürnberg Online bestellen | 90443 | 4,9 | 377 | 2–5 | 3,5 | 0,9% | 4,86 |
-| 188 | Mama Cafe | 90489 | 4,3 | 302 | 2–5 | 3,5 | 1,1% | 4,26 |
-| 189 | Café Ginkgo - Poké Bowl | 90489 | 5,0 | 296 | 2–5 | 3,5 | 1,2% | 4,95 |
-| 190 | Gasthof Tut | 90475 | 4,7 | 278 | 2–5 | 3,5 | 1,2% | 4,65 |
-| 191 | Gaststätte Sängerlust | 90480 | 4,5 | 229 | 2–5 | 3,5 | 1,5% | 4,45 |
-| 192 | Wirtshaus Albrecht | 90403 | 4,4 | 208 | 2–5 | 3,5 | 1,6% | 4,34 |
-| 193 | Trattoria La Vera | 90408 | 4,9 | 173 | 2–5 | 3,5 | 2,0% | 4,82 |
-| 194 | Jøwåy Nürnberg | 90403 | 4,9 | 157 | 2–5 | 3,5 | 2,2% | 4,82 |
-| 195 | Pizzeria Da Marcel | 90482 | 4,7 | 153 | 2–5 | 3,5 | 2,2% | 4,62 |
-| 196 | 2BITES Nürnberg | 90402 | 4,7 | 129 | 2–5 | 3,5 | 2,6% | 4,60 |
-| 197 | Pizzeria Basilico | 90409 | 4,9 | 121 | 2–5 | 3,5 | 2,8% | 4,79 |
-| 198 | KARL - Wein trifft feine Küche | 90403 | 4,7 | 89 | 2–5 | 3,5 | 3,8% | 4,56 |
-| 199 | Restaurant- Pizzeria Passaparola | 90453 | 4,8 | 83 | 2–5 | 3,5 | 4,0% | 4,65 |
-| 200 | Balkan Bäckerei & Konditorei Premium | 90431 | 4,9 | 32 | 2–5 | 3,5 | 9,9% | 4,51 |
-| 201 | Bosta Kaffee GmbH | 90441 | 5,0 | 27 | 2–5 | 3,5 | 11,5% | 4,54 |
-| 202 | Wolf Fleischerei-Fachgeschäft mit Heisser Wolf Restaurant | 90449 | 4,3 | 22 | 2–5 | 3,5 | 13,7% | 3,85 |
-| 203 | Die Kirschbohne Kaffeerösterei / KRS-Service | 90441 | 4,9 | 15 | 2–5 | 3,5 | 18,9% | 4,16 |
-| 204 | La Commedia Pizzeria Restaurant | 90461 | 4,5 | 2.623 | 1 | 1,0 | 0,0% | 4,50 |
-| 205 | Kerschers Imbiss GmbH | 90431 | 4,8 | 2.282 | 1 | 1,0 | 0,0% | 4,80 |
-| 206 | ARVENA PARK - Das Hotel am Franken-Center GmbH | 90473 | 4,3 | 1.600 | 1 | 1,0 | 0,1% | 4,30 |
-| 207 | Auckland Coffee | 90402 | 4,6 | 1.055 | 1 | 1,0 | 0,1% | 4,60 |
-| 208 | Osteria BellaVista Mögeldorf | 90482 | 4,0 | 724 | 1 | 1,0 | 0,1% | 4,00 |
-| 209 | Fishismuss \| Fisch Dürüm \| Bowls \| Burger \| MATCHA SPOT | 90459 | 5,0 | 472 | 1 | 1,0 | 0,2% | 4,99 |
-| 210 | El Bar | 90419 | 4,7 | 450 | 1 | 1,0 | 0,2% | 4,69 |
-| 211 | RegiNA 2.0 – Pizza Napoletana \| Food Trucks & Catering für Events | 90429 | 20,0 | 206 | 1 | 1,0 | 0,5% | 19,91 |
-| 212 | Pizzeria La Bruschetta Nürnberg | 90411 | 4,8 | 160 | 1 | 1,0 | 0,6% | 4,78 |
-| 213 | Jet Pizza Service Nürnberg | 90419 | 4,6 | 129 | 1 | 1,0 | 0,8% | 4,57 |
-| 214 | Wahler Partyservice GmbH | 90431 | 4,5 | 123 | 1 | 1,0 | 0,8% | 4,47 |
-| 215 | Pintxos bodega y café | 90403 | 4,8 | 82 | 1 | 1,0 | 1,2% | 4,75 |
-| 216 | Osteria Regina 2.0 | 90429 | 20,0 | 80 | 1 | 1,0 | 1,2% | 19,77 |
-| 217 | Lebe Gesund: Bäckerei & vegane Bio-Lebensmittel in Nürnberg, frisches Gemüse – Biomarkt & Bioladen Nürnberg mit Lieferservice | 90403 | 4,5 | 58 | 1 | 1,0 | 1,7% | 4,44 |
-| 218 | Ästhetik Room Maria Sayb -Massagen & Beauty. Fachfußpflege | 90489 | 5,0 | 58 | 1 | 1,0 | 1,7% | 4,93 |
-| 219 | Die Kirschbohne Stehkaffee | 90441 | 4,9 | 50 | 1 | 1,0 | 2,0% | 4,82 |
-| 220 | Restaurant Nisi | 90427 | 4,4 | 46 | 1 | 1,0 | 2,1% | 4,33 |
+| 130 | FranKonya | 90443 | 4,5 | 173 | 11–20 | 15,5 | 8,2% | 4,21 |
+| 131 | Pronto Pizza | 90431 | 3,6 | 165 | 11–20 | 15,5 | 8,6% | 3,38 |
+| 132 | Balū • Breakfast & Brunch | 90402 | 4,8 | 154 | 11–20 | 15,5 | 9,1% | 4,45 |
+| 133 | Lange Kante 16 | 90403 | 4,9 | 152 | 11–20 | 15,5 | 9,2% | 4,54 |
+| 134 | FoodHouse | 90425 | 4,8 | 143 | 11–20 | 15,5 | 9,8% | 4,43 |
+| 135 | ADA Simit Haus | 90459 | 4,8 | 140 | 11–20 | 15,5 | 10,0% | 4,42 |
+| 136 | Howe Wurstwaren KG | 90451 | 4,2 | 125 | 11–20 | 15,5 | 11,0% | 3,85 |
+| 137 | Kral Internetcafe | 90441 | 4,9 | 78 | 11–20 | 15,5 | 16,6% | 4,25 |
+| 138 | Bäcker Drexler | 90480 | 4,1 | 30 | 11–20 | 15,5 | 34,1% | 3,04 |
+| 139 | Bäckerei Drexler | 90461 | 4,5 | 23 | 11–20 | 15,5 | 40,3% | 3,09 |
+| 140 | Indisches Restaurant NAMASTE Nürnberg | 90403 | 4,9 | 4.781 | 6–10 | 8,0 | 0,2% | 4,89 |
+| 141 | BASECOFFEE® Nürnberg | 90402 | 4,7 | 1.934 | 6–10 | 8,0 | 0,4% | 4,68 |
+| 142 | Mercato Di Dio Feinkost | 90425 | 4,6 | 1.898 | 6–10 | 8,0 | 0,4% | 4,58 |
+| 143 | Indisches Restaurant Ganesha Nürnberg | 90403 | 4,8 | 1.814 | 6–10 | 8,0 | 0,4% | 4,78 |
+| 144 | Süss Dealer - Nürnberg | 90443 | 4,8 | 1.785 | 6–10 | 8,0 | 0,5% | 4,78 |
+| 145 | O.sha Thai Restaurant Nürnberg | 90402 | 4,6 | 1.394 | 6–10 | 8,0 | 0,6% | 4,58 |
+| 146 | Golden Club Lounge Hookah & Drink * | 90402 | 4,9 | 1.314 | 6–10 | 8,0 | 0,6% | 4,88 |
+| 147 | PINSANO café-restaurant-bar | 90402 | 4,8 | 999 | 6–10 | 8,0 | 0,8% | 4,77 |
+| 148 | Waldrestaurant Schiesshaus | 90491 | 4,6 | 957 | 6–10 | 8,0 | 0,8% | 4,57 |
+| 149 | Kebap Sarayi | 90441 | 4,8 | 921 | 6–10 | 8,0 | 0,9% | 4,77 |
+| 150 | Taqueria Cantina la Lucha city | 90403 | 4,6 | 870 | 6–10 | 8,0 | 0,9% | 4,57 |
+| 151 | dieroteBar | 90403 | 4,5 | 779 | 6–10 | 8,0 | 1,0% | 4,46 |
+| 152 | Quo Vadis | 90491 | 4,7 | 738 | 6–10 | 8,0 | 1,1% | 4,66 |
+| 153 | Chiba 小食光 | 90402 | 4,6 | 701 | 6–10 | 8,0 | 1,1% | 4,56 |
+| 154 | Altes Spital Historisches Restaurant | 90547 | 4,8 | 690 | 6–10 | 8,0 | 1,1% | 4,76 |
+| 155 | Würzhaus Restaurant Nürnberg | 90419 | 4,8 | 626 | 6–10 | 8,0 | 1,3% | 4,75 |
+| 156 | Chickenz Fried Chicken | 90443 | 4,8 | 612 | 6–10 | 8,0 | 1,3% | 4,75 |
+| 157 | Cigköftem Nürnberg Plärrer | 90443 | 5,0 | 593 | 6–10 | 8,0 | 1,3% | 4,95 |
+| 158 | SUNDAYS | 90409 | 4,6 | 553 | 6–10 | 8,0 | 1,4% | 4,55 |
+| 159 | Bit Stop Burger | 90489 | 4,6 | 514 | 6–10 | 8,0 | 1,5% | 4,54 |
+| 160 | Café in der 12 - Nürnberg | 90402 | 4,7 | 499 | 6–10 | 8,0 | 1,6% | 4,64 |
+| 161 | SUNDAYS | 90429 | 4,5 | 344 | 6–10 | 8,0 | 2,3% | 4,42 |
+| 162 | Metzgerei Freyberger KG | 90461 | 4,9 | 330 | 6–10 | 8,0 | 2,4% | 4,81 |
+| 163 | Eiscafé Sirena | 90402 | 4,7 | 320 | 6–10 | 8,0 | 2,4% | 4,61 |
+| 164 | Döppi Restaurant | 90459 | 4,8 | 279 | 6–10 | 8,0 | 2,8% | 4,69 |
+| 165 | Grünes Zentrum Krottenbach Baumschule & Gartencenter | 90453 | 4,8 | 148 | 6–10 | 8,0 | 5,1% | 4,61 |
+| 166 | PIZZAPIRATEN | 90482 | 4,8 | 138 | 6–10 | 8,0 | 5,5% | 4,59 |
+| 167 | Pizza Pasta 0911 | 90419 | 4,5 | 137 | 6–10 | 8,0 | 5,5% | 4,31 |
+| 168 | cia‘s | 90403 | 4,7 | 130 | 6–10 | 8,0 | 5,8% | 4,49 |
+| 169 | Bäckerei Drexler | 90475 | 4,8 | 84 | 6–10 | 8,0 | 8,7% | 4,47 |
+| 170 | BRÜTZEL - Döner geht immer | 90429 | 4,5 | 73 | 6–10 | 8,0 | 9,9% | 4,15 |
+| 171 | Pizza Zulù UG | 90402 | 4,6 | 56 | 6–10 | 8,0 | 12,5% | 4,15 |
+| 172 | La Pasta Cosi am Dutzendteich | 90478 | 4,8 | 55 | 6–10 | 8,0 | 12,7% | 4,32 |
+| 173 | Bäckerei Drexler | 90471 | 4,8 | 40 | 6–10 | 8,0 | 16,7% | 4,17 |
+| 174 | Fatos Imbiss | 90459 | 4,7 | 37 | 6–10 | 8,0 | 17,8% | 4,04 |
+| 175 | Bratwurst Röslein | 90403 | 4,1 | 10.144 | 2–5 | 3,5 | 0,0% | 4,10 |
+| 176 | Karl August - a Neighborhood Hotel | 90403 | 4,7 | 1.252 | 2–5 | 3,5 | 0,3% | 4,69 |
+| 177 | Q-bap - Qualitäts-Kebap | 90441 | 4,7 | 1.056 | 2–5 | 3,5 | 0,3% | 4,69 |
+| 178 | Landgasthof Hotel Gentner | 90475 | 4,7 | 1.028 | 2–5 | 3,5 | 0,3% | 4,69 |
+| 179 | Restaurant Thalassa Nürnberg | 90441 | 4,8 | 996 | 2–5 | 3,5 | 0,3% | 4,79 |
+| 180 | Kohinoor Indisches Restaurant | 90402 | 4,9 | 964 | 2–5 | 3,5 | 0,4% | 4,89 |
+| 181 | BARDOLINO Fine.Food.Hotel | 90443 | 4,8 | 633 | 2–5 | 3,5 | 0,6% | 4,78 |
+| 182 | XOCO Café | 90402 | 4,7 | 633 | 2–5 | 3,5 | 0,6% | 4,68 |
+| 183 | EDEKA Gass - Nürnberg | 90408 | 4,4 | 570 | 2–5 | 3,5 | 0,6% | 4,38 |
+| 184 | EDEKA | 90411 | 4,4 | 518 | 2–5 | 3,5 | 0,7% | 4,38 |
+| 185 | Gusto Natural Steakrestaurant Nürnberg | 90482 | 4,8 | 503 | 2–5 | 3,5 | 0,7% | 4,77 |
+| 186 | Caf(f)e Centrale Constantine | 90403 | 4,8 | 408 | 2–5 | 3,5 | 0,8% | 4,77 |
+| 187 | MANO | 90489 | 4,8 | 398 | 2–5 | 3,5 | 0,9% | 4,77 |
+| 188 | Woitinek Lebküchnerei Lebkuchen Fabrikverkauf und Lebkuchen aus Nürnberg Online bestellen | 90443 | 4,9 | 377 | 2–5 | 3,5 | 0,9% | 4,86 |
+| 189 | Mama Cafe | 90489 | 4,3 | 302 | 2–5 | 3,5 | 1,1% | 4,26 |
+| 190 | Café Ginkgo - Poké Bowl | 90489 | 5,0 | 296 | 2–5 | 3,5 | 1,2% | 4,95 |
+| 191 | Gasthof Tut | 90475 | 4,7 | 278 | 2–5 | 3,5 | 1,2% | 4,65 |
+| 192 | Gaststätte Sängerlust | 90480 | 4,5 | 229 | 2–5 | 3,5 | 1,5% | 4,45 |
+| 193 | Wirtshaus Albrecht | 90403 | 4,4 | 208 | 2–5 | 3,5 | 1,6% | 4,34 |
+| 194 | Trattoria La Vera | 90408 | 4,9 | 173 | 2–5 | 3,5 | 2,0% | 4,82 |
+| 195 | Jøwåy Nürnberg | 90403 | 4,9 | 157 | 2–5 | 3,5 | 2,2% | 4,82 |
+| 196 | Pizzeria Da Marcel | 90482 | 4,7 | 153 | 2–5 | 3,5 | 2,2% | 4,62 |
+| 197 | 2BITES Nürnberg | 90402 | 4,7 | 129 | 2–5 | 3,5 | 2,6% | 4,60 |
+| 198 | Pizzeria Basilico | 90409 | 4,9 | 121 | 2–5 | 3,5 | 2,8% | 4,79 |
+| 199 | KARL - Wein trifft feine Küche | 90403 | 4,7 | 89 | 2–5 | 3,5 | 3,8% | 4,56 |
+| 200 | Restaurant- Pizzeria Passaparola | 90453 | 4,8 | 83 | 2–5 | 3,5 | 4,0% | 4,65 |
+| 201 | Balkan Bäckerei & Konditorei Premium | 90431 | 4,9 | 32 | 2–5 | 3,5 | 9,9% | 4,51 |
+| 202 | Bosta Kaffee GmbH | 90441 | 5,0 | 27 | 2–5 | 3,5 | 11,5% | 4,54 |
+| 203 | Wolf Fleischerei-Fachgeschäft mit Heisser Wolf Restaurant | 90449 | 4,3 | 22 | 2–5 | 3,5 | 13,7% | 3,85 |
+| 204 | Die Kirschbohne Kaffeerösterei / KRS-Service | 90441 | 4,9 | 15 | 2–5 | 3,5 | 18,9% | 4,16 |
+| 205 | La Commedia Pizzeria Restaurant | 90461 | 4,5 | 2.623 | 1 | 1,0 | 0,0% | 4,50 |
+| 206 | Kerschers Imbiss GmbH | 90431 | 4,8 | 2.282 | 1 | 1,0 | 0,0% | 4,80 |
+| 207 | ARVENA PARK - Das Hotel am Franken-Center GmbH | 90473 | 4,3 | 1.600 | 1 | 1,0 | 0,1% | 4,30 |
+| 208 | Auckland Coffee | 90402 | 4,6 | 1.055 | 1 | 1,0 | 0,1% | 4,60 |
+| 209 | Osteria BellaVista Mögeldorf | 90482 | 4,0 | 724 | 1 | 1,0 | 0,1% | 4,00 |
+| 210 | Fishismuss \| Fisch Dürüm \| Bowls \| Burger \| MATCHA SPOT | 90459 | 5,0 | 472 | 1 | 1,0 | 0,2% | 4,99 |
+| 211 | El Bar | 90419 | 4,7 | 450 | 1 | 1,0 | 0,2% | 4,69 |
+| 212 | RegiNA 2.0 – Pizza Napoletana \| Food Trucks & Catering für Events | 90429 | 20,0 | 206 | 1 | 1,0 | 0,5% | 19,91 |
+| 213 | Pizzeria La Bruschetta Nürnberg | 90411 | 4,8 | 160 | 1 | 1,0 | 0,6% | 4,78 |
+| 214 | Jet Pizza Service Nürnberg | 90419 | 4,6 | 129 | 1 | 1,0 | 0,8% | 4,57 |
+| 215 | Wahler Partyservice GmbH | 90431 | 4,5 | 123 | 1 | 1,0 | 0,8% | 4,47 |
+| 216 | Pintxos bodega y café | 90403 | 4,8 | 82 | 1 | 1,0 | 1,2% | 4,75 |
+| 217 | Osteria Regina 2.0 | 90429 | 20,0 | 80 | 1 | 1,0 | 1,2% | 19,77 |
+| 218 | Lebe Gesund: Bäckerei & vegane Bio-Lebensmittel in Nürnberg, frisches Gemüse – Biomarkt & Bioladen Nürnberg mit Lieferservice | 90403 | 4,5 | 58 | 1 | 1,0 | 1,7% | 4,44 |
+| 219 | Ästhetik Room Maria Sayb -Massagen & Beauty. Fachfußpflege | 90489 | 5,0 | 58 | 1 | 1,0 | 1,7% | 4,93 |
+| 220 | Die Kirschbohne Stehkaffee | 90441 | 4,9 | 50 | 1 | 1,0 | 2,0% | 4,82 |
+| 221 | Restaurant Nisi | 90427 | 4,4 | 46 | 1 | 1,0 | 2,1% | 4,33 |
