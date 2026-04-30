@@ -1,4 +1,4 @@
-.PHONY: setup test check validate scrape backfill charts dashboard site all
+.PHONY: setup test check validate scrape backfill charts dashboard site deploy-pages all
 
 setup:
 	go mod download
@@ -32,6 +32,20 @@ site: charts dashboard
 	cp output/charts/nuernberg_dashboard.html public/index.html
 	cp output/charts/* public/charts/
 	cp output/metadata.json output/places.csv public/data/
+
+deploy-pages: site
+	@tmp=$$(mktemp -d); \
+	git clone --quiet --branch gh-pages --single-branch $$(git remote get-url origin) $$tmp; \
+	git -C $$tmp rm -r --ignore-unmatch . >/dev/null; \
+	cp -R public/. $$tmp/; \
+	git -C $$tmp add -A; \
+	if git -C $$tmp diff --cached --quiet; then \
+		echo "gh-pages ist bereits aktuell"; \
+	else \
+		git -C $$tmp commit -m "Deploy GitHub Pages site"; \
+		git -C $$tmp push origin gh-pages; \
+	fi; \
+	rm -rf $$tmp
 
 all:
 	go run ./cmd/scrape --postcodes all

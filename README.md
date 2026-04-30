@@ -98,13 +98,13 @@ Ausgaben:
 
 Wenn `magick` nicht installiert ist, überspringt `--png` die PNG-Dateien und schreibt weiterhin SVGs.
 
-Die erzeugten Diagramm- und Dashboard-Dateien unter `output/charts/` werden von git ignoriert. Im Repository bleiben nur die Scrape-Snapshots (`output/places.json`, `output/places.csv`, `output/metadata.json`, optional `output/discovery.json`) versioniert; GitHub Actions baut daraus `public/` für GitHub Pages neu.
+Die erzeugten Diagramm- und Dashboard-Dateien unter `output/charts/` werden von git ignoriert. Im Repository bleiben nur die Scrape-Snapshots (`output/places.json`, `output/places.csv`, `output/metadata.json`, optional `output/discovery.json`) versioniert; `make site` baut daraus `public/` für GitHub Pages neu.
 
 Die Dashboard-Karte nutzt Leaflet mit CARTO-Kartenkacheln auf Basis von OpenStreetMap-Daten. Beim Öffnen der HTML-Datei ist deshalb Internetzugriff für Kartenkacheln nötig. Das Dashboard gruppiert, filtert und überlagert Einträge außerdem nach Nürnberger statistischem Bezirk (`Bezirk`).
 
 ## Veröffentlichung mit GitHub Pages
 
-Der Pages-Workflow in `.github/workflows/pages.yml` führt Checks aus, baut `output/charts/` neu, erzeugt `public/index.html` und deployt das generierte `public/`-Artefakt.
+GitHub Pages ist auf den Branch `gh-pages` konfiguriert. Der Branch enthält nur das generierte `public/`-Artefakt; die Quell- und Snapshot-Dateien bleiben auf `main`.
 
 Lokale Vorschau des Veröffentlichungs-Artefakts:
 
@@ -113,7 +113,13 @@ make site
 python3 -m http.server --directory public 8080
 ```
 
-Danach im GitHub-Repository aktivieren: **Settings → Pages → Source: GitHub Actions**.
+Veröffentlichen:
+
+```bash
+make deploy-pages
+```
+
+Im GitHub-Repository muss dafür **Settings → Pages → Source: Deploy from a branch**, Branch `gh-pages`, Ordner `/` aktiv sein.
 
 ## Tests / Checks
 
