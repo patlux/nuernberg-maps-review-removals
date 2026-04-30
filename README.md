@@ -1,141 +1,162 @@
 # Nürnberg Google-Bewertungen: Diffamierungs-Löschbanner
 
-Reproducible local Go workflow to collect publicly visible Google Maps place metadata, detect review-removal notices like:
+Reproduzierbarer lokaler Go-Workflow, um öffentlich sichtbare Google-Maps-Ortsdaten zu sammeln, Hinweise auf entfernte Bewertungen zu erkennen, zum Beispiel:
 
 > „21 bis 50 Bewertungen aufgrund von Beschwerden wegen Diffamierung entfernt.“
 
-…and generate Nürnberg summary charts plus an interactive dashboard.
+…und daraus Nürnberg-Auswertungen sowie ein interaktives Dashboard zu erzeugen.
 
-## Important caveats
+## Wichtige Hinweise
 
-- This is for personal research / journalism only. Respect Google Maps terms and local law.
-- The scraper records only what is publicly visible at scrape time; user-verified Google Maps discrepancies can be kept as manual overrides in `internal/mapsreview/data/place_overrides.json`.
-- Missing banner ≠ definitely no removals. It only means no matching visible notice was detected.
-- The adjusted rating assumes all removed reviews were 1-star. That is a worst-case model, not a fact.
-- Use slow delays. If Google shows CAPTCHA, stop or solve manually in the headed browser.
+- Nur für private Recherche / Journalismus gedacht. Google-Maps-Bedingungen und geltendes Recht beachten.
+- Der Scraper speichert nur, was zum Scrape-Zeitpunkt öffentlich sichtbar ist. Manuell geprüfte Abweichungen können als Overrides in `internal/mapsreview/data/place_overrides.json` gepflegt werden.
+- Kein Banner ≠ definitiv keine entfernten Bewertungen. Es bedeutet nur: Beim Scrape wurde kein passender sichtbarer Hinweis erkannt.
+- Das angepasste Rating nimmt an, dass alle entfernten Bewertungen 1-Stern-Bewertungen waren. Das ist ein Worst-Case-Modell, keine Tatsache.
+- Langsame Delays verwenden. Wenn Google ein CAPTCHA zeigt: stoppen oder im sichtbaren Browser manuell lösen.
 
-## Setup
+## Einrichtung
 
-Requirements:
+Voraussetzungen:
 
 - Go 1.25+
-- Chrome or Chromium available on your PATH / standard install location
-- Optional for PNG export: ImageMagick `magick`
+- Chrome oder Chromium im `PATH` oder an einem Standard-Installationsort
+- Optional für PNG-Export: ImageMagick `magick`
 
 ```bash
 make setup
-# or directly:
+# oder direkt:
 go mod download
 ```
 
-## 1) Collect data
+## 1) Daten sammeln
 
-Full Nürnberg run:
+Vollständiger Nürnberg-Lauf:
 
 ```bash
 make scrape ARGS="--postcodes all --headless=false"
 ```
 
-Small test run:
+Kleiner Testlauf:
 
 ```bash
 make scrape ARGS="--postcodes 90402 --queries restaurant,café --max-results 20 --headless=false"
 ```
 
-Outputs:
+Ausgaben:
 
-- `output/discovery.json` — discovered Google Maps places
-- `output/places.json` — scraped data, including coordinates and `bezirkId` / `bezirkName` where assignable
-- `output/places.csv` — spreadsheet-friendly export
-- `output/metadata.json` — scrape settings, counts, timestamp, and user agent
+- `output/discovery.json` — gefundene Google-Maps-Orte
+- `output/places.json` — gescrapte Daten inklusive Koordinaten und, sofern zuordenbar, `bezirkId` / `bezirkName`
+- `output/places.csv` — CSV-Export für Tabellenkalkulationen
+- `output/metadata.json` — Scrape-Einstellungen, Zählwerte, Zeitstempel und User-Agent
 
-Useful flags:
+Nützliche Optionen:
 
 ```bash
 --postcodes 90402,90403
 --queries restaurant,café,imbiss,pizzeria,bäckerei
 --discovery-only
 --scrape-only
---scrape-only --rescrape-all   # re-read every discovered place, including existing successes
---scrape-only --rescrape-all --resume-from 1288   # continue a full rescan at a 1-based todo position
---scrape-only --rescrape-all --resume-from 1288 --scrape-limit 200   # scan one safer chunk
+--scrape-only --rescrape-all   # alle gefundenen Orte erneut lesen, auch bereits erfolgreiche
+--scrape-only --rescrape-all --resume-from 1288   # vollständigen Rescan an 1-basierter Todo-Position fortsetzen
+--scrape-only --rescrape-all --resume-from 1288 --scrape-limit 200   # sichereren Teil-Scan ausführen
 --delay-min 4000 --delay-max 9000
 --out output/places.json --csv output/places.csv
 ```
 
-## 2) Improve data quality
+## 2) Datenqualität verbessern
 
-Backfill missing addresses:
+Fehlende Adressen nachtragen:
 
 ```bash
 make backfill ARGS="--headless=true --concurrency 4"
 ```
 
-Validate the scrape output:
+Scrape-Ergebnis validieren:
 
 ```bash
 make validate
 go run ./cmd/validate --strict-nuremberg
 ```
 
-Validation reports missing addresses, missing rating/review counts, missing Nürnberg district assignments, non-Nürnberg postcodes, duplicate URLs/IDs, and banner rows with parse issues.
+Die Validierung meldet fehlende Adressen, fehlende Ratings/Rezensionszahlen, fehlende Nürnberg-Bezirkszuordnungen, Nicht-Nürnberger Postleitzahlen, doppelte URLs/IDs und Banner-Zeilen mit Parse-Problemen.
 
-## 3) Generate charts and dashboard
+## 3) Diagramme und Dashboard erzeugen
 
 ```bash
 make charts ARGS="--png"
 make dashboard
 ```
 
-Outputs:
+Ausgaben:
 
-- `output/charts/nuernberg_dashboard.html` — interactive app with KPIs, filters, map, sortable explorer table, and Google Maps links
+- `output/charts/nuernberg_dashboard.html` — interaktive App mit KPIs, Filtern, Karte, sortierbarer Explorer-Tabelle und Google-Maps-Links
 - `output/charts/nuernberg_overall_summary.svg/.png`
 - `output/charts/nuernberg_90402_summary.svg/.png`
 - `output/charts/nuernberg_most_removed.csv`
 - `output/charts/nuernberg_most_removed.md`
 - `output/charts/nuernberg_most_removed.html`
 
-If `magick` is not installed, `--png` skips PNG files and still writes SVGs.
+Wenn `magick` nicht installiert ist, überspringt `--png` die PNG-Dateien und schreibt weiterhin SVGs.
 
-The dashboard map uses Leaflet with CARTO basemap tiles based on OpenStreetMap data, so map tiles require internet access when opening the HTML file. The dashboard also groups, filters, and overlays entries by Nürnberg statistical district (`Bezirk`).
+Die erzeugten Diagramm- und Dashboard-Dateien unter `output/charts/` werden von git ignoriert. Im Repository bleiben nur die Scrape-Snapshots (`output/places.json`, `output/places.csv`, `output/metadata.json`, optional `output/discovery.json`) versioniert; GitHub Actions baut daraus `public/` für GitHub Pages neu.
 
-## Tests / checks
+Die Dashboard-Karte nutzt Leaflet mit CARTO-Kartenkacheln auf Basis von OpenStreetMap-Daten. Beim Öffnen der HTML-Datei ist deshalb Internetzugriff für Kartenkacheln nötig. Das Dashboard gruppiert, filtert und überlagert Einträge außerdem nach Nürnberger statistischem Bezirk (`Bezirk`).
+
+## Veröffentlichung mit GitHub Pages
+
+Der Pages-Workflow in `.github/workflows/pages.yml` führt Checks aus, baut `output/charts/` neu, erzeugt `public/index.html` und deployt das generierte `public/`-Artefakt.
+
+Lokale Vorschau des Veröffentlichungs-Artefakts:
+
+```bash
+make site
+python3 -m http.server --directory public 8080
+```
+
+Danach im GitHub-Repository aktivieren: **Settings → Pages → Source: GitHub Actions**.
+
+## Tests / Checks
 
 ```bash
 make test
 make check
-# or directly:
+# oder direkt:
 go test ./...
 go run ./cmd/validate
 ```
 
-## What the charts show
+## Was die Diagramme zeigen
 
 1. **Höchste Lösch-Quote**  
    `removed_midpoint / (visible_reviews + removed_midpoint)`
 
 2. **Schlechtestes „echtes“ Rating**  
-   Assumption: every removed review was 1-star.
+   Annahme: Jede entfernte Bewertung war eine 1-Stern-Bewertung.
 
 3. **Beste „saubere“ Orte**  
-   No visible defamation-removal banner, sorted by rating then review count.
+   Ohne sichtbaren Diffamierungs-Löschbanner, sortiert nach Rating und danach Rezensionszahl.
 
 4. **Verteilung der Lösch-Stufen**  
-   Counts places by Google’s visible removal ranges.
+   Zählt Orte nach Googles sichtbaren Löschbereichen.
 
-## Nürnberg statistical districts / Bezirke
+## Nürnberger statistische Bezirke
 
-Entries with coordinates are assigned to Nürnberg statistical districts using the official Bezirksatlas geometry from `online-service2.nuernberg.de/geoinf/ia_bezirksatlas/` (stored as `internal/mapsreview/data/nuernberg_statistische_bezirke.json`). Points on non-residential gaps in that source are assigned to the nearest statistical district only when the row has a Nürnberg postcode; non-Nürnberg postcodes stay unassigned.
+Einträge mit Koordinaten werden über die offizielle Bezirksatlas-Geometrie von `online-service2.nuernberg.de/geoinf/ia_bezirksatlas/` den Nürnberger statistischen Bezirken zugeordnet. Die Geometrie liegt in `internal/mapsreview/data/nuernberg_statistische_bezirke.json`.
 
-## Nürnberg PLZ included by default
+Punkte in nicht bewohnten Lücken dieser Quelle werden nur dann dem nächstgelegenen statistischen Bezirk zugeordnet, wenn die Zeile eine Nürnberger Postleitzahl hat. Nicht-Nürnberger Postleitzahlen bleiben ohne Bezirkszuordnung.
+
+## Standardmäßig enthaltene Nürnberger PLZ
 
 `90402, 90403, 90408, 90409, 90411, 90419, 90425, 90427, 90429, 90431, 90439, 90441, 90443, 90449, 90451, 90453, 90455, 90459, 90461, 90469, 90471, 90473, 90475, 90478, 90480, 90482, 90489, 90491`
 
-## Notes on completeness
+## Hinweise zur Vollständigkeit
 
-Google Maps search is not a complete database export. For better coverage, run multiple query types per PLZ and dedupe results. The defaults are:
+Die Google-Maps-Suche ist kein vollständiger Datenbankexport. Für bessere Abdeckung mehrere Suchbegriffe pro PLZ verwenden und Ergebnisse deduplizieren. Die Standard-Suchbegriffe sind:
 
 `restaurant, café, imbiss, pizzeria, bäckerei, döner, burger, sushi, schnitzel, frühstück, brunch`
 
-If you want a stricter “Restaurants only” dataset, use only `--queries restaurant` and manually filter `output/places.csv`.
+Für einen strengeren „nur Restaurants“-Datensatz nur `--queries restaurant` verwenden und `output/places.csv` anschließend manuell filtern.
+
+## Lizenz
+
+MIT, siehe [`LICENSE`](LICENSE).

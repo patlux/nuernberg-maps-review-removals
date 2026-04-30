@@ -5,6 +5,10 @@ debug/
 *.pid
 coverage.out
 bin/
+public/
+
+# Generated chart/dashboard artifacts; rebuilt locally or by GitHub Pages CI.
+output/charts/
 
 # Runtime/helper files from local scrape runs
 output/*.log

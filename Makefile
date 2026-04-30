@@ -1,4 +1,4 @@
-.PHONY: setup test check validate scrape backfill charts dashboard all
+.PHONY: setup test check validate scrape backfill charts dashboard site all
 
 setup:
 	go mod download
@@ -24,6 +24,14 @@ charts:
 
 dashboard:
 	go run ./cmd/dashboard $(ARGS)
+
+site: charts dashboard
+	rm -rf public
+	mkdir -p public/charts public/data
+	touch public/.nojekyll
+	cp output/charts/nuernberg_dashboard.html public/index.html
+	cp output/charts/* public/charts/
+	cp output/metadata.json output/places.csv public/data/
 
 all:
 	go run ./cmd/scrape --postcodes all
