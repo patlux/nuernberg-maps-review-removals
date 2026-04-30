@@ -35,7 +35,7 @@ func run(args args) error {
 		return err
 	}
 
-	browserCtx, cancel := mapsreview.NewBrowserContext(args.Headless)
+	browserCtx, cancel := newScrapeBrowserContext(args)
 	defer cancel()
 
 	discoveries := []mapsreview.Discovery{}
@@ -68,12 +68,20 @@ func run(args args) error {
 	return nil
 }
 
+func newScrapeBrowserContext(args args) (context.Context, context.CancelFunc) {
+	if args.CDPURL != "" {
+		return mapsreview.NewRemoteBrowserContext(args.CDPURL)
+	}
+	return mapsreview.NewBrowserContext(args.Headless)
+}
+
 type metadata struct {
 	ReadAt            string   `json:"readAt"`
 	Postcodes         []string `json:"postcodes"`
 	Queries           []string `json:"queries"`
 	MaxResults        int      `json:"maxResults"`
 	Headless          bool     `json:"headless"`
+	CDPURL            string   `json:"cdpUrl,omitempty"`
 	DiscoveryOnly     bool     `json:"discoveryOnly"`
 	ScrapeOnly        bool     `json:"scrapeOnly"`
 	RescrapeAll       bool     `json:"rescrapeAll"`
@@ -99,6 +107,7 @@ func writeMetadata(args args, discoveries []mapsreview.Discovery, rows []mapsrev
 		Queries:           args.Queries,
 		MaxResults:        args.MaxResults,
 		Headless:          args.Headless,
+		CDPURL:            args.CDPURL,
 		DiscoveryOnly:     args.DiscoveryOnly,
 		ScrapeOnly:        args.ScrapeOnly,
 		RescrapeAll:       args.RescrapeAll,
@@ -238,8 +247,25 @@ func extractPlace(ctx context.Context, discovery mapsreview.Discovery) (mapsrevi
 		rawH1 = overview.H1
 	}
 	rawText := overview.Text + "\n" + reviews.Text
+	if isConsentPage(rawText) {
+		return mapsreview.Place{}, errors.New("Google consent page still visible")
+	}
 	if isRestrictedMapsView(rawText) {
-		return mapsreview.Place{}, errors.New("restricted Google Maps view")
+		directReviews, err := extractReviewsDirect(ctx, discovery)
+		if err != nil {
+			return mapsreview.Place{}, err
+		}
+		reviews = directReviews
+		overview = directReviews
+		rawTitle = directReviews.Title
+		rawH1 = directReviews.H1
+		rawText = directReviews.Text
+		if isConsentPage(rawText) {
+			return mapsreview.Place{}, errors.New("Google consent page still visible")
+		}
+		if isRestrictedMapsView(rawText) {
+			return mapsreview.Place{}, errors.New("restricted Google Maps view")
+		}
 	}
 	name := rawH1
 	if name == "" {
@@ -289,6 +315,26 @@ func extractPlace(ctx context.Context, discovery mapsreview.Discovery) (mapsrevi
 	mapsreview.ApplyPlaceOverrides(&row)
 	mapsreview.ComputeMetrics(&row)
 	return row, nil
+}
+
+func extractReviewsDirect(ctx context.Context, discovery mapsreview.Discovery) (mapText, error) {
+	reviewsURL := mapsreview.ReviewsURLFromURL(discovery.URL)
+	if reviewsURL == mapsreview.NormalizeURL(discovery.URL) {
+		return mapText{}, errors.New("restricted Google Maps view")
+	}
+	if err := navigate(ctx, reviewsURL, 60*time.Second); err != nil {
+		return mapText{}, err
+	}
+	_ = acceptConsent(ctx)
+	if err := waitForPlacePanel(ctx); err != nil {
+		return mapText{}, err
+	}
+	return readMapText(ctx)
+}
+
+func isConsentPage(text string) bool {
+	compact := strings.ToLower(strings.Join(strings.Fields(text), " "))
+	return strings.Contains(compact, "bevor sie zu google weitergehen") || strings.Contains(compact, "before you go to google")
 }
 
 func isRestrictedMapsView(text string) bool {
@@ -395,6 +441,9 @@ func scrapePlaces(ctx context.Context, discoveries []mapsreview.Discovery, args 
 			fmt.Printf("  ERROR: %s\n", errorText)
 			_ = screenshot(ctx, filepath.Join("debug", safeFilename(place.ID)+".png"))
 		} else {
+			if hadPreviousRow {
+				row = preservePreviousMetadata(previousRow, row)
+			}
 			if keep, reason := shouldKeepPreviousRow(previousRow, row, hadPreviousRow, args); keep {
 				fmt.Printf("  SKIP: %s; keeping existing success row\n", reason)
 				sleepBetweenPlaces(i, len(todo), args)
@@ -419,6 +468,34 @@ func scrapePlaces(ctx context.Context, discoveries []mapsreview.Discovery, args 
 	out := mapValues(rows)
 	mapsreview.SortPlaces(out)
 	return out, nil
+}
+
+func preservePreviousMetadata(previous, next mapsreview.Place) mapsreview.Place {
+	if next.Name == "" {
+		next.Name = previous.Name
+	}
+	if next.Postcode == nil {
+		next.Postcode = previous.Postcode
+	}
+	if next.Address == nil {
+		next.Address = previous.Address
+	}
+	if next.Category == nil {
+		next.Category = previous.Category
+	}
+	if next.Lat == nil {
+		next.Lat = previous.Lat
+	}
+	if next.Lng == nil {
+		next.Lng = previous.Lng
+	}
+	if next.BezirkID == nil {
+		next.BezirkID = previous.BezirkID
+	}
+	if next.BezirkName == nil {
+		next.BezirkName = previous.BezirkName
+	}
+	return next
 }
 
 func shouldKeepPreviousRow(previous, next mapsreview.Place, hadPrevious bool, args args) (bool, string) {

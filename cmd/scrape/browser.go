@@ -38,8 +38,9 @@ func waitForPlacePanel(ctx context.Context) error {
 	var ready bool
 	err := mapsreview.RunWithTimeout(ctx, 12*time.Second, chromedp.Poll(`(() => {
   const text = document.body?.innerText || '';
+  const consent = /Bevor Sie zu Google weitergehen|Before you go to Google|Alle akzeptieren|Accept all/i.test(text);
   const hasTitle = Boolean(document.querySelector('h1')?.textContent?.trim()) || /Google Maps/i.test(document.title || '');
-  return hasTitle && text.length > 500;
+  return !consent && hasTitle && text.length > 500;
 })()`, &ready, chromedp.WithPollingInterval(150*time.Millisecond), chromedp.WithPollingTimeout(10*time.Second)))
 	if err != nil {
 		return err
@@ -54,8 +55,8 @@ func acceptConsent(ctx context.Context) error {
 	var accepted bool
 	err := mapsreview.RunWithTimeout(ctx, 5*time.Second, chromedp.Evaluate(`(() => {
   const patterns = [/Alle akzeptieren/i, /Ich stimme zu/i, /Akzeptieren/i, /Accept all/i, /I agree/i];
-  const buttons = Array.from(document.querySelectorAll('button, [role="button"]'));
-  const button = buttons.find(el => patterns.some(pattern => pattern.test(el.innerText || el.textContent || el.getAttribute('aria-label') || '')));
+  const buttons = Array.from(document.querySelectorAll('button, [role="button"], input[type="submit"]'));
+  const button = buttons.find(el => patterns.some(pattern => pattern.test(el.innerText || el.textContent || el.value || el.getAttribute('aria-label') || '')));
   if (!button) return false;
   button.click();
   return true;

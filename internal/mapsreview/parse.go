@@ -18,6 +18,19 @@ func NormalizeURL(raw string) string {
 	return u.String()
 }
 
+func ReviewsURLFromURL(raw string) string {
+	base, query, hasQuery := strings.Cut(NormalizeURL(raw), "?")
+	if !strings.Contains(base, "!9m1!1b1") {
+		base = strings.Replace(base, "!4m7!3m6", "!4m8!3m7", 1)
+		base = strings.Replace(base, "!16s", "!9m1!1b1!16s", 1)
+	}
+	base = regexp.MustCompile(`!19s[^!/?]+`).ReplaceAllString(base, "")
+	if hasQuery {
+		return base + "?" + query
+	}
+	return base
+}
+
 func PlaceIDFromURL(raw string) string {
 	decoded, err := url.QueryUnescape(raw)
 	if err != nil {
@@ -142,12 +155,25 @@ func numberFromToken(token string) (int, bool) {
 }
 
 func ParsePlaceStats(text string) PlaceStats {
+	var rating *float64
 	var reviewCount *int
+	compactRatingReviewRe := regexp.MustCompile(`(?i)([1-5][,.][0-9])([0-9][0-9.]*)[\s\x{00a0}]*(?:Rezensionen|Berichte)\b`)
+	if match := compactRatingReviewRe.FindStringSubmatch(text); len(match) > 2 {
+		if n, ok := ParseGermanNumber(match[1]); ok {
+			rating = FloatPtr(n)
+		}
+		if n, ok := ParseGermanNumber(match[2]); ok && n >= 0 {
+			reviewCount = IntPtr(int(n))
+		}
+	}
 	reviewPatterns := []*regexp.Regexp{
-		regexp.MustCompile(`(?i)(?:^|\n|\s|\()([0-9][0-9.]*)\)?\s*(?:Rezensionen|Berichte)\b`),
+		regexp.MustCompile(`(?i)(?:^|\n|\s|\x{00a0}|\()([0-9][0-9.]*)\)?[\s\x{00a0}]*(?:Rezensionen|Berichte)\b`),
 		regexp.MustCompile(`(?m)^[1-5][,.][0-9]\s*\n\s*\(([0-9][0-9.]*)\)\s*$`),
 	}
 	for _, reviewRe := range reviewPatterns {
+		if reviewCount != nil {
+			break
+		}
 		for _, match := range reviewRe.FindAllStringSubmatch(text, -1) {
 			if len(match) > 1 {
 				if n, ok := ParseGermanNumber(match[1]); ok && n >= 0 {
@@ -161,19 +187,25 @@ func ParsePlaceStats(text string) PlaceStats {
 		}
 	}
 
-	var rating *float64
-	if reviewCount != nil {
+	if reviewCount != nil && rating == nil {
 		if n, ok := parseRatingNearReviewCount(text, *reviewCount); ok {
 			rating = FloatPtr(n)
 		}
 	}
 	if rating == nil {
+		ratingText := text
+		for _, marker := range []string{"Rezensionen werden nicht überprüft", "Reviews are not verified", "Alle Rezensionen", "Sortieren"} {
+			if idx := strings.Index(strings.ToLower(ratingText), strings.ToLower(marker)); idx >= 0 {
+				ratingText = ratingText[:idx]
+				break
+			}
+		}
 		ratingPatterns := []string{
 			`(?i)(?:^|\n|\s)([1-5][,.][0-9])[\s\x{00a0}]*(?:Sterne|stars|★)`,
 			`(?m)(?:^|\n)\s*([1-5][,.][0-9])\s*\n\s*\([0-9][0-9.]*\)\s*(?:\n|$)`,
 		}
 		for _, pattern := range ratingPatterns {
-			if match := regexp.MustCompile(pattern).FindStringSubmatch(text); len(match) > 1 {
+			if match := regexp.MustCompile(pattern).FindStringSubmatch(ratingText); len(match) > 1 {
 				if n, ok := ParseGermanNumber(match[1]); ok {
 					rating = FloatPtr(n)
 					break

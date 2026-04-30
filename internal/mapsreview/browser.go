@@ -11,6 +11,16 @@ import (
 
 const UserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36"
 
+func NewRemoteBrowserContext(cdpURL string) (context.Context, context.CancelFunc) {
+	allocCtx, allocCancel := chromedp.NewRemoteAllocator(context.Background(), cdpURL)
+	browserCtx, browserCancel := chromedp.NewContext(allocCtx)
+	_ = chromedp.Run(browserCtx)
+	return browserCtx, func() {
+		browserCancel()
+		allocCancel()
+	}
+}
+
 func NewBrowserContext(headless bool) (context.Context, context.CancelFunc) {
 	opts := append(chromedp.DefaultExecAllocatorOptions[:],
 		chromedp.Flag("headless", headless),

@@ -1,6 +1,9 @@
 package mapsreview
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestParseNotice(t *testing.T) {
 	tests := []struct {
@@ -95,6 +98,16 @@ func TestParsePlaceStatsAcceptsNonBreakingSpaceBeforeStars(t *testing.T) {
 	}
 }
 
+func TestParsePlaceStatsFromCompactLightpandaReviewsText(t *testing.T) {
+	stats := ParsePlaceStats("543214,5173 Berichte Rezensionen werden nicht überprüft max. 1,5 Sterne")
+	if stats.Rating == nil || *stats.Rating != 4.5 {
+		t.Fatalf("rating = %v, want 4.5", stats.Rating)
+	}
+	if stats.ReviewCount == nil || *stats.ReviewCount != 173 {
+		t.Fatalf("reviewCount = %v, want 173", stats.ReviewCount)
+	}
+}
+
 func TestParseGermanNumber(t *testing.T) {
 	tests := map[string]float64{
 		"1.234": 1234,
@@ -106,6 +119,20 @@ func TestParseGermanNumber(t *testing.T) {
 		if !ok || got != want {
 			t.Fatalf("ParseGermanNumber(%q) = %v, %v; want %v, true", input, got, ok, want)
 		}
+	}
+}
+
+func TestReviewsURLFromURL(t *testing.T) {
+	raw := "https://www.google.com/maps/place/FranKonya/data=!4m7!3m6!1s0x479f57a73350aed5:0xef0321790f9cee83!8m2!3d49.4471632!4d11.0647079!16s%2Fg%2F11t1h2jrkw!19sChIJ1a5QM6dXn0cRg-6cD3khA-8?authuser=0&hl=de&rclk=1"
+	got := ReviewsURLFromURL(raw)
+	if !strings.Contains(got, "!9m1!1b1!16s") {
+		t.Fatalf("reviews URL %q does not contain reviews tab marker", got)
+	}
+	if strings.Contains(got, "!19s") {
+		t.Fatalf("reviews URL %q still contains search-result marker", got)
+	}
+	if !strings.Contains(got, "hl=de") {
+		t.Fatalf("reviews URL %q lost query", got)
 	}
 }
 

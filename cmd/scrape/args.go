@@ -15,6 +15,7 @@ type args struct {
 	Queries           []string
 	MaxResults        int
 	Headless          bool
+	CDPURL            string
 	DiscoveryOnly     bool
 	ScrapeOnly        bool
 	RescrapeAll       bool
@@ -58,6 +59,8 @@ func parseArgs(argv []string) (args, error) {
 			out.MaxResults = atoi(value)
 		case "--headless":
 			out.Headless = parseBool(value, true)
+		case "--cdp-url":
+			out.CDPURL = value
 		case "--discovery-only":
 			out.DiscoveryOnly = true
 			consume = false
@@ -111,6 +114,7 @@ Options:
   --queries <csv>           Google Maps search terms. Default: %s.
   --max-results <n>         Stop after n discovered places. 0 = unlimited.
   --headless <true|false>   Headless browser. Default: false; safer for consent/CAPTCHA.
+  --cdp-url <ws-url>        Connect to an existing CDP browser, e.g. Lightpanda serve on ws://127.0.0.1:9333.
   --discovery-only          Only create/update output/discovery.json.
   --scrape-only             Skip discovery; scrape output/discovery.json.
   --rescrape-all, --all     Re-read every discovered place, including existing success rows.

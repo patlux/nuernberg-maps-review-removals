@@ -7,6 +7,15 @@ import (
 	"nuernberg-maps-review-removals/internal/mapsreview"
 )
 
+func TestIsConsentPage(t *testing.T) {
+	if !isConsentPage("Bevor Sie zu Google weitergehen\nAlle akzeptieren") {
+		t.Fatal("German consent page not detected")
+	}
+	if isConsentPage("FranKonya\n4,5\n(173)\nRezensionen") {
+		t.Fatal("normal place text detected as consent page")
+	}
+}
+
 func TestIsRestrictedMapsView(t *testing.T) {
 	texts := []string{
 		"Die Ansicht ist beschränkt und du siehst nur einen Teil der Google Maps-Daten. Weitere Informationen",
@@ -29,6 +38,33 @@ func TestParseArgsSaveEvery(t *testing.T) {
 	}
 	if args.SaveEvery != 25 {
 		t.Fatalf("SaveEvery = %d, want 25", args.SaveEvery)
+	}
+}
+
+func TestParseArgsCDPURL(t *testing.T) {
+	args, err := parseArgs([]string{"--cdp-url", "ws://127.0.0.1:9333"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if args.CDPURL != "ws://127.0.0.1:9333" {
+		t.Fatalf("CDPURL = %q", args.CDPURL)
+	}
+}
+
+func TestPreservePreviousMetadata(t *testing.T) {
+	previous := successPlace()
+	previous.Address = mapsreview.StringPtr("Gostenhofer Hauptstraße 20, 90443 Nürnberg")
+	previous.Category = mapsreview.StringPtr("Restaurants")
+	next := successPlace()
+	next.Address = nil
+	next.Category = nil
+
+	got := preservePreviousMetadata(previous, next)
+	if got.Address == nil || *got.Address != "Gostenhofer Hauptstraße 20, 90443 Nürnberg" {
+		t.Fatalf("Address = %v", got.Address)
+	}
+	if got.Category == nil || *got.Category != "Restaurants" {
+		t.Fatalf("Category = %v", got.Category)
 	}
 }
 

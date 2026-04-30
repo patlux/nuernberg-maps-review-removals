@@ -64,6 +64,15 @@ Nützliche Optionen:
 --out output/places.json --csv output/places.csv
 ```
 
+Optional kann der Scraper über CDP auch gegen einen bereits laufenden Browser wie Lightpanda laufen:
+
+```bash
+LIGHTPANDA_DISABLE_TELEMETRY=true lightpanda serve --host 127.0.0.1 --port 9333
+make scrape ARGS="--scrape-only --rescrape-all --cdp-url ws://127.0.0.1:9333 --save-every 25 --delay-min 4000 --delay-max 9000"
+```
+
+Lightpanda ist experimentell für dieses Projekt: Es kann den Desktop-Rezensionstab inklusive Löschbanner auslesen, sollte aber erst weiter mit Stichproben geprüft werden, bevor es Chrome als Standard ersetzt.
+
 ## 2) Datenqualität verbessern
 
 Fehlende Adressen nachtragen:
