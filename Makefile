@@ -36,7 +36,8 @@ site: charts dashboard
 
 deploy-pages: site
 	@tmp=$$(mktemp -d); \
-	git clone --quiet --branch gh-pages --single-branch $$(git remote get-url origin) $$tmp; \
+	remote=$${DEPLOY_REMOTE:-$$(git remote get-url origin)}; \
+	git clone --quiet --branch gh-pages --single-branch $$remote $$tmp; \
 	git -C $$tmp rm -r --ignore-unmatch . >/dev/null; \
 	cp -R public/. $$tmp/; \
 	git -C $$tmp add -A; \

@@ -1,0 +1,77 @@
+name: Refresh data and deploy site
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      refresh_data:
+        description: "Re-scrape Google Maps data before building the site"
+        required: true
+        type: boolean
+        default: false
+      scrape_args:
+        description: "Arguments passed to make scrape ARGS=... when refresh_data is enabled"
+        required: false
+        type: string
+        default: "--scrape-only --rescrape-all --delay-min 4000 --delay-max 9000 --headless=true"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh-and-deploy
+  cancel-in-progress: false
+
+jobs:
+  refresh-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Test
+        run: go test ./...
+
+      - name: Show Chrome version
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.refresh_data }}
+        run: |
+          google-chrome --version || chromium --version || chromium-browser --version
+
+      - name: Refresh Google Maps snapshot
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.refresh_data }}
+        env:
+          SCRAPE_ARGS: ${{ inputs.scrape_args }}
+        run: make scrape ARGS="$SCRAPE_ARGS"
+
+      - name: Validate snapshot
+        run: go run ./cmd/validate
+
+      - name: Commit refreshed snapshot
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.refresh_data }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add output/discovery.json output/places.json output/places.csv output/metadata.json
+          if git diff --cached --quiet; then
+            echo "No snapshot changes to commit"
+          else
+            git commit -m "Refresh Google Maps snapshot"
+            git push origin HEAD:main
+          fi
+
+      - name: Deploy GitHub Pages branch
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          DEPLOY_REMOTE="https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" make deploy-pages
