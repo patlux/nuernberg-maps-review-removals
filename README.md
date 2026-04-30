@@ -56,6 +56,7 @@ Useful flags:
 --queries restaurant,café,imbiss,pizzeria,bäckerei
 --discovery-only
 --scrape-only
+--scrape-only --rescrape-all   # re-read every discovered place, including existing successes
 --delay-min 4000 --delay-max 9000
 --out output/places.json --csv output/places.csv
 ```
@@ -133,6 +134,6 @@ Entries with coordinates are assigned to Nürnberg statistical districts using t
 
 Google Maps search is not a complete database export. For better coverage, run multiple query types per PLZ and dedupe results. The defaults are:
 
-`restaurant, café, imbiss, pizzeria, bäckerei`
+`restaurant, café, imbiss, pizzeria, bäckerei, döner, burger, sushi, schnitzel, frühstück, brunch`
 
 If you want a stricter “Restaurants only” dataset, use only `--queries restaurant` and manually filter `output/places.csv`.

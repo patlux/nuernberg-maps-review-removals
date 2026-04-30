@@ -158,13 +158,21 @@ func ParsePlaceStats(text string) PlaceStats {
 	}
 
 	var reviewCount *int
-	reviewRe := regexp.MustCompile(`(?i)(?:^|\n|\s|\()([0-9][0-9.]*)\)?\s*(?:Rezensionen|Berichte)\b`)
-	for _, match := range reviewRe.FindAllStringSubmatch(text, -1) {
-		if len(match) > 1 {
-			if n, ok := ParseGermanNumber(match[1]); ok && n >= 0 {
-				reviewCount = IntPtr(int(n))
-				break
+	reviewPatterns := []*regexp.Regexp{
+		regexp.MustCompile(`(?i)(?:^|\n|\s|\()([0-9][0-9.]*)\)?\s*(?:Rezensionen|Berichte)\b`),
+		regexp.MustCompile(`(?m)^[1-5][,.][0-9]\s*\n\s*\(([0-9][0-9.]*)\)\s*$`),
+	}
+	for _, reviewRe := range reviewPatterns {
+		for _, match := range reviewRe.FindAllStringSubmatch(text, -1) {
+			if len(match) > 1 {
+				if n, ok := ParseGermanNumber(match[1]); ok && n >= 0 {
+					reviewCount = IntPtr(int(n))
+					break
+				}
 			}
+		}
+		if reviewCount != nil {
+			break
 		}
 	}
 	return PlaceStats{Rating: rating, ReviewCount: reviewCount}

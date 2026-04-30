@@ -76,6 +76,7 @@ type metadata struct {
 	Headless      bool     `json:"headless"`
 	DiscoveryOnly bool     `json:"discoveryOnly"`
 	ScrapeOnly    bool     `json:"scrapeOnly"`
+	RescrapeAll   bool     `json:"rescrapeAll"`
 	DelayMin      int      `json:"delayMin"`
 	DelayMax      int      `json:"delayMax"`
 	Output        string   `json:"output"`
@@ -96,6 +97,7 @@ func writeMetadata(args args, discoveries []mapsreview.Discovery, rows []mapsrev
 		Headless:      args.Headless,
 		DiscoveryOnly: args.DiscoveryOnly,
 		ScrapeOnly:    args.ScrapeOnly,
+		RescrapeAll:   args.RescrapeAll,
 		DelayMin:      args.DelayMin,
 		DelayMax:      args.DelayMax,
 		Output:        args.Out,
@@ -303,7 +305,7 @@ func scrapePlaces(ctx context.Context, discoveries []mapsreview.Discovery, args 
 	todo := make([]mapsreview.Discovery, 0, len(discoveries))
 	for _, place := range discoveries {
 		row, ok := rows[place.ID]
-		if !ok || row.Status != "success" {
+		if args.RescrapeAll || !ok || row.Status != "success" {
 			todo = append(todo, place)
 		}
 	}

@@ -68,6 +68,16 @@ func TestParseNoticeIgnoresUnrelatedText(t *testing.T) {
 	}
 }
 
+func TestParsePlaceStatsFromMapsHeader(t *testing.T) {
+	stats := ParsePlaceStats("Schnitzery Nürnberg\n4,5\n(268)\nRestaurant\nÜbersicht")
+	if stats.Rating == nil || *stats.Rating != 4.5 {
+		t.Fatalf("rating = %v, want 4.5", stats.Rating)
+	}
+	if stats.ReviewCount == nil || *stats.ReviewCount != 268 {
+		t.Fatalf("reviewCount = %v, want 268", stats.ReviewCount)
+	}
+}
+
 func TestParseGermanNumber(t *testing.T) {
 	tests := map[string]float64{
 		"1.234": 1234,

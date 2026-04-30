@@ -17,6 +17,7 @@ type args struct {
 	Headless      bool
 	DiscoveryOnly bool
 	ScrapeOnly    bool
+	RescrapeAll   bool
 	DelayMin      int
 	DelayMax      int
 	Out           string
@@ -57,6 +58,9 @@ func parseArgs(argv []string) (args, error) {
 		case "--scrape-only":
 			out.ScrapeOnly = true
 			consume = false
+		case "--rescrape-all", "--all":
+			out.RescrapeAll = true
+			consume = false
 		case "--delay-min":
 			out.DelayMin = atoi(value)
 		case "--delay-max":
@@ -94,6 +98,7 @@ Options:
   --headless <true|false>   Headless browser. Default: false; safer for consent/CAPTCHA.
   --discovery-only          Only create/update output/discovery.json.
   --scrape-only             Skip discovery; scrape output/discovery.json.
+  --rescrape-all, --all     Re-read every discovered place, including existing success rows.
   --delay-min <ms>          Minimum delay between place pages. Default: 2500.
   --delay-max <ms>          Maximum delay between place pages. Default: 6000.
   --out <path>              Results JSON path. Default: output/places.json.

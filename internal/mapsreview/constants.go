@@ -15,7 +15,10 @@ var NurembergPostcodes = []string{
 	"90480", "90482", "90489", "90491",
 }
 
-var DefaultQueries = []string{"restaurant", "café", "imbiss", "pizzeria", "bäckerei"}
+var DefaultQueries = []string{
+	"restaurant", "café", "imbiss", "pizzeria", "bäckerei",
+	"döner", "burger", "sushi", "schnitzel", "frühstück", "brunch",
+}
 
 var NurembergPostcodeSet = func() map[string]bool {
 	set := make(map[string]bool, len(NurembergPostcodes))

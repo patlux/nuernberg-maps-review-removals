@@ -51,10 +51,22 @@ func acceptConsent(ctx context.Context) error {
 
 func readPlaceAnchors(ctx context.Context) ([]discoveredAnchor, error) {
 	var anchors []discoveredAnchor
-	err := mapsreview.RunWithTimeout(ctx, 10*time.Second, chromedp.Evaluate(`(() => Array.from(document.querySelectorAll('a[href*="/maps/place/"]')).map(a => ({
-  url: a.href,
-  name: (a.getAttribute('aria-label') || a.textContent || '').split('\n')[0].trim()
-})).filter(place => place.url))()`, &anchors))
+	err := mapsreview.RunWithTimeout(ctx, 10*time.Second, chromedp.Evaluate(`(() => {
+  const places = Array.from(document.querySelectorAll('a[href*="/maps/place/"]')).map(a => ({
+    url: a.href,
+    name: (a.getAttribute('aria-label') || a.textContent || '').split('\n')[0].trim()
+  })).filter(place => place.url);
+  if (location.href.includes('/maps/place/')) {
+    const name = document.querySelector('h1')?.textContent?.trim() || document.title.replace(/\s*-\s*Google Maps.*/i, '').trim();
+    if (name) places.unshift({ url: location.href, name });
+  }
+  const seen = new Set();
+  return places.filter(place => {
+    if (seen.has(place.url)) return false;
+    seen.add(place.url);
+    return true;
+  });
+})()`, &anchors))
 	return anchors, err
 }
 
