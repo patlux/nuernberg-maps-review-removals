@@ -309,7 +309,9 @@ func makeHTML(data []clientRow) string {
     a:hover { text-decoration: underline; }
     .pill { display: inline-flex; align-items: center; border-radius: 3px; padding: 3px 7px; background: #e8f2ea; color: var(--green); font-weight: 700; font-size: 12px; }
     .pill.bad { background: #fde6e2; color: var(--red); }
-    footer { margin-top: 18px; color: var(--muted); font-size: 13px; }
+    footer { margin-top: 18px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+    .footer-credit { margin-top: 6px; }
+    .footer-credit a { font-weight: 700; }
     @media (max-width: 1200px) { .kpis, .panel-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .controls { grid-template-columns: 1fr 1fr 1fr; } .search { grid-column: 1 / -1; } .n-logo { position: static; height: 76px; width: 150px; margin-left: auto; padding-top: 48px; } .n-logo::before { top: 40px; } .n-logo::after { top: 4px; } }
     @media (max-width: 720px) { .sitebar-inner, main, .hero-inner { width: min(100vw - 20px, 1320px); } .top-icons { display: none; } .kpis, .panel-grid, .controls { grid-template-columns: 1fr; } .hero { min-height: 300px; } .hero-inner { padding-top: 92px; } .hero-title { font-size: 32px; padding: 18px; } .hero-subtitle { font-size: 16px; } }
   </style>
@@ -395,7 +397,10 @@ func makeHTML(data []clientRow) string {
         <tbody></tbody>
       </table>
     </section>
-    <footer>Quelle: Google Maps, öffentlich sichtbare Banner. „Kein Banner“ heißt nur: im Scrape war kein passender Hinweis sichtbar. Snapshot: __SNAPSHOT__.</footer>
+    <footer>
+      <div>Quelle: Google Maps, öffentlich sichtbare Banner. „Kein Banner“ heißt nur: im Scrape war kein passender Hinweis sichtbar. Snapshot: __SNAPSHOT__.</div>
+      <div class="footer-credit">© 2026 Patrick Wozniak · <a href="https://patwoz.dev" target="_blank" rel="noopener noreferrer">patwoz.dev</a></div>
+    </footer>
   </main>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
