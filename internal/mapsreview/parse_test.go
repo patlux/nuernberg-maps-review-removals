@@ -78,6 +78,23 @@ func TestParsePlaceStatsFromMapsHeader(t *testing.T) {
 	}
 }
 
+func TestParsePlaceStatsPrefersRatingPairedWithReviewCount(t *testing.T) {
+	stats := ParsePlaceStats("Route\n1,5 km\nFranKonya\n4,5\n(173)\nCafé mit Frucht- und Süßspeisen")
+	if stats.Rating == nil || *stats.Rating != 4.5 {
+		t.Fatalf("rating = %v, want 4.5", stats.Rating)
+	}
+	if stats.ReviewCount == nil || *stats.ReviewCount != 173 {
+		t.Fatalf("reviewCount = %v, want 173", stats.ReviewCount)
+	}
+}
+
+func TestParsePlaceStatsAcceptsNonBreakingSpaceBeforeStars(t *testing.T) {
+	stats := ParsePlaceStats("FranKonya\n4,5\u00a0Sterne \nWeitere Informationen")
+	if stats.Rating == nil || *stats.Rating != 4.5 {
+		t.Fatalf("rating = %v, want 4.5", stats.Rating)
+	}
+}
+
 func TestParseGermanNumber(t *testing.T) {
 	tests := map[string]float64{
 		"1.234": 1234,

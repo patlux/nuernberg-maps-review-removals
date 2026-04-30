@@ -142,21 +142,6 @@ func numberFromToken(token string) (int, bool) {
 }
 
 func ParsePlaceStats(text string) PlaceStats {
-	ratingPatterns := []string{
-		`(?i)(?:^|\n|\s)([1-5][,.][0-9])\s*(?:Sterne|stars|★)`,
-		`(?i)(?:^|\n|\s)([1-5][,.][0-9])\s*\n\s*(?:\(?[\d.]+\)?\s*)?(?:Rezensionen|Berichte)`,
-		`(?i)\b([1-5][,.][0-9])\b`,
-	}
-	var rating *float64
-	for _, pattern := range ratingPatterns {
-		if match := regexp.MustCompile(pattern).FindStringSubmatch(text); len(match) > 1 {
-			if n, ok := ParseGermanNumber(match[1]); ok {
-				rating = FloatPtr(n)
-				break
-			}
-		}
-	}
-
 	var reviewCount *int
 	reviewPatterns := []*regexp.Regexp{
 		regexp.MustCompile(`(?i)(?:^|\n|\s|\()([0-9][0-9.]*)\)?\s*(?:Rezensionen|Berichte)\b`),
@@ -175,7 +160,54 @@ func ParsePlaceStats(text string) PlaceStats {
 			break
 		}
 	}
+
+	var rating *float64
+	if reviewCount != nil {
+		if n, ok := parseRatingNearReviewCount(text, *reviewCount); ok {
+			rating = FloatPtr(n)
+		}
+	}
+	if rating == nil {
+		ratingPatterns := []string{
+			`(?i)(?:^|\n|\s)([1-5][,.][0-9])[\s\x{00a0}]*(?:Sterne|stars|★)`,
+			`(?m)(?:^|\n)\s*([1-5][,.][0-9])\s*\n\s*\([0-9][0-9.]*\)\s*(?:\n|$)`,
+		}
+		for _, pattern := range ratingPatterns {
+			if match := regexp.MustCompile(pattern).FindStringSubmatch(text); len(match) > 1 {
+				if n, ok := ParseGermanNumber(match[1]); ok {
+					rating = FloatPtr(n)
+					break
+				}
+			}
+		}
+	}
 	return PlaceStats{Rating: rating, ReviewCount: reviewCount}
+}
+
+func parseRatingNearReviewCount(text string, reviewCount int) (float64, bool) {
+	countPattern := regexp.QuoteMeta(strconv.Itoa(reviewCount))
+	if reviewCount >= 1000 {
+		formatted := strconv.Itoa(reviewCount)
+		parts := []string{}
+		for len(formatted) > 3 {
+			parts = append([]string{formatted[len(formatted)-3:]}, parts...)
+			formatted = formatted[:len(formatted)-3]
+		}
+		parts = append([]string{formatted}, parts...)
+		countPattern = regexp.QuoteMeta(strings.Join(parts, ".")) + `|` + countPattern
+	}
+	patterns := []string{
+		`(?i)([1-5][,.][0-9])[\s\x{00a0}]*(?:Sterne|stars|★)?\s*\n\s*\(?(?:` + countPattern + `)\)?\s*(?:Rezensionen|Berichte)?\b`,
+		`(?i)([1-5][,.][0-9])[\s\x{00a0}]*(?:Sterne|stars|★).{0,80}(?:` + countPattern + `)\s*(?:Rezensionen|Berichte)`,
+	}
+	for _, pattern := range patterns {
+		if match := regexp.MustCompile(pattern).FindStringSubmatch(text); len(match) > 1 {
+			if n, ok := ParseGermanNumber(match[1]); ok {
+				return n, true
+			}
+		}
+	}
+	return 0, false
 }
 
 func ExtractAddress(text string) *string {
