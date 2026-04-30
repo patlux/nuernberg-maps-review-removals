@@ -31,6 +31,9 @@ func run(args args) error {
 	if err != nil {
 		return err
 	}
+	for i := range rows {
+		mapsreview.ApplyPlaceOverrides(&rows[i])
+	}
 	valid := mapsreview.ValidRows(rows)
 	fatal := []string{}
 	warnings := []string{}

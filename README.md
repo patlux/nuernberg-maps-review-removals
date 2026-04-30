@@ -9,7 +9,7 @@ Reproducible local Go workflow to collect publicly visible Google Maps place met
 ## Important caveats
 
 - This is for personal research / journalism only. Respect Google Maps terms and local law.
-- The scraper records only what is publicly visible at scrape time.
+- The scraper records only what is publicly visible at scrape time; user-verified Google Maps discrepancies can be kept as manual overrides in `internal/mapsreview/data/place_overrides.json`.
 - Missing banner ≠ definitely no removals. It only means no matching visible notice was detected.
 - The adjusted rating assumes all removed reviews were 1-star. That is a worst-case model, not a fact.
 - Use slow delays. If Google shows CAPTCHA, stop or solve manually in the headed browser.
@@ -57,6 +57,8 @@ Useful flags:
 --discovery-only
 --scrape-only
 --scrape-only --rescrape-all   # re-read every discovered place, including existing successes
+--scrape-only --rescrape-all --resume-from 1288   # continue a full rescan at a 1-based todo position
+--scrape-only --rescrape-all --resume-from 1288 --scrape-limit 200   # scan one safer chunk
 --delay-min 4000 --delay-max 9000
 --out output/places.json --csv output/places.csv
 ```
@@ -96,7 +98,7 @@ Outputs:
 
 If `magick` is not installed, `--png` skips PNG files and still writes SVGs.
 
-The dashboard map uses Leaflet with OpenStreetMap tiles, so map tiles require internet access when opening the HTML file. The dashboard also groups, filters, and overlays entries by Nürnberg statistical district (`Bezirk`).
+The dashboard map uses Leaflet with CARTO basemap tiles based on OpenStreetMap data, so map tiles require internet access when opening the HTML file. The dashboard also groups, filters, and overlays entries by Nürnberg statistical district (`Bezirk`).
 
 ## Tests / checks
 

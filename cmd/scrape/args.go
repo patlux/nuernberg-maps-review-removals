@@ -18,6 +18,8 @@ type args struct {
 	DiscoveryOnly bool
 	ScrapeOnly    bool
 	RescrapeAll   bool
+	ScrapeStart   int
+	ScrapeLimit   int
 	DelayMin      int
 	DelayMax      int
 	Out           string
@@ -27,14 +29,15 @@ type args struct {
 func parseArgs(argv []string) (args, error) {
 	csvSet := false
 	out := args{
-		Postcodes:  mapsreview.NurembergPostcodes,
-		Queries:    mapsreview.DefaultQueries,
-		Headless:   false,
-		DelayMin:   2500,
-		DelayMax:   6000,
-		Out:        mapsreview.ResultsJSON,
-		CSV:        mapsreview.ResultsCSV,
-		MaxResults: 0,
+		Postcodes:   mapsreview.NurembergPostcodes,
+		Queries:     mapsreview.DefaultQueries,
+		Headless:    false,
+		DelayMin:    2500,
+		DelayMax:    6000,
+		Out:         mapsreview.ResultsJSON,
+		CSV:         mapsreview.ResultsCSV,
+		MaxResults:  0,
+		ScrapeStart: 1,
 	}
 
 	for i := 0; i < len(argv); i++ {
@@ -61,6 +64,10 @@ func parseArgs(argv []string) (args, error) {
 		case "--rescrape-all", "--all":
 			out.RescrapeAll = true
 			consume = false
+		case "--scrape-start", "--resume-from":
+			out.ScrapeStart = max(1, atoi(value))
+		case "--scrape-limit":
+			out.ScrapeLimit = max(0, atoi(value))
 		case "--delay-min":
 			out.DelayMin = atoi(value)
 		case "--delay-max":
@@ -99,6 +106,9 @@ Options:
   --discovery-only          Only create/update output/discovery.json.
   --scrape-only             Skip discovery; scrape output/discovery.json.
   --rescrape-all, --all     Re-read every discovered place, including existing success rows.
+  --scrape-start <n>        Start scraping at 1-based position within the todo list. Default: 1.
+  --resume-from <n>         Alias for --scrape-start.
+  --scrape-limit <n>        Scrape at most n todo rows. 0 = unlimited.
   --delay-min <ms>          Minimum delay between place pages. Default: 2500.
   --delay-max <ms>          Maximum delay between place pages. Default: 6000.
   --out <path>              Results JSON path. Default: output/places.json.

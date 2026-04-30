@@ -57,6 +57,7 @@ func run(args args) error {
 	save := func() error {
 		for i := range rows {
 			mapsreview.EnrichPlaceLocation(&rows[i])
+			mapsreview.ApplyPlaceOverrides(&rows[i])
 		}
 		mapsreview.SortPlaces(rows)
 		if err := mapsreview.WriteJSON(args.Input, rows); err != nil {

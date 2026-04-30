@@ -52,6 +52,9 @@ func run(args args) error {
 	if err != nil {
 		return err
 	}
+	for i := range rows {
+		mapsreview.ApplyPlaceOverrides(&rows[i])
+	}
 	if err := os.MkdirAll(args.OutDir, 0o755); err != nil {
 		return err
 	}

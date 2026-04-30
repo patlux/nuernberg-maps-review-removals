@@ -77,6 +77,8 @@ type metadata struct {
 	DiscoveryOnly bool     `json:"discoveryOnly"`
 	ScrapeOnly    bool     `json:"scrapeOnly"`
 	RescrapeAll   bool     `json:"rescrapeAll"`
+	ScrapeStart   int      `json:"scrapeStart"`
+	ScrapeLimit   int      `json:"scrapeLimit"`
 	DelayMin      int      `json:"delayMin"`
 	DelayMax      int      `json:"delayMax"`
 	Output        string   `json:"output"`
@@ -98,6 +100,8 @@ func writeMetadata(args args, discoveries []mapsreview.Discovery, rows []mapsrev
 		DiscoveryOnly: args.DiscoveryOnly,
 		ScrapeOnly:    args.ScrapeOnly,
 		RescrapeAll:   args.RescrapeAll,
+		ScrapeStart:   args.ScrapeStart,
+		ScrapeLimit:   args.ScrapeLimit,
 		DelayMin:      args.DelayMin,
 		DelayMax:      args.DelayMax,
 		Output:        args.Out,
@@ -273,6 +277,7 @@ func extractPlace(ctx context.Context, discovery mapsreview.Discovery) (mapsrevi
 		row.RemovedEstimate = mapsreview.FloatPtr(notice.Estimate)
 		row.RemovedText = mapsreview.StringPtr(notice.Text)
 	}
+	mapsreview.ApplyPlaceOverrides(&row)
 	mapsreview.ComputeMetrics(&row)
 	return row, nil
 }
@@ -309,13 +314,42 @@ func scrapePlaces(ctx context.Context, discoveries []mapsreview.Discovery, args 
 			todo = append(todo, place)
 		}
 	}
-	fmt.Printf("\nScrape: %d remaining / %d discovered\n", len(todo), len(discoveries))
+	if args.ScrapeStart > 1 {
+		if args.ScrapeStart > len(todo) {
+			todo = nil
+		} else {
+			todo = todo[args.ScrapeStart-1:]
+		}
+	}
+	if args.ScrapeLimit > 0 && args.ScrapeLimit < len(todo) {
+		todo = todo[:args.ScrapeLimit]
+	}
+	fmt.Printf("\nScrape: %d remaining / %d discovered", len(todo), len(discoveries))
+	if args.ScrapeStart > 1 {
+		fmt.Printf(" (starting at todo position %d)", args.ScrapeStart)
+	}
+	if args.ScrapeLimit > 0 {
+		fmt.Printf(" (limit %d)", args.ScrapeLimit)
+	}
+	fmt.Println()
 
 	for i, place := range todo {
 		fmt.Printf("[%d/%d] %s\n", i+1, len(todo), displayPlaceName(place))
+		previousRow, hadPreviousRow := rows[place.ID]
 		row, err := extractPlace(ctx, place)
 		if err != nil {
 			errorText := err.Error()
+			if hadPreviousRow && previousRow.Status == "success" {
+				fmt.Printf("  ERROR: %s; keeping existing success row\n", errorText)
+				if errors.Is(err, context.Canceled) {
+					return mapValues(rows), err
+				}
+				sleep(randomDelay(args.DelayMin, args.DelayMax))
+				continue
+			}
+			if errors.Is(err, context.Canceled) {
+				return mapValues(rows), err
+			}
 			row = mapsreview.Place{
 				ID:       place.ID,
 				Name:     place.Name,
@@ -356,6 +390,7 @@ func saveRows(args args, rows map[string]mapsreview.Place) error {
 	out := mapValues(rows)
 	for i := range out {
 		mapsreview.EnrichPlaceLocation(&out[i])
+		mapsreview.ApplyPlaceOverrides(&out[i])
 	}
 	mapsreview.SortPlaces(out)
 	if err := mapsreview.WriteJSON(args.Out, out); err != nil {

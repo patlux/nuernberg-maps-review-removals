@@ -117,6 +117,7 @@ func makeClientRows(rows []mapsreview.Place) []clientRow {
 			continue
 		}
 		mapsreview.EnrichPlaceLocation(&row)
+		mapsreview.ApplyPlaceOverrides(&row)
 		removedEstimate := 0.0
 		if row.HasDefamationNotice {
 			removedEstimate = mapsreview.RemovedSortValue(row)
@@ -538,7 +539,7 @@ func makeHTML(data []clientRow) string {
       const root = document.getElementById('placesMap');
       if (typeof L === 'undefined') {
         mapUnavailable = true;
-        root.innerHTML = '<div class="map-empty">Karte konnte nicht geladen werden. Internetzugriff auf Leaflet/OpenStreetMap prüfen.</div>';
+        root.innerHTML = '<div class="map-empty">Karte konnte nicht geladen werden. Internetzugriff auf Leaflet/Kartenkacheln prüfen.</div>';
         return false;
       }
       root.innerHTML = '';
@@ -547,7 +548,7 @@ func makeHTML(data []clientRow) string {
       placesMap.getPane('bezirkPane').style.zIndex = 350;
       placesMap.createPane('placeMarkerPane');
       placesMap.getPane('placeMarkerPane').style.zIndex = 650;
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap-Mitwirkende' }).addTo(placesMap);
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { maxZoom: 20, subdomains: 'abcd', attribution: '&copy; OpenStreetMap-Mitwirkende &copy; CARTO' }).addTo(placesMap);
       bezirkLayer = L.layerGroup().addTo(placesMap);
       markerLayer = L.layerGroup().addTo(placesMap);
       setupMapGestureGate(root);
