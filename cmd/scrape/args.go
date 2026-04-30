@@ -11,19 +11,20 @@ import (
 )
 
 type args struct {
-	Postcodes     []string
-	Queries       []string
-	MaxResults    int
-	Headless      bool
-	DiscoveryOnly bool
-	ScrapeOnly    bool
-	RescrapeAll   bool
-	ScrapeStart   int
-	ScrapeLimit   int
-	DelayMin      int
-	DelayMax      int
-	Out           string
-	CSV           string
+	Postcodes         []string
+	Queries           []string
+	MaxResults        int
+	Headless          bool
+	DiscoveryOnly     bool
+	ScrapeOnly        bool
+	RescrapeAll       bool
+	AllowBannerClears bool
+	ScrapeStart       int
+	ScrapeLimit       int
+	DelayMin          int
+	DelayMax          int
+	Out               string
+	CSV               string
 }
 
 func parseArgs(argv []string) (args, error) {
@@ -63,6 +64,9 @@ func parseArgs(argv []string) (args, error) {
 			consume = false
 		case "--rescrape-all", "--all":
 			out.RescrapeAll = true
+			consume = false
+		case "--allow-banner-clears":
+			out.AllowBannerClears = true
 			consume = false
 		case "--scrape-start", "--resume-from":
 			out.ScrapeStart = max(1, atoi(value))
@@ -106,6 +110,7 @@ Options:
   --discovery-only          Only create/update output/discovery.json.
   --scrape-only             Skip discovery; scrape output/discovery.json.
   --rescrape-all, --all     Re-read every discovered place, including existing success rows.
+  --allow-banner-clears     Allow a re-scrape to remove a previously seen deletion banner. Default: keep old banner until manually verified.
   --scrape-start <n>        Start scraping at 1-based position within the todo list. Default: 1.
   --resume-from <n>         Alias for --scrape-start.
   --scrape-limit <n>        Scrape at most n todo rows. 0 = unlimited.

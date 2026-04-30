@@ -57,6 +57,7 @@ Nützliche Optionen:
 --discovery-only
 --scrape-only
 --scrape-only --rescrape-all   # alle gefundenen Orte erneut lesen, auch bereits erfolgreiche
+--scrape-only --rescrape-all --allow-banner-clears   # zuvor erkannte Banner nach manueller Prüfung entfernen lassen
 --scrape-only --rescrape-all --resume-from 1288   # vollständigen Rescan an 1-basierter Todo-Position fortsetzen
 --scrape-only --rescrape-all --resume-from 1288 --scrape-limit 200   # sichereren Teil-Scan ausführen
 --delay-min 4000 --delay-max 9000
@@ -133,7 +134,7 @@ Ein Daten-Refresh läuft bewusst nur manuell über **Actions → Refresh data an
 --scrape-only --rescrape-all --delay-min 4000 --delay-max 9000 --headless=true
 ```
 
-Falls Google ein CAPTCHA oder eine eingeschränkte Ansicht ausliefert, kann der Action-Lauf fehlschlagen oder unvollständige Daten liefern; dann lokal mit sichtbarem Browser neu laufen lassen.
+Falls Google ein CAPTCHA oder eine eingeschränkte Ansicht ausliefert, kann der Action-Lauf fehlschlagen oder unvollständige Daten liefern; dann lokal mit sichtbarem Browser neu laufen lassen. Zuvor erkannte Löschbanner werden bei automatischen Re-Scrapes standardmäßig nicht entfernt; dafür ist nach manueller Prüfung `--allow-banner-clears` nötig.
 
 ## Tests / Checks
 

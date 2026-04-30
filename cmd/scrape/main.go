@@ -69,46 +69,48 @@ func run(args args) error {
 }
 
 type metadata struct {
-	ReadAt        string   `json:"readAt"`
-	Postcodes     []string `json:"postcodes"`
-	Queries       []string `json:"queries"`
-	MaxResults    int      `json:"maxResults"`
-	Headless      bool     `json:"headless"`
-	DiscoveryOnly bool     `json:"discoveryOnly"`
-	ScrapeOnly    bool     `json:"scrapeOnly"`
-	RescrapeAll   bool     `json:"rescrapeAll"`
-	ScrapeStart   int      `json:"scrapeStart"`
-	ScrapeLimit   int      `json:"scrapeLimit"`
-	DelayMin      int      `json:"delayMin"`
-	DelayMax      int      `json:"delayMax"`
-	Output        string   `json:"output"`
-	CSV           string   `json:"csv"`
-	UserAgent     string   `json:"userAgent"`
-	Discovered    int      `json:"discovered"`
-	Rows          int      `json:"rows"`
-	Success       int      `json:"success"`
-	Errors        int      `json:"errors"`
+	ReadAt            string   `json:"readAt"`
+	Postcodes         []string `json:"postcodes"`
+	Queries           []string `json:"queries"`
+	MaxResults        int      `json:"maxResults"`
+	Headless          bool     `json:"headless"`
+	DiscoveryOnly     bool     `json:"discoveryOnly"`
+	ScrapeOnly        bool     `json:"scrapeOnly"`
+	RescrapeAll       bool     `json:"rescrapeAll"`
+	AllowBannerClears bool     `json:"allowBannerClears"`
+	ScrapeStart       int      `json:"scrapeStart"`
+	ScrapeLimit       int      `json:"scrapeLimit"`
+	DelayMin          int      `json:"delayMin"`
+	DelayMax          int      `json:"delayMax"`
+	Output            string   `json:"output"`
+	CSV               string   `json:"csv"`
+	UserAgent         string   `json:"userAgent"`
+	Discovered        int      `json:"discovered"`
+	Rows              int      `json:"rows"`
+	Success           int      `json:"success"`
+	Errors            int      `json:"errors"`
 }
 
 func writeMetadata(args args, discoveries []mapsreview.Discovery, rows []mapsreview.Place) error {
 	m := metadata{
-		ReadAt:        mapsreview.NowISO(),
-		Postcodes:     args.Postcodes,
-		Queries:       args.Queries,
-		MaxResults:    args.MaxResults,
-		Headless:      args.Headless,
-		DiscoveryOnly: args.DiscoveryOnly,
-		ScrapeOnly:    args.ScrapeOnly,
-		RescrapeAll:   args.RescrapeAll,
-		ScrapeStart:   args.ScrapeStart,
-		ScrapeLimit:   args.ScrapeLimit,
-		DelayMin:      args.DelayMin,
-		DelayMax:      args.DelayMax,
-		Output:        args.Out,
-		CSV:           args.CSV,
-		UserAgent:     mapsreview.UserAgent,
-		Discovered:    len(discoveries),
-		Rows:          len(rows),
+		ReadAt:            mapsreview.NowISO(),
+		Postcodes:         args.Postcodes,
+		Queries:           args.Queries,
+		MaxResults:        args.MaxResults,
+		Headless:          args.Headless,
+		DiscoveryOnly:     args.DiscoveryOnly,
+		ScrapeOnly:        args.ScrapeOnly,
+		RescrapeAll:       args.RescrapeAll,
+		AllowBannerClears: args.AllowBannerClears,
+		ScrapeStart:       args.ScrapeStart,
+		ScrapeLimit:       args.ScrapeLimit,
+		DelayMin:          args.DelayMin,
+		DelayMax:          args.DelayMax,
+		Output:            args.Out,
+		CSV:               args.CSV,
+		UserAgent:         mapsreview.UserAgent,
+		Discovered:        len(discoveries),
+		Rows:              len(rows),
 	}
 	for _, row := range rows {
 		if row.Status == "success" {
@@ -370,6 +372,11 @@ func scrapePlaces(ctx context.Context, discoveries []mapsreview.Discovery, args 
 			fmt.Printf("  ERROR: %s\n", errorText)
 			_ = screenshot(ctx, filepath.Join("debug", safeFilename(place.ID)+".png"))
 		} else {
+			if keep, reason := shouldKeepPreviousRow(previousRow, row, hadPreviousRow, args); keep {
+				fmt.Printf("  SKIP: %s; keeping existing success row\n", reason)
+				sleep(randomDelay(args.DelayMin, args.DelayMax))
+				continue
+			}
 			removed := "none"
 			if row.RemovedText != nil {
 				removed = *row.RemovedText
@@ -385,6 +392,22 @@ func scrapePlaces(ctx context.Context, discoveries []mapsreview.Discovery, args 
 	out := mapValues(rows)
 	mapsreview.SortPlaces(out)
 	return out, nil
+}
+
+func shouldKeepPreviousRow(previous, next mapsreview.Place, hadPrevious bool, args args) (bool, string) {
+	if !hadPrevious || previous.Status != "success" || next.Status != "success" {
+		return false, ""
+	}
+	if previous.Rating != nil && next.Rating == nil {
+		return true, "new scrape is missing rating"
+	}
+	if previous.ReviewCount != nil && next.ReviewCount == nil {
+		return true, "new scrape is missing review count"
+	}
+	if previous.HasDefamationNotice && !next.HasDefamationNotice && !args.AllowBannerClears {
+		return true, "new scrape would clear an existing deletion banner; rerun with --allow-banner-clears after manual verification"
+	}
+	return false, ""
 }
 
 func displayPlaceName(place mapsreview.Discovery) string {
