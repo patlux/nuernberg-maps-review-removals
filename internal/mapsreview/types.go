@@ -2,6 +2,14 @@ package mapsreview
 
 import "time"
 
+const (
+	PlaceStateActive            = "active"
+	PlaceStateNoPublicReviews   = "no_public_reviews"
+	PlaceStatePermanentlyClosed = "permanently_closed"
+	PlaceStateTemporarilyClosed = "temporarily_closed"
+	PlaceStatePartialLoad       = "partial_load"
+)
+
 type Discovery struct {
 	ID                 string `json:"id"`
 	Name               string `json:"name"`
@@ -31,6 +39,7 @@ type Place struct {
 	RemovedText         *string  `json:"removedText"`
 	URL                 string   `json:"url"`
 	ReadAt              string   `json:"readAt"`
+	PlaceState          string   `json:"placeState,omitempty"`
 	Status              string   `json:"status"`
 	Error               *string  `json:"error"`
 }

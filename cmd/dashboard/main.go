@@ -46,6 +46,7 @@ type clientRow struct {
 	URL                string   `json:"url"`
 	Address            string   `json:"address"`
 	ReadAt             string   `json:"readAt"`
+	PlaceState         string   `json:"placeState,omitempty"`
 }
 
 func main() {
@@ -114,7 +115,7 @@ func splitArg(argv []string, index int) (key string, value string, consume bool)
 func makeClientRows(rows []mapsreview.Place) []clientRow {
 	out := make([]clientRow, 0, len(rows))
 	for _, row := range rows {
-		if row.Status != "success" || row.Name == "" {
+		if row.Status != "success" || row.Name == "" || row.Rating == nil {
 			continue
 		}
 		mapsreview.EnrichPlaceLocation(&row)
@@ -154,6 +155,7 @@ func makeClientRows(rows []mapsreview.Place) []clientRow {
 			URL:                row.URL,
 			Address:            mapsreview.StringValue(row.Address),
 			ReadAt:             row.ReadAt,
+			PlaceState:         row.PlaceState,
 		})
 	}
 	return out

@@ -15,6 +15,8 @@ import (
 	"nuernberg-maps-review-removals/internal/mapsreview"
 )
 
+var errPartialMapsShell = errors.New("partial Google Maps shell")
+
 func main() {
 	args, err := parseArgs(os.Args[1:])
 	if err != nil {
@@ -269,7 +271,8 @@ func extractPlace(ctx context.Context, discovery mapsreview.Discovery) (mapsrevi
 			stats.ReviewCount = fallbackStats.ReviewCount
 		}
 	}
-	if directReviewsTextHasNoPublicReviews(statsText) {
+	placeState := classifyPlaceState(rawText, statsText)
+	if placeState == mapsreview.PlaceStateNoPublicReviews {
 		stats.Rating = nil
 		stats.ReviewCount = mapsreview.IntPtr(0)
 	}
@@ -294,6 +297,7 @@ func extractPlace(ctx context.Context, discovery mapsreview.Discovery) (mapsrevi
 		Category:    category,
 		URL:         mapsreview.NormalizeURL(discovery.URL),
 		ReadAt:      mapsreview.NowISO(),
+		PlaceState:  placeState,
 		Status:      "success",
 	}
 	if coords != nil {
@@ -355,7 +359,7 @@ func extractReviewsDirectWithRetry(ctx context.Context, discovery mapsreview.Dis
 	sleep(500)
 	reviews, err = extractReviewsDirect(ctx, discovery)
 	if err != nil {
-		return mapText{}, fmt.Errorf("direct reviews failed after retry: %v; first error: %v", err, firstErr)
+		return mapText{}, fmt.Errorf("direct reviews failed after retry: %w; first error: %v", err, firstErr)
 	}
 	return reviews, nil
 }
@@ -418,19 +422,53 @@ func extractReviewsDirect(ctx context.Context, discovery mapsreview.Discovery) (
 	if reviewsURL == mapsreview.NormalizeURL(discovery.URL) {
 		return mapText{}, errors.New("restricted Google Maps view")
 	}
+	reviews, err := extractReviewsDirectOnce(ctx, reviewsURL, discovery)
+	if err == nil || !errors.Is(err, errPartialMapsShell) {
+		return reviews, err
+	}
+	sleep(1000)
+	return extractReviewsDirectOnce(ctx, reviewsURL, discovery)
+}
+
+func extractReviewsDirectOnce(ctx context.Context, reviewsURL string, discovery mapsreview.Discovery) (mapText, error) {
 	if err := navigate(ctx, reviewsURL, 60*time.Second); err != nil {
 		return mapText{}, err
 	}
 	_ = acceptConsent(ctx)
 	if err := waitForDirectReviewsPanel(ctx); err != nil {
-		return mapText{}, err
+		reviews, readErr := readMapText(ctx)
+		if readErr == nil && isPartialMapsShell(reviews.Text, discovery.Name) {
+			return reviews, fmt.Errorf("%w: %v", errPartialMapsShell, err)
+		}
+		return reviews, err
 	}
-	return readMapText(ctx)
+	reviews, err := readMapText(ctx)
+	if err != nil {
+		return reviews, err
+	}
+	if isPartialMapsShell(reviews.Text, discovery.Name) {
+		return reviews, errPartialMapsShell
+	}
+	return reviews, nil
 }
 
 func isConsentPage(text string) bool {
 	compact := strings.ToLower(strings.Join(strings.Fields(text), " "))
 	return strings.Contains(compact, "bevor sie zu google weitergehen") || strings.Contains(compact, "before you go to google")
+}
+
+func classifyPlaceState(rawText, directReviewsText string) string {
+	compact := strings.ToLower(strings.Join(strings.Fields(rawText), " "))
+	switch {
+	case strings.Contains(compact, "dauerhaft geschlossen") || strings.Contains(compact, "permanently closed"):
+		return mapsreview.PlaceStatePermanentlyClosed
+	case strings.Contains(compact, "vorübergehend geschlossen") || strings.Contains(compact, "temporarily closed"):
+		return mapsreview.PlaceStateTemporarilyClosed
+	case directReviewsTextHasNoPublicReviews(directReviewsText):
+		return mapsreview.PlaceStateNoPublicReviews
+	default:
+		return mapsreview.PlaceStateActive
+	}
 }
 
 func directReviewsTextHasNoPublicReviews(text string) bool {
@@ -450,6 +488,19 @@ func directReviewsTextHasNoPublicReviews(text string) bool {
 	canWriteReview := strings.Contains(compact, "rezension schreiben") || strings.Contains(compact, "write a review")
 	loadedPlace := strings.Contains(compact, "übersicht") || strings.Contains(compact, "overview") || strings.Contains(compact, "routenplaner") || strings.Contains(compact, "directions")
 	return canWriteReview && loadedPlace
+}
+
+func isPartialMapsShell(text, expectedName string) bool {
+	compact := strings.ToLower(strings.Join(strings.Fields(text), " "))
+	if isConsentPage(text) || directReviewsTextHasNoPublicReviews(text) || compact == "" || len(compact) > 800 {
+		return false
+	}
+	if expectedName != "" && strings.Contains(compact, strings.ToLower(strings.Join(strings.Fields(expectedName), " "))) {
+		return false
+	}
+	hasMapsShell := strings.Contains(compact, "gespeichert") && strings.Contains(compact, "zuletzt verwendet")
+	hasNoPlaceContent := !strings.Contains(compact, "rezension schreiben") && !strings.Contains(compact, "sortieren") && !strings.Contains(compact, "berichte") && !strings.Contains(compact, "diffamierung")
+	return hasMapsShell && hasNoPlaceContent
 }
 
 func isRestrictedMapsView(text string) bool {
@@ -568,14 +619,19 @@ func scrapePlaces(ctx context.Context, discoveries []mapsreview.Discovery, args 
 				}
 				return mapValues(rows), err
 			}
+			placeState := ""
+			if errors.Is(err, errPartialMapsShell) {
+				placeState = mapsreview.PlaceStatePartialLoad
+			}
 			row = mapsreview.Place{
-				ID:       place.ID,
-				Name:     place.Name,
-				Postcode: mapsreview.StringPtr(place.DiscoveredPostcode),
-				URL:      mapsreview.NormalizeURL(place.URL),
-				ReadAt:   mapsreview.NowISO(),
-				Status:   "error",
-				Error:    mapsreview.StringPtr(errorText),
+				ID:         place.ID,
+				Name:       place.Name,
+				Postcode:   mapsreview.StringPtr(place.DiscoveredPostcode),
+				URL:        mapsreview.NormalizeURL(place.URL),
+				ReadAt:     mapsreview.NowISO(),
+				PlaceState: placeState,
+				Status:     "error",
+				Error:      mapsreview.StringPtr(errorText),
 			}
 			fmt.Printf("  ERROR: %s\n", errorText)
 			_ = screenshot(ctx, filepath.Join("debug", safeFilename(place.ID)+".png"))

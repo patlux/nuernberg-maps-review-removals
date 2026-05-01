@@ -84,6 +84,27 @@ func TestDirectReviewsTextCanBeParsedWithoutRestrictedOverview(t *testing.T) {
 	}
 }
 
+func TestClassifyPlaceState(t *testing.T) {
+	tests := []struct {
+		name              string
+		rawText           string
+		directReviewsText string
+		want              string
+	}{
+		{name: "active", rawText: "FranKonya", directReviewsText: "Rezensionen\n4,5\n173 Berichte\nSortieren", want: mapsreview.PlaceStateActive},
+		{name: "no public reviews", rawText: "EAT HAPPY\nÜbersicht", directReviewsText: "EAT HAPPY\nÜbersicht\nRoutenplaner\nRezension schreiben", want: mapsreview.PlaceStateNoPublicReviews},
+		{name: "permanently closed", rawText: "Imbiss Nhan\nDauerhaft geschlossen", directReviewsText: "", want: mapsreview.PlaceStatePermanentlyClosed},
+		{name: "temporarily closed", rawText: "Snack am Eck\nVorübergehend geschlossen", directReviewsText: "", want: mapsreview.PlaceStateTemporarilyClosed},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := classifyPlaceState(test.rawText, test.directReviewsText); got != test.want {
+				t.Fatalf("classifyPlaceState() = %q, want %q", got, test.want)
+			}
+		})
+	}
+}
+
 func TestDirectReviewsTextHasNoPublicReviews(t *testing.T) {
 	text := "EAT HAPPY\nÜbersicht\nInfo\nRoutenplaner\nRezension schreiben\nWird auch oft gesucht\nHaDaCo Sushi Thai Wok\n4,5(105)"
 	if !directReviewsTextHasNoPublicReviews(text) {
@@ -92,6 +113,17 @@ func TestDirectReviewsTextHasNoPublicReviews(t *testing.T) {
 	withReviews := "Zu den zwei goldenen Hirschen\nÜbersicht\nRezensionen\nInfo\n4,6\n447 Berichte\nSortieren"
 	if directReviewsTextHasNoPublicReviews(withReviews) {
 		t.Fatal("reviews panel detected as no-review page")
+	}
+}
+
+func TestIsPartialMapsShell(t *testing.T) {
+	shell := "Restaurants\nHotels\nGespeichert\nZuletzt verwendet\nApp herunterladen\nRoutenplaner\nSpeichern\nIn der Nähe\nTeilen"
+	if !isPartialMapsShell(shell, "Schnitzery Nürnberg") {
+		t.Fatal("partial Maps shell was not detected")
+	}
+	loadedPlace := "Schnitzery Nürnberg\nÜbersicht\nRezensionen\n4,5\n268 Berichte\nSortieren"
+	if isPartialMapsShell(loadedPlace, "Schnitzery Nürnberg") {
+		t.Fatal("loaded place was detected as partial shell")
 	}
 }
 

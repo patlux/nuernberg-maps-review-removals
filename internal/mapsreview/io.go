@@ -71,7 +71,7 @@ func WritePlacesCSV(file string, rows []Place) error {
 		"id", "name", "postcode", "address", "rating", "reviewCount", "category", "lat", "lng", "bezirkId", "bezirkName",
 		"hasDefamationNotice", "removedMin", "removedMax", "removedEstimate",
 		"deletionRatioPct", "realRatingAdjusted", "removedText", "url", "readAt",
-		"status", "error",
+		"placeState", "status", "error",
 	}
 	if err := w.Write(columns); err != nil {
 		return err
@@ -98,6 +98,7 @@ func WritePlacesCSV(file string, rows []Place) error {
 			StringValue(row.RemovedText),
 			row.URL,
 			row.ReadAt,
+			row.PlaceState,
 			row.Status,
 			StringValue(row.Error),
 		}); err != nil {
