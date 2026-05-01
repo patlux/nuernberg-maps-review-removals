@@ -138,9 +138,6 @@
     body { margin: 0; min-height: 100vh; font-family: var(--sans); color: var(--text); background: var(--bg); }
     .sitebar { height: 76px; background: var(--surface-raised); border-bottom: 1px solid var(--line); box-shadow: var(--shadow); }
     .sitebar-inner { position: relative; width: min(1320px, calc(100vw - 32px)); height: 100%; margin: 0 auto; display: flex; align-items: center; gap: 42px; }
-    .menu-word { display: flex; align-items: center; gap: 14px; color: var(--nav-text); font-size: 22px; font-weight: 700; text-transform: uppercase; }
-    .hamburger { display: grid; gap: 6px; width: 44px; }
-    .hamburger span { display: block; height: 5px; border-radius: 2px; background: var(--nav-text); }
     .top-icons { display: flex; gap: 28px; color: var(--nav-text); font-size: 33px; line-height: 1; }
     .theme-toggle { display: inline-flex; align-items: center; gap: 8px; height: 42px; margin-left: auto; margin-right: 190px; padding: 0 14px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--heading); box-shadow: 0 1px 4px rgba(0,0,0,.12); font-weight: 700; cursor: pointer; }
     .theme-toggle:hover, .theme-toggle:focus-visible { border-color: var(--red); color: var(--red); outline: none; }
@@ -249,9 +246,6 @@
     @media (max-width: 720px) {
       .sitebar-inner, main, .hero-inner { width: min(100vw - 20px, 1320px); }
       .sitebar-inner { gap: 14px; }
-      .menu-word { gap: 10px; font-size: 18px; }
-      .hamburger { gap: 5px; width: 36px; }
-      .hamburger span { height: 4px; }
       .top-icons { display: none; }
       .theme-toggle { width: 42px; padding: 0; justify-content: center; }
       .theme-toggle-text { display: none; }
@@ -278,7 +272,6 @@
 <body>
   <div class="sitebar" role="banner">
     <div class="sitebar-inner">
-      <div class="menu-word"><span class="hamburger" aria-hidden="true"><span></span><span></span><span></span></span><span>Menü</span></div>
       <div class="top-icons" aria-hidden="true"><span>●</span><span>☝</span><span>▰</span></div>
       <button class="theme-toggle" id="themeToggle" type="button" aria-label="Dunkles Design aktivieren" aria-pressed="false"><span class="theme-toggle-icon" aria-hidden="true">☾</span><span class="theme-toggle-text">Dunkel</span></button>
       <div class="n-logo">Nürnberg</div>
