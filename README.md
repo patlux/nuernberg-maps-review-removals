@@ -128,6 +128,13 @@ make site
 python3 -m http.server --directory public 8080
 ```
 
+Optionale Plausible-Analytics werden nur eingebunden, wenn die Umgebungsvariable gesetzt ist:
+
+```bash
+DASHBOARD_ANALYTICS_SRC="https://analytics.patwoz.dev/js/8ec69274-bcd1-49c2-9c59-633a50b7a049.js" \
+make site
+```
+
 Veröffentlichen:
 
 ```bash

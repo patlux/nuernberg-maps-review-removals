@@ -196,6 +196,7 @@ func makeHTML(data []clientRow) string {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Nürnberg Google-Maps-Bewertungen Dashboard</title>
+__ANALYTICS__
   <script>
     (function () {
       try {
@@ -1059,10 +1060,24 @@ func makeHTML(data []clientRow) string {
 		"__POSTCODE_OPTIONS__", postcodeOptions,
 		"__BEZIRK_OPTIONS__", bezirkOptions,
 		"__RANGE_OPTIONS__", rangeOptions,
+		"__ANALYTICS__", plausibleAnalyticsSnippet(),
 		"__SNAPSHOT__", time.Now().Format("02.01.2006"),
 		"__DATA__", jsonText,
 		"__BEZIRK_DATA__", bezirkText,
 	).Replace(page)
+}
+
+func plausibleAnalyticsSnippet() string {
+	src := strings.TrimSpace(os.Getenv("DASHBOARD_ANALYTICS_SRC"))
+	if src == "" {
+		return ""
+	}
+	return fmt.Sprintf(`  <!-- Privacy-friendly analytics by Plausible -->
+  <script async src="%s"></script>
+  <script>
+    window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
+    plausible.init()
+  </script>`, escAttr(src))
 }
 
 func allBezirkLabels() []string {
