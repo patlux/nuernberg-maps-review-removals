@@ -29,6 +29,10 @@ func TestIsRestrictedMapsView(t *testing.T) {
 	if isRestrictedMapsView("FranKonya\n4,5\n(173)\nRezensionen") {
 		t.Fatal("normal place text detected as restricted")
 	}
+	loadedPlaceWithHiddenMarker := "EAT HAPPY\nÜbersicht\nInfo\nRoutenplaner\nRezension schreiben\nDie Ansicht ist beschränkt"
+	if isRestrictedMapsView(loadedPlaceWithHiddenMarker) {
+		t.Fatal("loaded place page with hidden restricted marker detected as restricted")
+	}
 }
 
 func TestParseArgsSaveEvery(t *testing.T) {
@@ -67,7 +71,7 @@ func TestParseArgsBannerAudit(t *testing.T) {
 func TestDirectReviewsTextCanBeParsedWithoutRestrictedOverview(t *testing.T) {
 	overview := mapText{Text: "Die Ansicht ist beschränkt und du siehst nur einen Teil der Google Maps-Daten. Route 1,5 km"}
 	reviews := mapText{Text: "543214,82.336 Berichte\n21 bis 50 Bewertungen aufgrund von Beschwerden wegen Diffamierung entfernt."}
-	if !isRestrictedMapsView(combinedMapText(overview, reviews)) {
+	if !isRestrictedMapsView(overview.Text) {
 		t.Fatal("test fixture should include restricted overview text")
 	}
 
@@ -77,6 +81,17 @@ func TestDirectReviewsTextCanBeParsedWithoutRestrictedOverview(t *testing.T) {
 	}
 	if notice := mapsreview.ParseNotice(got); notice == nil || notice.Min != 21 {
 		t.Fatalf("ParseNotice(%q) = %#v, want deletion banner", got, notice)
+	}
+}
+
+func TestDirectReviewsTextHasNoPublicReviews(t *testing.T) {
+	text := "EAT HAPPY\nÜbersicht\nInfo\nRoutenplaner\nRezension schreiben\nWird auch oft gesucht\nHaDaCo Sushi Thai Wok\n4,5(105)"
+	if !directReviewsTextHasNoPublicReviews(text) {
+		t.Fatal("no-review-tab place was not detected")
+	}
+	withReviews := "Zu den zwei goldenen Hirschen\nÜbersicht\nRezensionen\nInfo\n4,6\n447 Berichte\nSortieren"
+	if directReviewsTextHasNoPublicReviews(withReviews) {
+		t.Fatal("reviews panel detected as no-review page")
 	}
 }
 
@@ -151,6 +166,18 @@ func TestShouldKeepPreviousRowPreventsStatsRegression(t *testing.T) {
 	}
 	if !strings.Contains(reason, "review count") {
 		t.Fatalf("reason = %q, want review-count reason", reason)
+	}
+}
+
+func TestShouldKeepPreviousRowAllowsNoReviewStatsClear(t *testing.T) {
+	previous := successPlace()
+	next := successPlace()
+	next.Rating = nil
+	next.ReviewCount = mapsreview.IntPtr(0)
+
+	keep, reason := shouldKeepPreviousRow(previous, next, true, args{AllowBannerClears: true})
+	if keep {
+		t.Fatalf("shouldKeepPreviousRow = true (%q), want false", reason)
 	}
 }
 

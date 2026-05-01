@@ -146,6 +146,20 @@ func TestReviewsURLFromURL(t *testing.T) {
 	}
 }
 
+func TestReviewsURLFromURLCanonicalizesAtDataURLs(t *testing.T) {
+	raw := "https://www.google.com/maps/place/Schnitzery+N%C3%BCrnberg/@49.449978,11.0735199,17z/data=!3m1!4b1!4m6!3m5!1s0x479f5793537290f3:0x369418ec26602e09!8m2!3d49.449978!4d11.0735199!16s%2Fg%2F11lyrycx33?entry=ttu&hl=de"
+	got := ReviewsURLFromURL(raw)
+	if strings.Contains(got, "/@") {
+		t.Fatalf("reviews URL %q still contains @ coordinate path", got)
+	}
+	if strings.Contains(got, "!3m1!4b1") {
+		t.Fatalf("reviews URL %q still contains map viewport data prefix", got)
+	}
+	if !strings.Contains(got, "/data=!4m8!3m7") || !strings.Contains(got, "!9m1!1b1!16s") {
+		t.Fatalf("reviews URL %q was not converted to canonical reviews data URL", got)
+	}
+}
+
 func TestReviewsURLFromURLIncrementsExistingDataCounts(t *testing.T) {
 	raw := "https://www.google.com/maps/place/Das+Steichele/data=!4m10!3m9!1s0x479f57a9a65ab759:0x123dd70a4e8f0ed0!5m2!4m1!1i2!8m2!3d49.449225!4d11.071107!16s%2Fg%2F126122ghp!19sSearchResult?authuser=0&hl=de&rclk=1"
 	got := ReviewsURLFromURL(raw)

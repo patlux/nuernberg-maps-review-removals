@@ -225,19 +225,12 @@ func extractPlace(ctx context.Context, discovery mapsreview.Discovery) (mapsrevi
 	if discovery.URL == "" {
 		return mapsreview.Place{}, errors.New("missing URL")
 	}
-	if err := navigate(ctx, mapsreview.NormalizeURL(discovery.URL), 60*time.Second); err != nil {
-		return mapsreview.Place{}, err
-	}
-	_ = acceptConsent(ctx)
-	if err := waitForPlacePanel(ctx); err != nil {
-		return mapsreview.Place{}, err
-	}
-	overview, err := readMapText(ctx)
-	if err != nil {
-		return mapsreview.Place{}, err
-	}
+	overview, overviewErr := extractOverview(ctx, discovery)
 	reviews, err := extractReviewsDirectWithRetry(ctx, discovery)
 	if err != nil {
+		if overviewErr != nil {
+			return mapsreview.Place{}, fmt.Errorf("%v; overview error: %v", err, overviewErr)
+		}
 		return mapsreview.Place{}, err
 	}
 
@@ -276,6 +269,10 @@ func extractPlace(ctx context.Context, discovery mapsreview.Discovery) (mapsrevi
 			stats.ReviewCount = fallbackStats.ReviewCount
 		}
 	}
+	if directReviewsTextHasNoPublicReviews(statsText) {
+		stats.Rating = nil
+		stats.ReviewCount = mapsreview.IntPtr(0)
+	}
 	address := mapsreview.ExtractAddress(overview.Text)
 	postcode := mapsreview.StringPtr(discovery.DiscoveredPostcode)
 	if address != nil {
@@ -308,6 +305,21 @@ func extractPlace(ctx context.Context, discovery mapsreview.Discovery) (mapsrevi
 	mapsreview.ApplyPlaceOverrides(&row)
 	mapsreview.ComputeMetrics(&row)
 	return row, nil
+}
+
+func extractOverview(ctx context.Context, discovery mapsreview.Discovery) (mapText, error) {
+	if err := navigate(ctx, mapsreview.NormalizeURL(discovery.URL), 60*time.Second); err != nil {
+		return mapText{}, err
+	}
+	_ = acceptConsent(ctx)
+	if err := waitForPlacePanel(ctx); err != nil {
+		return mapText{}, err
+	}
+	overview, err := readMapText(ctx)
+	if err != nil {
+		return mapText{}, err
+	}
+	return overview, nil
 }
 
 func combinedMapText(overview, reviews mapText) string {
@@ -421,9 +433,49 @@ func isConsentPage(text string) bool {
 	return strings.Contains(compact, "bevor sie zu google weitergehen") || strings.Contains(compact, "before you go to google")
 }
 
+func directReviewsTextHasNoPublicReviews(text string) bool {
+	compact := strings.ToLower(strings.Join(strings.Fields(text), " "))
+	if strings.Contains(compact, "noch keine rezensionen") || strings.Contains(compact, "no reviews") {
+		return true
+	}
+	if regexp.MustCompile(`(?im)(^|\n)\s*Rezensionen\s*(\n|$)`).MatchString(text) {
+		return false
+	}
+	reviewPanelMarkers := []string{"sortieren", "in rezensionen suchen", "berichte", "bewertungen aufgrund", "diffamierung"}
+	for _, marker := range reviewPanelMarkers {
+		if strings.Contains(compact, marker) {
+			return false
+		}
+	}
+	canWriteReview := strings.Contains(compact, "rezension schreiben") || strings.Contains(compact, "write a review")
+	loadedPlace := strings.Contains(compact, "übersicht") || strings.Contains(compact, "overview") || strings.Contains(compact, "routenplaner") || strings.Contains(compact, "directions")
+	return canWriteReview && loadedPlace
+}
+
 func isRestrictedMapsView(text string) bool {
 	compact := strings.ToLower(strings.Join(strings.Fields(text), " "))
-	return strings.Contains(compact, "ansicht ist beschränkt") || strings.Contains(compact, "limited view")
+	hasRestrictedMarker := strings.Contains(compact, "ansicht ist beschränkt") || strings.Contains(compact, "limited view")
+	if !hasRestrictedMarker {
+		return false
+	}
+	usablePlaceMarkers := []string{
+		"rezension schreiben",
+		"sortieren",
+		"berichte",
+		"bewertungen aufgrund",
+		"noch keine rezensionen",
+		"routenplaner",
+		"fotos und videos",
+		"write a review",
+		"directions",
+		"photos and videos",
+	}
+	for _, marker := range usablePlaceMarkers {
+		if strings.Contains(compact, marker) {
+			return false
+		}
+	}
+	return true
 }
 
 func extractCategory(text string) *string {
@@ -686,7 +738,7 @@ func shouldKeepPreviousRow(previous, next mapsreview.Place, hadPrevious bool, ar
 	if !hadPrevious || previous.Status != "success" || next.Status != "success" {
 		return false, ""
 	}
-	if previous.Rating != nil && next.Rating == nil {
+	if previous.Rating != nil && next.Rating == nil && (next.ReviewCount == nil || *next.ReviewCount > 0) {
 		return true, "new scrape is missing rating"
 	}
 	if previous.ReviewCount != nil && next.ReviewCount == nil {

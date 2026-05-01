@@ -20,8 +20,14 @@ func NormalizeURL(raw string) string {
 
 func ReviewsURLFromURL(raw string) string {
 	base, query, hasQuery := strings.Cut(NormalizeURL(raw), "?")
+	base = canonicalizeMapsDataBase(base)
+	hasSearchResultMarker := regexp.MustCompile(`!19s[^!/?]+`).MatchString(base)
 	if !strings.Contains(base, "!9m1!1b1") {
-		base = incrementMapsDataCounts(base)
+		delta := 2
+		if hasSearchResultMarker {
+			delta = 1
+		}
+		base = incrementMapsDataCounts(base, delta)
 		base = strings.Replace(base, "!16s", "!9m1!1b1!16s", 1)
 	}
 	base = regexp.MustCompile(`!19s[^!/?]+`).ReplaceAllString(base, "")
@@ -31,7 +37,14 @@ func ReviewsURLFromURL(raw string) string {
 	return base
 }
 
-func incrementMapsDataCounts(base string) string {
+func canonicalizeMapsDataBase(base string) string {
+	if strings.Contains(base, "/@") && strings.Contains(base, "/data=") {
+		base = regexp.MustCompile(`/@[^/]+/data=`).ReplaceAllString(base, "/data=")
+	}
+	return regexp.MustCompile(`/data=!3m1!4b1(!4m)`).ReplaceAllString(base, `/data=$1`)
+}
+
+func incrementMapsDataCounts(base string, delta int) string {
 	match := regexp.MustCompile(`!4m(\d+)!3m(\d+)`).FindStringSubmatch(base)
 	if len(match) != 3 {
 		return base
@@ -41,7 +54,7 @@ func incrementMapsDataCounts(base string) string {
 	if outerErr != nil || innerErr != nil {
 		return base
 	}
-	return strings.Replace(base, match[0], "!4m"+strconv.Itoa(outer+1)+"!3m"+strconv.Itoa(inner+1), 1)
+	return strings.Replace(base, match[0], "!4m"+strconv.Itoa(outer+delta)+"!3m"+strconv.Itoa(inner+delta), 1)
 }
 
 func PlaceIDFromURL(raw string) string {

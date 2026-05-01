@@ -116,7 +116,18 @@ func waitForDirectReviewsPanel(ctx context.Context) error {
 	var ready bool
 	return mapsreview.RunWithTimeout(ctx, 15*time.Second, chromedp.Poll(`(() => {
   const text = document.body?.innerText || '';
-  return /Sortieren|In Rezensionen suchen|Berichte|Bewertungen aufgrund|Diffamierung|No reviews|Noch keine Rezensionen|Bevor Sie zu Google weitergehen|Before you go to Google/i.test(text);
+  const hasReviewsPanel = /Sortieren|In Rezensionen suchen|Berichte|Bewertungen aufgrund|Diffamierung|No reviews|Noch keine Rezensionen|Bevor Sie zu Google weitergehen|Before you go to Google/i.test(text);
+  if (hasReviewsPanel) return true;
+  const hasLoadedPlace = text.length > 450 && (Boolean(document.querySelector('h1')?.textContent?.trim()) || /Google Maps/i.test(document.title || ''));
+  const hasNoReviewsTab = !/(^|\n)Rezensionen(\n|$)|Berichte|Bewertungen aufgrund|Diffamierung|Reviews/i.test(text);
+  const hasPlaceActions = /Rezension schreiben|Fotos und Videos|Routen.{0,10}planer|Write a review|Photos and videos|Directions/i.test(text);
+  const noReviewsCandidate = hasLoadedPlace && hasNoReviewsTab && hasPlaceActions;
+  if (!noReviewsCandidate) {
+    window.__mapsReviewNoReviewsSince = 0;
+    return false;
+  }
+  window.__mapsReviewNoReviewsSince ||= Date.now();
+  return Date.now() - window.__mapsReviewNoReviewsSince > 4500;
 })()`, &ready, chromedp.WithPollingInterval(150*time.Millisecond), chromedp.WithPollingTimeout(12*time.Second)))
 }
 
