@@ -1072,6 +1072,11 @@ func plausibleAnalyticsSnippet() string {
 	if src == "" {
 		return ""
 	}
+	domain := strings.TrimSpace(os.Getenv("DASHBOARD_ANALYTICS_DOMAIN"))
+	if domain != "" {
+		return fmt.Sprintf(`  <!-- Privacy-friendly analytics by Plausible -->
+  <script defer data-domain="%s" src="%s"></script>`, escAttr(domain), escAttr(src))
+	}
 	return fmt.Sprintf(`  <!-- Privacy-friendly analytics by Plausible -->
   <script async src="%s"></script>
   <script>
