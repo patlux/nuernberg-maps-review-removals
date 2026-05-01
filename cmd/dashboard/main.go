@@ -45,6 +45,7 @@ type clientRow struct {
 	RemovedText        string   `json:"removedText"`
 	URL                string   `json:"url"`
 	Address            string   `json:"address"`
+	ReadAt             string   `json:"readAt"`
 }
 
 func main() {
@@ -152,6 +153,7 @@ func makeClientRows(rows []mapsreview.Place) []clientRow {
 			RemovedText:        mapsreview.StringValue(row.RemovedText),
 			URL:                row.URL,
 			Address:            mapsreview.StringValue(row.Address),
+			ReadAt:             row.ReadAt,
 		})
 	}
 	return out
@@ -411,8 +413,8 @@ __ANALYTICS__
     .table-head { display: flex; justify-content: space-between; align-items: center; margin: 0 0 10px; color: var(--muted); font-size: 14px; }
     .table-head strong { color: var(--heading); font-size: 22px; }
     .table-wrap { overflow: auto; background: var(--surface); border: 1px solid var(--line); }
-    table { width: 100%; min-width: 1440px; border-collapse: collapse; table-layout: fixed; }
-    col.rank { width: 70px; } col.name { width: 360px; } col.bezirk { width: 210px; } col.plz { width: 90px; } col.rating { width: 95px; } col.reviews { width: 125px; } col.banner { width: 100px; } col.removed { width: 120px; } col.estimate { width: 125px; } col.ratio { width: 120px; } col.real { width: 160px; } col.category { width: 175px; }
+    table { width: 100%; min-width: 1570px; border-collapse: collapse; table-layout: fixed; }
+    col.rank { width: 70px; } col.name { width: 360px; } col.bezirk { width: 210px; } col.plz { width: 90px; } col.rating { width: 95px; } col.reviews { width: 125px; } col.banner { width: 100px; } col.removed { width: 120px; } col.estimate { width: 125px; } col.ratio { width: 120px; } col.real { width: 160px; } col.checked { width: 130px; } col.category { width: 175px; }
     th { position: sticky; top: 0; z-index: 2; padding: 0; background: var(--table-head-bg); border-bottom: 2px solid var(--line); color: var(--heading); font-size: 13px; text-align: left; }
     th button { display: flex; align-items: center; gap: 5px; width: 100%; min-height: 44px; padding: 12px; border: 0; background: transparent; color: inherit; font: inherit; font-weight: 700; text-align: inherit; cursor: pointer; }
     th.num button, th.rank button { justify-content: flex-end; text-align: right; }
@@ -526,7 +528,7 @@ __ANALYTICS__
     <div class="table-head"><strong id="tableTitle">Höchste Lösch-Quote</strong><span id="resultCount">–</span></div>
     <section class="table-wrap" aria-label="Daten-Explorer">
       <table id="placesTable">
-        <colgroup><col class="rank"><col class="name"><col class="bezirk"><col class="plz"><col class="rating"><col class="reviews"><col class="banner"><col class="removed"><col class="estimate"><col class="ratio"><col class="real"><col class="category"></colgroup>
+        <colgroup><col class="rank"><col class="name"><col class="bezirk"><col class="plz"><col class="rating"><col class="reviews"><col class="banner"><col class="removed"><col class="estimate"><col class="ratio"><col class="real"><col class="checked"><col class="category"></colgroup>
         <thead><tr>
           <th class="rank"><button data-sort="rank">Rang <span class="arrow"></span></button></th>
           <th><button data-sort="name">Name / Google Maps <span class="arrow"></span></button></th>
@@ -539,6 +541,7 @@ __ANALYTICS__
           <th class="num"><button data-sort="removedEstimate">Schätzwert <span class="arrow"></span></button></th>
           <th class="num"><button data-sort="deletionRatioPct">Löschquote <span class="arrow"></span></button></th>
           <th class="num"><button data-sort="realRatingAdjusted">Worst-Case <span class="arrow"></span></button></th>
+          <th><button data-sort="readAt">Geprüft <span class="arrow"></span></button></th>
           <th><button data-sort="category">Kategorie <span class="arrow"></span></button></th>
         </tr></thead>
         <tbody></tbody>
@@ -561,6 +564,7 @@ __ANALYTICS_PRIVACY__
     const fmt = new Intl.NumberFormat('de-DE');
     const fmt1 = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 1, minimumFractionDigits: 1 });
     const fmt2 = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 2, minimumFractionDigits: 2 });
+    const fmtDateTime = new Intl.DateTimeFormat('de-DE', { dateStyle: 'short', timeStyle: 'short' });
     const state = { mode: 'ratio', sortKey: 'deletionRatioPct', sortDir: 'desc', userLocation: null };
     const els = {
       themeToggle: document.getElementById('themeToggle'), controls: document.getElementById('dashboardFilterControls'), filterToggle: document.getElementById('filterToggle'), filterSummary: document.getElementById('filterSummary'), search: document.getElementById('searchInput'), postcode: document.getElementById('postcodeFilter'), bezirk: document.getElementById('bezirkFilter'), banner: document.getElementById('bannerFilter'), range: document.getElementById('rangeFilter'), minReviews: document.getElementById('minReviews'), reset: document.getElementById('resetFilters'), tbody: document.querySelector('#placesTable tbody'), resultCount: document.getElementById('resultCount'), tableTitle: document.getElementById('tableTitle'), mapCount: document.getElementById('mapCount'), nearbyStatus: document.getElementById('nearbyStatus')
@@ -613,6 +617,10 @@ __ANALYTICS_PRIVACY__
     function rating(value, digits = 1) { return Number.isFinite(value) ? (digits === 2 ? fmt2.format(value) : fmt1.format(value)) : '–'; }
     function n(value) { return Number.isFinite(value) ? fmt.format(value) : '–'; }
     function distanceLabel(km) { return Number.isFinite(km) ? (km < 1 ? n(Math.round(km * 1000)) + ' m' : fmt1.format(km) + ' km') : '–'; }
+    function readAtLabel(value) {
+      const timestamp = Date.parse(value || '');
+      return Number.isFinite(timestamp) ? fmtDateTime.format(new Date(timestamp)) : '–';
+    }
     function distanceKm(lat1, lng1, lat2, lng2) {
       const toRad = value => value * Math.PI / 180;
       const dLat = toRad(lat2 - lat1);
@@ -717,6 +725,7 @@ __ANALYTICS_PRIVACY__
       if (key === 'rank') return index + 1;
       if (key === 'hasBanner') return row.hasBanner ? 1 : 0;
       if (key === 'distanceKm') return rowDistanceKm(row);
+      if (key === 'readAt') return Date.parse(row.readAt || '') || 0;
       const v = row[key];
       return typeof v === 'string' ? v.toLowerCase() : (Number.isFinite(v) ? v : -Infinity);
     }
@@ -961,7 +970,7 @@ __ANALYTICS_PRIVACY__
       els.tbody.innerHTML = sorted.map((row, index) => {
         const distance = state.mode === 'nearby' ? '<span class="entry-address">Entfernung: ' + esc(distanceLabel(rowDistanceKm(row))) + '</span>' : '';
         const address = row.address ? '<span class="entry-address">' + esc(row.address) + '</span>' : '';
-        return '<tr data-entry-id="' + esc(row.id) + '"><td class="rank">' + (index + 1) + '</td><td class="name"><a href="' + esc(row.url) + '" target="_blank" rel="noopener noreferrer">' + esc(row.name) + '</a>' + distance + address + '</td><td>' + esc(row.bezirkLabel || '–') + '</td><td>' + esc(row.postcode) + '</td><td class="num">' + rating(row.rating) + '</td><td class="num">' + n(row.reviewCount) + '</td><td>' + (row.hasBanner ? '<span class="pill bad">Löschbanner</span>' : '<span class="pill">kein Löschbanner</span>') + '</td><td class="num">' + (row.hasBanner ? esc(row.removedRange) : '–') + '</td><td class="num">' + (row.hasBanner ? rating(row.removedEstimate) : '–') + '</td><td class="num">' + pct(row.deletionRatioPct) + '</td><td class="num">' + rating(row.realRatingAdjusted, 2) + '</td><td>' + esc(row.category) + '</td></tr>';
+        return '<tr data-entry-id="' + esc(row.id) + '"><td class="rank">' + (index + 1) + '</td><td class="name"><a href="' + esc(row.url) + '" target="_blank" rel="noopener noreferrer">' + esc(row.name) + '</a>' + distance + address + '</td><td>' + esc(row.bezirkLabel || '–') + '</td><td>' + esc(row.postcode) + '</td><td class="num">' + rating(row.rating) + '</td><td class="num">' + n(row.reviewCount) + '</td><td>' + (row.hasBanner ? '<span class="pill bad">Löschbanner</span>' : '<span class="pill">kein Löschbanner</span>') + '</td><td class="num">' + (row.hasBanner ? esc(row.removedRange) : '–') + '</td><td class="num">' + (row.hasBanner ? rating(row.removedEstimate) : '–') + '</td><td class="num">' + pct(row.deletionRatioPct) + '</td><td class="num">' + rating(row.realRatingAdjusted, 2) + '</td><td>' + esc(readAtLabel(row.readAt)) + '</td><td>' + esc(row.category) + '</td></tr>';
       }).join('');
       document.querySelectorAll('th button[data-sort]').forEach(button => {
         const active = button.dataset.sort === state.sortKey;
