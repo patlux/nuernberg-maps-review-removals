@@ -61,6 +61,7 @@ Nützliche Optionen:
 --scrape-only
 --scrape-only --rescrape-all   # alle gefundenen Orte erneut lesen, auch bereits erfolgreiche
 --scrape-only --rescrape-all --allow-banner-clears   # zuvor erkannte Banner nach manueller Prüfung entfernen lassen
+--scrape-only --banner-audit-only --notice-attempts 2   # no-banner-Zeilen gezielt auf übersehene Banner prüfen; schreibt nur neu gefundene Banner
 --scrape-only --rescrape-all --resume-from 1288   # vollständigen Rescan an 1-basierter Todo-Position fortsetzen
 --scrape-only --rescrape-all --resume-from 1288 --scrape-limit 200   # sichereren Teil-Scan ausführen
 --delay-min 4000 --delay-max 9000
@@ -75,6 +76,12 @@ make scrape ARGS="--scrape-only --rescrape-all --cdp-url ws://127.0.0.1:9333 --s
 ```
 
 Lightpanda ist als Vergleichs- oder Fallback-Backend nützlich, sollte aber mit Stichproben gegen Chrome geprüft werden, bevor seine Ergebnisse übernommen werden.
+
+Nach einem Refresh kann ein konservativer Banner-Audit helfen, zuvor übersehene Löschbanner zu finden. Der Audit prüft nur bestehende erfolgreiche Zeilen ohne Banner und schreibt ausschließlich neu gefundene Banner; bestehende Banner werden dabei nie entfernt:
+
+```bash
+make scrape ARGS="--scrape-only --banner-audit-only --notice-attempts 2 --save-every 25 --delay-min 4000 --delay-max 9000"
+```
 
 ## 2) Datenqualität verbessern
 

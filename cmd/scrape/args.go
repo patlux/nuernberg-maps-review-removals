@@ -19,7 +19,9 @@ type args struct {
 	DiscoveryOnly     bool
 	ScrapeOnly        bool
 	RescrapeAll       bool
+	BannerAuditOnly   bool
 	AllowBannerClears bool
+	NoticeAttempts    int
 	ScrapeStart       int
 	ScrapeLimit       int
 	SaveEvery         int
@@ -32,16 +34,17 @@ type args struct {
 func parseArgs(argv []string) (args, error) {
 	csvSet := false
 	out := args{
-		Postcodes:   mapsreview.NurembergPostcodes,
-		Queries:     mapsreview.DefaultQueries,
-		Headless:    false,
-		DelayMin:    2500,
-		DelayMax:    6000,
-		SaveEvery:   1,
-		Out:         mapsreview.ResultsJSON,
-		CSV:         mapsreview.ResultsCSV,
-		MaxResults:  0,
-		ScrapeStart: 1,
+		Postcodes:      mapsreview.NurembergPostcodes,
+		Queries:        mapsreview.DefaultQueries,
+		Headless:       false,
+		DelayMin:       2500,
+		DelayMax:       6000,
+		SaveEvery:      1,
+		NoticeAttempts: 2,
+		Out:            mapsreview.ResultsJSON,
+		CSV:            mapsreview.ResultsCSV,
+		MaxResults:     0,
+		ScrapeStart:    1,
 	}
 
 	for i := 0; i < len(argv); i++ {
@@ -70,6 +73,9 @@ func parseArgs(argv []string) (args, error) {
 		case "--rescrape-all", "--all":
 			out.RescrapeAll = true
 			consume = false
+		case "--banner-audit-only":
+			out.BannerAuditOnly = true
+			consume = false
 		case "--allow-banner-clears":
 			out.AllowBannerClears = true
 			consume = false
@@ -79,6 +85,8 @@ func parseArgs(argv []string) (args, error) {
 			out.ScrapeLimit = max(0, atoi(value))
 		case "--save-every":
 			out.SaveEvery = max(1, atoi(value))
+		case "--notice-attempts":
+			out.NoticeAttempts = max(1, atoi(value))
 		case "--delay-min":
 			out.DelayMin = atoi(value)
 		case "--delay-max":
@@ -118,7 +126,9 @@ Options:
   --discovery-only          Only create/update output/discovery.json.
   --scrape-only             Skip discovery; scrape output/discovery.json.
   --rescrape-all, --all     Re-read every discovered place, including existing success rows.
+  --banner-audit-only       Scan existing no-banner success rows for missed banners; only newly found banners are written.
   --allow-banner-clears     Allow a re-scrape to remove a previously seen deletion banner. Default: keep old banner until manually verified.
+  --notice-attempts <n>     Direct-reviews attempts for banner-clear verification and banner audit. Default: 2.
   --scrape-start <n>        Start scraping at 1-based position within the todo list. Default: 1.
   --resume-from <n>         Alias for --scrape-start.
   --scrape-limit <n>        Scrape at most n todo rows. 0 = unlimited.

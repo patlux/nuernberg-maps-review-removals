@@ -51,6 +51,19 @@ func TestParseArgsCDPURL(t *testing.T) {
 	}
 }
 
+func TestParseArgsBannerAudit(t *testing.T) {
+	args, err := parseArgs([]string{"--banner-audit-only", "--notice-attempts", "3"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !args.BannerAuditOnly {
+		t.Fatal("BannerAuditOnly = false, want true")
+	}
+	if args.NoticeAttempts != 3 {
+		t.Fatalf("NoticeAttempts = %d, want 3", args.NoticeAttempts)
+	}
+}
+
 func TestDirectReviewsTextCanBeParsedWithoutRestrictedOverview(t *testing.T) {
 	overview := mapText{Text: "Die Ansicht ist beschränkt und du siehst nur einen Teil der Google Maps-Daten. Route 1,5 km"}
 	reviews := mapText{Text: "543214,82.336 Berichte\n21 bis 50 Bewertungen aufgrund von Beschwerden wegen Diffamierung entfernt."}
@@ -64,6 +77,20 @@ func TestDirectReviewsTextCanBeParsedWithoutRestrictedOverview(t *testing.T) {
 	}
 	if notice := mapsreview.ParseNotice(got); notice == nil || notice.Min != 21 {
 		t.Fatalf("ParseNotice(%q) = %#v, want deletion banner", got, notice)
+	}
+}
+
+func TestApplyNotice(t *testing.T) {
+	row := successPlace()
+	notice := &mapsreview.Notice{Text: "Zwei bis fünf Bewertungen aufgrund von Beschwerden wegen Diffamierung entfernt.", Min: 2, Max: mapsreview.IntPtr(5), Estimate: 3.5}
+
+	applyNotice(&row, notice)
+	mapsreview.ComputeMetrics(&row)
+	if !row.HasDefamationNotice || row.RemovedText == nil || *row.RemovedText != notice.Text {
+		t.Fatalf("notice was not applied: %#v", row)
+	}
+	if row.RemovedEstimate == nil || *row.RemovedEstimate != 3.5 {
+		t.Fatalf("RemovedEstimate = %v, want 3.5", row.RemovedEstimate)
 	}
 }
 

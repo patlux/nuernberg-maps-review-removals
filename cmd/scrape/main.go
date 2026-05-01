@@ -85,7 +85,9 @@ type metadata struct {
 	DiscoveryOnly     bool     `json:"discoveryOnly"`
 	ScrapeOnly        bool     `json:"scrapeOnly"`
 	RescrapeAll       bool     `json:"rescrapeAll"`
+	BannerAuditOnly   bool     `json:"bannerAuditOnly"`
 	AllowBannerClears bool     `json:"allowBannerClears"`
+	NoticeAttempts    int      `json:"noticeAttempts"`
 	ScrapeStart       int      `json:"scrapeStart"`
 	ScrapeLimit       int      `json:"scrapeLimit"`
 	SaveEvery         int      `json:"saveEvery"`
@@ -111,7 +113,9 @@ func writeMetadata(args args, discoveries []mapsreview.Discovery, rows []mapsrev
 		DiscoveryOnly:     args.DiscoveryOnly,
 		ScrapeOnly:        args.ScrapeOnly,
 		RescrapeAll:       args.RescrapeAll,
+		BannerAuditOnly:   args.BannerAuditOnly,
 		AllowBannerClears: args.AllowBannerClears,
+		NoticeAttempts:    args.NoticeAttempts,
 		ScrapeStart:       args.ScrapeStart,
 		ScrapeLimit:       args.ScrapeLimit,
 		SaveEvery:         args.SaveEvery,
@@ -300,13 +304,7 @@ func extractPlace(ctx context.Context, discovery mapsreview.Discovery) (mapsrevi
 		row.Lng = mapsreview.FloatPtr(coords.Lng)
 	}
 	mapsreview.EnrichPlaceLocation(&row)
-	if notice != nil {
-		row.HasDefamationNotice = true
-		row.RemovedMin = mapsreview.IntPtr(notice.Min)
-		row.RemovedMax = notice.Max
-		row.RemovedEstimate = mapsreview.FloatPtr(notice.Estimate)
-		row.RemovedText = mapsreview.StringPtr(notice.Text)
-	}
+	applyNotice(&row, notice)
 	mapsreview.ApplyPlaceOverrides(&row)
 	mapsreview.ComputeMetrics(&row)
 	return row, nil
@@ -314,6 +312,26 @@ func extractPlace(ctx context.Context, discovery mapsreview.Discovery) (mapsrevi
 
 func combinedMapText(overview, reviews mapText) string {
 	return overview.Text + "\n" + reviews.Text
+}
+
+func applyNotice(row *mapsreview.Place, notice *mapsreview.Notice) {
+	if notice == nil {
+		return
+	}
+	row.HasDefamationNotice = true
+	row.RemovedMin = mapsreview.IntPtr(notice.Min)
+	row.RemovedMax = notice.Max
+	row.RemovedEstimate = mapsreview.FloatPtr(notice.Estimate)
+	row.RemovedText = mapsreview.StringPtr(notice.Text)
+}
+
+func applyStatsIfPresent(row *mapsreview.Place, stats mapsreview.PlaceStats) {
+	if stats.Rating != nil {
+		row.Rating = stats.Rating
+	}
+	if stats.ReviewCount != nil {
+		row.ReviewCount = stats.ReviewCount
+	}
 }
 
 func extractReviewsDirectWithRetry(ctx context.Context, discovery mapsreview.Discovery) (mapText, error) {
@@ -328,6 +346,59 @@ func extractReviewsDirectWithRetry(ctx context.Context, discovery mapsreview.Dis
 		return mapText{}, fmt.Errorf("direct reviews failed after retry: %v; first error: %v", err, firstErr)
 	}
 	return reviews, nil
+}
+
+func extractNoticeWithAttempts(ctx context.Context, discovery mapsreview.Discovery, attempts int) (*mapsreview.Notice, mapsreview.PlaceStats, []string, error) {
+	attempts = max(1, attempts)
+	texts := []string{}
+	var lastStats mapsreview.PlaceStats
+	var lastErr error
+	gotText := false
+	for attempt := 1; attempt <= attempts; attempt++ {
+		reviews, err := extractReviewsDirectWithRetry(ctx, discovery)
+		if err != nil {
+			lastErr = err
+			texts = append(texts, fmt.Sprintf("attempt %d error: %v", attempt, err))
+			if errors.Is(err, context.Canceled) {
+				return nil, lastStats, texts, err
+			}
+		} else {
+			gotText = true
+			texts = append(texts, reviews.Text)
+			lastStats = mapsreview.ParsePlaceStats(reviews.Text)
+			if notice := mapsreview.ParseNotice(reviews.Text); notice != nil {
+				return notice, lastStats, texts, nil
+			}
+		}
+		if attempt < attempts {
+			sleep(750)
+		}
+	}
+	if !gotText && lastErr != nil {
+		return nil, lastStats, texts, lastErr
+	}
+	return nil, lastStats, texts, nil
+}
+
+func writeNoticeDebug(discovery mapsreview.Discovery, texts []string, err error) error {
+	path := filepath.Join("debug", "banner-clear-"+safeFilename(discovery.ID)+".txt")
+	if err := mapsreview.EnsureDirForPath(path); err != nil {
+		return err
+	}
+	var b strings.Builder
+	b.WriteString("place: " + displayPlaceName(discovery) + "\n")
+	b.WriteString("id: " + discovery.ID + "\n")
+	b.WriteString("url: " + mapsreview.NormalizeURL(discovery.URL) + "\n")
+	b.WriteString("readAt: " + mapsreview.NowISO() + "\n")
+	if err != nil {
+		b.WriteString("error: " + err.Error() + "\n")
+	}
+	for i, text := range texts {
+		b.WriteString(fmt.Sprintf("\n--- attempt %d (%d bytes) ---\n", i+1, len(text)))
+		b.WriteString(text)
+		b.WriteString("\n")
+	}
+	return os.WriteFile(path, []byte(b.String()), 0o644)
 }
 
 func extractReviewsDirect(ctx context.Context, discovery mapsreview.Discovery) (mapText, error) {
@@ -378,6 +449,9 @@ func scrapePlaces(ctx context.Context, discoveries []mapsreview.Discovery, args 
 	rows := map[string]mapsreview.Place{}
 	for _, row := range previous {
 		rows[row.ID] = row
+	}
+	if args.BannerAuditOnly {
+		return auditBannerPlaces(ctx, discoveries, args, rows)
 	}
 
 	todo := make([]mapsreview.Discovery, 0, len(discoveries))
@@ -456,6 +530,18 @@ func scrapePlaces(ctx context.Context, discoveries []mapsreview.Discovery, args 
 		} else {
 			if hadPreviousRow {
 				row = preservePreviousMetadata(previousRow, row)
+				if previousRow.HasDefamationNotice && !row.HasDefamationNotice && !args.AllowBannerClears {
+					notice, stats, texts, verifyErr := extractNoticeWithAttempts(ctx, place, args.NoticeAttempts)
+					if notice != nil {
+						applyStatsIfPresent(&row, stats)
+						applyNotice(&row, notice)
+						mapsreview.ComputeMetrics(&row)
+						fmt.Printf("  VERIFIED existing banner after extra check: %s\n", notice.Text)
+					} else {
+						_ = writeNoticeDebug(place, texts, verifyErr)
+						_ = screenshot(ctx, filepath.Join("debug", "banner-clear-"+safeFilename(place.ID)+".png"))
+					}
+				}
 			}
 			if keep, reason := shouldKeepPreviousRow(previousRow, row, hadPreviousRow, args); keep {
 				fmt.Printf("  SKIP: %s; keeping existing success row\n", reason)
@@ -470,6 +556,91 @@ func scrapePlaces(ctx context.Context, discoveries []mapsreview.Discovery, args 
 		}
 		rows[row.ID] = row
 		changedSinceSave++
+		if err := saveIfNeeded(false); err != nil {
+			return nil, err
+		}
+		sleepBetweenPlaces(i, len(todo), args)
+	}
+	if err := saveIfNeeded(true); err != nil {
+		return nil, err
+	}
+	out := mapValues(rows)
+	mapsreview.SortPlaces(out)
+	return out, nil
+}
+
+func auditBannerPlaces(ctx context.Context, discoveries []mapsreview.Discovery, args args, rows map[string]mapsreview.Place) ([]mapsreview.Place, error) {
+	todo := make([]mapsreview.Discovery, 0, len(discoveries))
+	for _, place := range discoveries {
+		row, ok := rows[place.ID]
+		if ok && row.Status == "success" && !row.HasDefamationNotice {
+			todo = append(todo, place)
+		}
+	}
+	if args.ScrapeStart > 1 {
+		if args.ScrapeStart > len(todo) {
+			todo = nil
+		} else {
+			todo = todo[args.ScrapeStart-1:]
+		}
+	}
+	if args.ScrapeLimit > 0 && args.ScrapeLimit < len(todo) {
+		todo = todo[:args.ScrapeLimit]
+	}
+	fmt.Printf("\nBanner audit: %d no-banner rows / %d discovered", len(todo), len(discoveries))
+	if args.ScrapeStart > 1 {
+		fmt.Printf(" (starting at audit position %d)", args.ScrapeStart)
+	}
+	if args.ScrapeLimit > 0 {
+		fmt.Printf(" (limit %d)", args.ScrapeLimit)
+	}
+	fmt.Println()
+
+	changedSinceSave := 0
+	saveEvery := max(1, args.SaveEvery)
+	saveIfNeeded := func(force bool) error {
+		if changedSinceSave == 0 || (!force && changedSinceSave < saveEvery) {
+			return nil
+		}
+		if err := saveRows(args, rows); err != nil {
+			return err
+		}
+		changedSinceSave = 0
+		return nil
+	}
+
+	for i, place := range todo {
+		fmt.Printf("[%d/%d] %s\n", i+1, len(todo), displayPlaceName(place))
+		previousRow := rows[place.ID]
+		notice, stats, _, err := extractNoticeWithAttempts(ctx, place, args.NoticeAttempts)
+		if err != nil {
+			fmt.Printf("  ERROR: %s; keeping existing row\n", err.Error())
+			if errors.Is(err, context.Canceled) {
+				if saveErr := saveIfNeeded(true); saveErr != nil {
+					return nil, saveErr
+				}
+				return mapValues(rows), err
+			}
+			sleepBetweenPlaces(i, len(todo), args)
+			continue
+		}
+		if notice == nil {
+			fmt.Println("  no banner found")
+			sleepBetweenPlaces(i, len(todo), args)
+			continue
+		}
+		next := previousRow
+		next.Status = "success"
+		next.Error = nil
+		next.ReadAt = mapsreview.NowISO()
+		applyStatsIfPresent(&next, stats)
+		applyNotice(&next, notice)
+		mapsreview.EnrichPlaceLocation(&next)
+		mapsreview.ApplyPlaceOverrides(&next)
+		mapsreview.ComputeMetrics(&next)
+		rows[next.ID] = next
+		changedSinceSave++
+		fmt.Printf("  FOUND banner: %s\n", notice.Text)
 		if err := saveIfNeeded(false); err != nil {
 			return nil, err
 		}
