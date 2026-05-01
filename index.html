@@ -4,6 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Nürnberg Google-Maps-Bewertungen Dashboard</title>
+  <script>
+    (function () {
+      try {
+        const savedTheme = localStorage.getItem('dashboardTheme');
+        if (savedTheme === 'dark' || savedTheme === 'light') document.documentElement.dataset.theme = savedTheme;
+      } catch (_) {}
+    }());
+  </script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <style>
     :root {
@@ -11,81 +19,187 @@
       --red: #cf2a1b;
       --red-dark: #9f2017;
       --text: #3f3f3f;
+      --heading: #333;
       --muted: #6f6f6f;
       --line: #d6d6d6;
       --soft: #f4f4f4;
       --blue: #1f6f8b;
       --green: #2d7b3f;
       --orange: #d97a1d;
+      --bg: #fff;
+      --surface: #fff;
+      --surface-raised: #fff;
+      --surface-muted: #f6f6f6;
+      --surface-subtle: #fafafa;
+      --control-bg: #333;
+      --control-text: #fff;
+      --control-muted: rgba(255,255,255,.78);
+      --input-bg: #fff;
+      --input-text: #333;
+      --nav-text: #666;
+      --hero-bg: linear-gradient(180deg, rgba(38,120,155,.25), rgba(38,120,155,.25)), linear-gradient(135deg, #b7d5e1 0%, #e1edf2 45%, #bdc8cf 100%);
+      --hero-title-bg: rgba(55,55,55,.78);
+      --track-bg: #e7e7e7;
+      --table-head-bg: #f3f3f3;
+      --table-head-hover: #ececec;
+      --row-hover: #fff4f2;
+      --target-row: #fff0cc;
+      --pill-bg: #e8f2ea;
+      --pill-bad-bg: #fde6e2;
+      --map-bg: #f4f4f4;
+      --hint-bg: rgba(51,51,51,.88);
+      --focus-blue: rgba(31,111,139,.13);
+      --focus-red: rgba(207,42,27,.35);
       --shadow: 0 2px 10px rgba(0,0,0,.18);
       --sans: Arial, Helvetica, sans-serif;
     }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        color-scheme: dark;
+        --red: #ff5b49;
+        --red-dark: #e23c2b;
+        --text: #e7e2dc;
+        --heading: #fff5ec;
+        --muted: #b8afa6;
+        --line: #332e2b;
+        --soft: #171412;
+        --blue: #6ab8d8;
+        --green: #72c382;
+        --orange: #ff9d42;
+        --bg: #0e0c0b;
+        --surface: #171412;
+        --surface-raised: #211c19;
+        --surface-muted: #211c19;
+        --surface-subtle: #141110;
+        --control-bg: #fff5ec;
+        --control-text: #171412;
+        --control-muted: rgba(23,20,18,.68);
+        --input-bg: #120f0e;
+        --input-text: #fff5ec;
+        --nav-text: #d4c8bd;
+        --hero-bg: radial-gradient(circle at 18% 18%, rgba(255,91,73,.18), transparent 34%), linear-gradient(180deg, rgba(14,12,11,.32), rgba(14,12,11,.68)), linear-gradient(135deg, #102b35 0%, #171412 48%, #3b1c18 100%);
+        --hero-title-bg: rgba(14,12,11,.82);
+        --track-bg: #302925;
+        --table-head-bg: #211c19;
+        --table-head-hover: #2b2420;
+        --row-hover: #2a1714;
+        --target-row: #382b12;
+        --pill-bg: rgba(114,195,130,.16);
+        --pill-bad-bg: rgba(255,91,73,.16);
+        --map-bg: #151210;
+        --hint-bg: rgba(14,12,11,.92);
+        --focus-blue: rgba(106,184,216,.22);
+        --focus-red: rgba(255,91,73,.32);
+        --shadow: 0 18px 40px rgba(0,0,0,.42);
+      }
+    }
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --red: #ff5b49;
+      --red-dark: #e23c2b;
+      --text: #e7e2dc;
+      --heading: #fff5ec;
+      --muted: #b8afa6;
+      --line: #332e2b;
+      --soft: #171412;
+      --blue: #6ab8d8;
+      --green: #72c382;
+      --orange: #ff9d42;
+      --bg: #0e0c0b;
+      --surface: #171412;
+      --surface-raised: #211c19;
+      --surface-muted: #211c19;
+      --surface-subtle: #141110;
+      --control-bg: #fff5ec;
+      --control-text: #171412;
+      --control-muted: rgba(23,20,18,.68);
+      --input-bg: #120f0e;
+      --input-text: #fff5ec;
+      --nav-text: #d4c8bd;
+      --hero-bg: radial-gradient(circle at 18% 18%, rgba(255,91,73,.18), transparent 34%), linear-gradient(180deg, rgba(14,12,11,.32), rgba(14,12,11,.68)), linear-gradient(135deg, #102b35 0%, #171412 48%, #3b1c18 100%);
+      --hero-title-bg: rgba(14,12,11,.82);
+      --track-bg: #302925;
+      --table-head-bg: #211c19;
+      --table-head-hover: #2b2420;
+      --row-hover: #2a1714;
+      --target-row: #382b12;
+      --pill-bg: rgba(114,195,130,.16);
+      --pill-bad-bg: rgba(255,91,73,.16);
+      --map-bg: #151210;
+      --hint-bg: rgba(14,12,11,.92);
+      --focus-blue: rgba(106,184,216,.22);
+      --focus-red: rgba(255,91,73,.32);
+      --shadow: 0 18px 40px rgba(0,0,0,.42);
+    }
     * { box-sizing: border-box; }
     html { scroll-behavior: smooth; }
-    body { margin: 0; min-height: 100vh; font-family: var(--sans); color: var(--text); background: #fff; }
-    .sitebar { height: 76px; background: #fff; border-bottom: 1px solid #e3e3e3; box-shadow: 0 1px 5px rgba(0,0,0,.18); }
+    body { margin: 0; min-height: 100vh; font-family: var(--sans); color: var(--text); background: var(--bg); }
+    .sitebar { height: 76px; background: var(--surface-raised); border-bottom: 1px solid var(--line); box-shadow: var(--shadow); }
     .sitebar-inner { position: relative; width: min(1320px, calc(100vw - 32px)); height: 100%; margin: 0 auto; display: flex; align-items: center; gap: 42px; }
-    .menu-word { display: flex; align-items: center; gap: 14px; color: #666; font-size: 22px; font-weight: 700; text-transform: uppercase; }
+    .menu-word { display: flex; align-items: center; gap: 14px; color: var(--nav-text); font-size: 22px; font-weight: 700; text-transform: uppercase; }
     .hamburger { display: grid; gap: 6px; width: 44px; }
-    .hamburger span { display: block; height: 5px; border-radius: 2px; background: #666; }
-    .top-icons { display: flex; gap: 28px; color: #666; font-size: 33px; line-height: 1; }
+    .hamburger span { display: block; height: 5px; border-radius: 2px; background: var(--nav-text); }
+    .top-icons { display: flex; gap: 28px; color: var(--nav-text); font-size: 33px; line-height: 1; }
+    .theme-toggle { display: inline-flex; align-items: center; gap: 8px; height: 42px; margin-left: auto; margin-right: 190px; padding: 0 14px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--heading); box-shadow: 0 1px 4px rgba(0,0,0,.12); font-weight: 700; cursor: pointer; }
+    .theme-toggle:hover, .theme-toggle:focus-visible { border-color: var(--red); color: var(--red); outline: none; }
+    .theme-toggle-icon { width: 1.1em; text-align: center; }
     .n-logo { position: absolute; right: 0; top: 0; width: 170px; height: 128px; padding: 66px 14px 10px; background: var(--red); color: #fff; font-size: 24px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; z-index: 5; }
     .n-logo::before { content: ""; position: absolute; left: 14px; right: 14px; top: 58px; height: 2px; background: #fff; opacity: .9; }
     .n-logo::after { content: "⌂⌂"; position: absolute; right: 13px; top: 20px; color: #fff; font-size: 36px; letter-spacing: -12px; transform: scaleX(1.4); }
-    .hero { min-height: 380px; margin: 0 0 30px; background: linear-gradient(180deg, rgba(38,120,155,.25), rgba(38,120,155,.25)), linear-gradient(135deg, #b7d5e1 0%, #e1edf2 45%, #bdc8cf 100%); display: flex; align-items: end; }
+    .hero { min-height: 380px; margin: 0 0 30px; background: var(--hero-bg); display: flex; align-items: end; }
     .hero-inner { width: min(1320px, calc(100vw - 32px)); margin: 0 auto; padding: 140px 0 42px; }
-    .hero-title { width: min(760px, 100%); padding: 24px 28px; background: rgba(55,55,55,.78); color: #fff; font-size: clamp(32px, 4vw, 52px); line-height: 1.12; font-weight: 400; }
-    .hero-subtitle { width: min(760px, 100%); margin-top: 14px; padding: 18px 22px; background: #fff; border-radius: 5px; box-shadow: var(--shadow); color: #777; font-size: 20px; line-height: 1.45; }
+    .hero-title { width: min(760px, 100%); padding: 24px 28px; background: var(--hero-title-bg); color: #fff; font-size: clamp(32px, 4vw, 52px); line-height: 1.12; font-weight: 400; }
+    .hero-subtitle { width: min(760px, 100%); margin-top: 14px; padding: 18px 22px; background: var(--surface-raised); border-radius: 5px; box-shadow: var(--shadow); color: var(--muted); font-size: 20px; line-height: 1.45; }
     main { width: min(1320px, calc(100vw - 32px)); margin: 0 auto 70px; }
-    .controls { position: sticky; top: 0; z-index: 2000; display: grid; grid-template-columns: minmax(260px, 1fr) 120px 190px 150px 160px 140px auto; gap: 12px; align-items: end; padding: 16px; margin: 0 0 24px; background: #fff; border: 1px solid var(--line); box-shadow: 0 2px 8px rgba(0,0,0,.12); }
+    .controls { position: sticky; top: 0; z-index: 2000; display: grid; grid-template-columns: minmax(260px, 1fr) 120px 190px 150px 160px 140px auto; gap: 12px; align-items: end; padding: 16px; margin: 0 0 24px; background: var(--surface-raised); border: 1px solid var(--line); box-shadow: 0 2px 8px rgba(0,0,0,.12); }
     .filter-toggle { display: none; }
-    label { display: block; margin-bottom: 6px; color: #666; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+    label { display: block; margin-bottom: 6px; color: var(--muted); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
     input, select, button { font: inherit; }
-    input, select { width: 100%; height: 44px; padding: 0 12px; border: 1px solid #cfcfcf; border-radius: 5px; background: #fff; color: #333; outline: none; }
-    input:focus, select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(31,111,139,.13); }
-    .reset { height: 44px; border: 0; border-radius: 5px; padding: 0 18px; background: #333; color: #fff; font-weight: 700; cursor: pointer; }
+    input, select { width: 100%; height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 5px; background: var(--input-bg); color: var(--input-text); outline: none; }
+    input:focus, select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px var(--focus-blue); }
+    .reset { height: 44px; border: 0; border-radius: 5px; padding: 0 18px; background: var(--control-bg); color: var(--control-text); font-weight: 700; cursor: pointer; }
     .grid { display: grid; gap: 16px; }
     .kpis { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-    .card { background: #fff; border: 1px solid var(--line); overflow: hidden; }
+    .card { background: var(--surface); border: 1px solid var(--line); overflow: hidden; }
     .kpi { padding: 18px; border-top: 5px solid var(--red); }
     .kpi:nth-child(2) { border-top-color: var(--orange); }
     .kpi:nth-child(3) { border-top-color: var(--blue); }
     .kpi:nth-child(4) { border-top-color: var(--red-dark); }
     .kpi:nth-child(5) { border-top-color: var(--green); }
-    .kpi .value { display: block; color: #333; font-size: clamp(30px, 3vw, 44px); font-weight: 400; line-height: 1; }
+    .kpi .value { display: block; color: var(--heading); font-size: clamp(30px, 3vw, 44px); font-weight: 400; line-height: 1; }
     .kpi .label { display: block; margin-top: 8px; color: var(--muted); font-size: 14px; }
     .panel-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: stretch; margin-top: 18px; }
     .panel { padding: 18px; min-height: 330px; }
-    .panel h2, .dist h2 { margin: 0 0 8px; color: #333; font-size: 22px; font-weight: 700; }
+    .panel h2, .dist h2 { margin: 0 0 8px; color: var(--heading); font-size: 22px; font-weight: 700; }
     .panel p { margin: 0 0 16px; color: var(--muted); font-size: 13px; }
     .bars { display: grid; gap: 10px; }
     .bar-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 7px 10px; align-items: center; font-size: 12px; }
     .bar-link { width: 100%; padding: 0; border: 0; background: transparent; color: inherit; text-align: left; text-decoration: none; cursor: pointer; }
     .bar-link:hover .bar-name, .bar-link:focus .bar-name { color: var(--red); text-decoration: underline; }
-    .bar-link:focus { outline: 2px solid rgba(207,42,27,.35); outline-offset: 3px; }
+    .bar-link:focus { outline: 2px solid var(--focus-red); outline-offset: 3px; }
     .bar-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
     .bar-value { color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
-    .track { grid-column: 1 / -1; height: 8px; background: #e7e7e7; overflow: hidden; }
+    .track { grid-column: 1 / -1; height: 8px; background: var(--track-bg); overflow: hidden; }
     .fill { height: 100%; background: var(--red); }
     .fill.orange { background: var(--orange); }
     .fill.green { background: var(--green); }
     .dist { padding: 18px; margin-top: 18px; }
     .dist-row { display: grid; grid-template-columns: 130px minmax(0, 1fr) 90px; gap: 12px; align-items: center; margin: 8px 0; font-size: 13px; }
     .bezirk-summary { padding: 18px; margin-top: 18px; }
-    .bezirk-summary h2 { margin: 0 0 8px; color: #333; font-size: 22px; font-weight: 700; }
+    .bezirk-summary h2 { margin: 0 0 8px; color: var(--heading); font-size: 22px; font-weight: 700; }
     .bezirk-summary p { margin: 0 0 14px; color: var(--muted); font-size: 13px; }
     .bezirk-list { display: grid; gap: 8px; }
-    .bezirk-row { display: grid; grid-template-columns: minmax(0, 1fr) 76px 80px 86px; gap: 12px; align-items: center; width: 100%; padding: 10px 12px; border: 1px solid #e5e5e5; background: #fff; color: #333; text-align: left; cursor: pointer; }
-    .bezirk-row:hover, .bezirk-row:focus { border-color: var(--red); background: #fff4f2; outline: none; }
+    .bezirk-row { display: grid; grid-template-columns: minmax(0, 1fr) 76px 80px 86px; gap: 12px; align-items: center; width: 100%; padding: 10px 12px; border: 1px solid var(--line); background: var(--surface); color: var(--heading); text-align: left; cursor: pointer; }
+    .bezirk-row:hover, .bezirk-row:focus { border-color: var(--red); background: var(--row-hover); outline: none; }
     .bezirk-row strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .bezirk-row span { color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; }
-    .dist-track { height: 12px; background: #e7e7e7; overflow: hidden; }
+    .dist-track { height: 12px; background: var(--track-bg); overflow: hidden; }
     .dist-fill { height: 100%; background: var(--red); }
     .map-panel { margin-top: 18px; padding: 18px; }
-    .map-panel h2 { margin: 0 0 8px; color: #333; font-size: 22px; font-weight: 700; }
+    .map-panel h2 { margin: 0 0 8px; color: var(--heading); font-size: 22px; font-weight: 700; }
     .map-panel p { margin: 0 0 16px; color: var(--muted); font-size: 13px; }
-    #placesMap { position: relative; z-index: 0; height: 520px; border: 1px solid var(--line); background: #f4f4f4; }
-    #placesMap.map-needs-key::after, #placesMap.map-active::after { position: absolute; left: 50%; top: 18px; z-index: 1000; transform: translateX(-50%); padding: 10px 14px; border-radius: 4px; background: rgba(51,51,51,.88); color: #fff; font-size: 13px; font-weight: 700; box-shadow: 0 2px 10px rgba(0,0,0,.22); pointer-events: none; }
+    #placesMap { position: relative; z-index: 0; height: 520px; border: 1px solid var(--line); background: var(--map-bg); }
+    #placesMap.map-needs-key::after, #placesMap.map-active::after { position: absolute; left: 50%; top: 18px; z-index: 1000; transform: translateX(-50%); padding: 10px 14px; border-radius: 4px; background: var(--hint-bg); color: #fff; font-size: 13px; font-weight: 700; box-shadow: 0 2px 10px rgba(0,0,0,.22); pointer-events: none; }
     #placesMap.map-needs-key::after { content: "Strg/⌘ halten, um mit dem Mausrad zu zoomen"; }
     #placesMap.map-active::after { content: "Karten-Zoom aktiv"; }
     @media (pointer: coarse) { #placesMap.map-needs-key::after { content: "Zwei Finger zum Zoomen und Bewegen der Karte"; } }
@@ -93,43 +207,58 @@
     .map-legend { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 10px; color: var(--muted); font-size: 13px; }
     .legend-dot { display: inline-block; width: 12px; height: 12px; margin-right: 6px; border-radius: 50%; vertical-align: -1px; }
     .legend-area { display: inline-block; width: 16px; height: 12px; margin-right: 6px; border: 2px solid var(--red); background: rgba(207,42,27,.12); vertical-align: -2px; }
+    .leaflet-container { background: var(--map-bg); color: var(--text); }
+    .leaflet-bar a, .leaflet-bar a:hover, .leaflet-control-attribution { background: var(--surface-raised); color: var(--text); border-color: var(--line); }
+    .leaflet-control-attribution a, .leaflet-tooltip a { color: var(--red); }
+    .leaflet-tooltip, .leaflet-popup-content-wrapper, .leaflet-popup-tip { background: var(--surface-raised); color: var(--text); border-color: var(--line); box-shadow: var(--shadow); }
     .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 22px 0 14px; }
-    .tab { border: 1px solid var(--line); border-radius: 5px; padding: 10px 14px; background: #f6f6f6; color: #333; font-weight: 700; cursor: pointer; }
+    .tab { border: 1px solid var(--line); border-radius: 5px; padding: 10px 14px; background: var(--surface-muted); color: var(--heading); font-weight: 700; cursor: pointer; }
     .tab.active { background: var(--red); border-color: var(--red); color: #fff; }
+    .tab:disabled { opacity: .65; cursor: progress; }
+    .nearby-status { margin: -6px 0 14px; color: var(--muted); font-size: 13px; }
+    .nearby-status.error { color: var(--red); font-weight: 700; }
+    .nearby-status[hidden] { display: none; }
     .table-head { display: flex; justify-content: space-between; align-items: center; margin: 0 0 10px; color: var(--muted); font-size: 14px; }
-    .table-head strong { color: #333; font-size: 22px; }
-    .table-wrap { overflow: auto; background: #fff; border: 1px solid var(--line); }
+    .table-head strong { color: var(--heading); font-size: 22px; }
+    .table-wrap { overflow: auto; background: var(--surface); border: 1px solid var(--line); }
     table { width: 100%; min-width: 1440px; border-collapse: collapse; table-layout: fixed; }
     col.rank { width: 70px; } col.name { width: 360px; } col.bezirk { width: 210px; } col.plz { width: 90px; } col.rating { width: 95px; } col.reviews { width: 125px; } col.banner { width: 100px; } col.removed { width: 120px; } col.estimate { width: 125px; } col.ratio { width: 120px; } col.real { width: 160px; } col.category { width: 175px; }
-    th { position: sticky; top: 0; z-index: 2; padding: 0; background: #f3f3f3; border-bottom: 2px solid #cfcfcf; color: #333; font-size: 13px; text-align: left; }
+    th { position: sticky; top: 0; z-index: 2; padding: 0; background: var(--table-head-bg); border-bottom: 2px solid var(--line); color: var(--heading); font-size: 13px; text-align: left; }
     th button { display: flex; align-items: center; gap: 5px; width: 100%; min-height: 44px; padding: 12px; border: 0; background: transparent; color: inherit; font: inherit; font-weight: 700; text-align: inherit; cursor: pointer; }
     th.num button, th.rank button { justify-content: flex-end; text-align: right; }
-    th button:hover { color: var(--red); background: #ececec; }
-    .arrow { width: 1em; color: #777; }
+    th button:hover { color: var(--red); background: var(--table-head-hover); }
+    .arrow { width: 1em; color: var(--muted); }
     button.active .arrow { color: var(--red); }
-    td { padding: 12px; border-bottom: 1px solid #e5e5e5; vertical-align: top; font-size: 14px; }
-    tbody tr:nth-child(even) { background: #fafafa; }
-    tbody tr:hover { background: #fff4f2; }
-    tbody tr.target-row { background: #fff0cc; box-shadow: inset 5px 0 0 var(--red); }
+    td { padding: 12px; border-bottom: 1px solid var(--line); vertical-align: top; font-size: 14px; }
+    tbody tr:nth-child(even) { background: var(--surface-subtle); }
+    tbody tr:hover { background: var(--row-hover); }
+    tbody tr.target-row { background: var(--target-row); box-shadow: inset 5px 0 0 var(--red); }
     td.num, td.rank { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
     td.name { overflow-wrap: anywhere; font-weight: 700; }
     .entry-address { display: block; margin-top: 4px; color: var(--muted); font-size: 12px; font-weight: 400; line-height: 1.35; }
     a { color: var(--red); text-decoration: none; }
     a:hover { text-decoration: underline; }
-    .pill { display: inline-flex; align-items: center; border-radius: 3px; padding: 3px 7px; background: #e8f2ea; color: var(--green); font-weight: 700; font-size: 12px; }
-    .pill.bad { background: #fde6e2; color: var(--red); }
+    .pill { display: inline-flex; align-items: center; border-radius: 3px; padding: 3px 7px; background: var(--pill-bg); color: var(--green); font-weight: 700; font-size: 12px; }
+    .pill.bad { background: var(--pill-bad-bg); color: var(--red); }
     footer { margin-top: 18px; color: var(--muted); font-size: 13px; line-height: 1.5; }
     .footer-credit { margin-top: 6px; }
     .footer-credit a { font-weight: 700; }
-    @media (max-width: 1200px) { .kpis, .panel-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .controls { grid-template-columns: 1fr 1fr 1fr; } .search { grid-column: 1 / -1; } .n-logo { position: static; height: 76px; width: 150px; margin-left: auto; padding-top: 48px; } .n-logo::before { top: 40px; } .n-logo::after { top: 4px; } }
+    @media (max-width: 1200px) { .kpis, .panel-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .controls { grid-template-columns: 1fr 1fr 1fr; } .search { grid-column: 1 / -1; } .theme-toggle { margin-left: auto; margin-right: 0; } .n-logo { position: relative; height: 76px; width: 150px; margin-left: 0; padding-top: 48px; } .n-logo::before { top: 40px; } .n-logo::after { top: 4px; } }
     @media (max-width: 720px) {
       .sitebar-inner, main, .hero-inner { width: min(100vw - 20px, 1320px); }
+      .sitebar-inner { gap: 14px; }
+      .menu-word { gap: 10px; font-size: 18px; }
+      .hamburger { gap: 5px; width: 36px; }
+      .hamburger span { height: 4px; }
       .top-icons { display: none; }
+      .theme-toggle { width: 42px; padding: 0; justify-content: center; }
+      .theme-toggle-text { display: none; }
+      .n-logo { width: 128px; font-size: 18px; padding-left: 10px; padding-right: 10px; }
       .kpis, .panel-grid { grid-template-columns: 1fr; }
       .controls { position: sticky; top: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px 10px; padding: 10px; margin-bottom: 14px; }
-      .filter-toggle { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 42px; padding: 8px 12px; border: 0; border-radius: 5px; background: #333; color: #fff; text-align: left; cursor: pointer; }
+      .filter-toggle { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 42px; padding: 8px 12px; border: 0; border-radius: 5px; background: var(--control-bg); color: var(--control-text); text-align: left; cursor: pointer; }
       .filter-toggle strong { display: block; font-size: 15px; line-height: 1.1; }
-      .filter-summary { display: block; max-width: 380px; overflow: hidden; color: rgba(255,255,255,.78); font-size: 12px; font-weight: 400; line-height: 1.3; text-overflow: ellipsis; white-space: nowrap; }
+      .filter-summary { display: block; max-width: 380px; overflow: hidden; color: var(--control-muted); font-size: 12px; font-weight: 400; line-height: 1.3; text-overflow: ellipsis; white-space: nowrap; }
       .filter-toggle-icon { font-size: 16px; transition: transform .18s ease; }
       .controls:not(.is-collapsed) .filter-toggle-icon { transform: rotate(180deg); }
       .controls.is-collapsed .control, .controls.is-collapsed .reset { display: none; }
@@ -149,6 +278,7 @@
     <div class="sitebar-inner">
       <div class="menu-word"><span class="hamburger" aria-hidden="true"><span></span><span></span><span></span></span><span>Menü</span></div>
       <div class="top-icons" aria-hidden="true"><span>●</span><span>☝</span><span>▰</span></div>
+      <button class="theme-toggle" id="themeToggle" type="button" aria-label="Dunkles Design aktivieren" aria-pressed="false"><span class="theme-toggle-icon" aria-hidden="true">☾</span><span class="theme-toggle-text">Dunkel</span></button>
       <div class="n-logo">Nürnberg</div>
     </div>
   </div>
@@ -195,7 +325,7 @@
       <h2>Karte der erfassten Orte</h2>
       <p><span id="mapCount">–</span> Orte mit Koordinaten im aktuellen Filter. Marker anklicken markiert Einträge; Bezirksflächen anklicken setzt den Bezirkfilter.</p>
       <div id="placesMap"><div class="map-empty">Karte wird geladen …</div></div>
-      <div class="map-legend"><span><i class="legend-area"></i>Bezirk, klickbar</span><span><i class="legend-dot" style="background:#c9332c"></i>hohe Lösch-Quote</span><span><i class="legend-dot" style="background:#ef7d16"></i>sichtbarer Banner</span><span><i class="legend-dot" style="background:#2d7b3f"></i>kein sichtbarer Banner</span></div>
+      <div class="map-legend"><span><i class="legend-area"></i>Bezirk, klickbar</span><span><i class="legend-dot" style="background:#1f6f8b"></i>dein Standort</span><span><i class="legend-dot" style="background:#c9332c"></i>hohe Lösch-Quote</span><span><i class="legend-dot" style="background:#ef7d16"></i>sichtbarer Banner</span><span><i class="legend-dot" style="background:#2d7b3f"></i>kein sichtbarer Banner</span></div>
     </section>
 
     <nav class="tabs" aria-label="Tabellen-Presets">
@@ -203,7 +333,9 @@
       <button class="tab active" data-mode="ratio">Höchste Lösch-Quote</button>
       <button class="tab" data-mode="worst">Worst-Case-Rating</button>
       <button class="tab" data-mode="clean">Ohne Löschbanner</button>
+      <button class="tab" data-mode="nearby">In meiner Nähe</button>
     </nav>
+    <div class="nearby-status" id="nearbyStatus" role="status" aria-live="polite" hidden></div>
 
     <div class="table-head"><strong id="tableTitle">Höchste Lösch-Quote</strong><span id="resultCount">–</span></div>
     <section class="table-wrap" aria-label="Daten-Explorer">
@@ -227,7 +359,7 @@
       </table>
     </section>
     <footer>
-      <div>Quelle: Google Maps, öffentlich sichtbare Banner. „Kein Banner“ heißt nur: im Scrape war kein passender Hinweis sichtbar. Snapshot: 30.04.2026.</div>
+      <div>Quelle: Google Maps, öffentlich sichtbare Banner. „Kein Banner“ heißt nur: im Scrape war kein passender Hinweis sichtbar. Snapshot: 01.05.2026.</div>
       <div class="footer-credit">© 2026 Patrick Wozniak · <a href="https://patwoz.dev" target="_blank" rel="noopener noreferrer">patwoz.dev</a></div>
     </footer>
   </main>
@@ -242,21 +374,69 @@
     const fmt = new Intl.NumberFormat('de-DE');
     const fmt1 = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 1, minimumFractionDigits: 1 });
     const fmt2 = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 2, minimumFractionDigits: 2 });
-    const state = { mode: 'ratio', sortKey: 'deletionRatioPct', sortDir: 'desc' };
+    const state = { mode: 'ratio', sortKey: 'deletionRatioPct', sortDir: 'desc', userLocation: null };
     const els = {
-      controls: document.getElementById('dashboardFilterControls'), filterToggle: document.getElementById('filterToggle'), filterSummary: document.getElementById('filterSummary'), search: document.getElementById('searchInput'), postcode: document.getElementById('postcodeFilter'), bezirk: document.getElementById('bezirkFilter'), banner: document.getElementById('bannerFilter'), range: document.getElementById('rangeFilter'), minReviews: document.getElementById('minReviews'), reset: document.getElementById('resetFilters'), tbody: document.querySelector('#placesTable tbody'), resultCount: document.getElementById('resultCount'), tableTitle: document.getElementById('tableTitle'), mapCount: document.getElementById('mapCount')
+      themeToggle: document.getElementById('themeToggle'), controls: document.getElementById('dashboardFilterControls'), filterToggle: document.getElementById('filterToggle'), filterSummary: document.getElementById('filterSummary'), search: document.getElementById('searchInput'), postcode: document.getElementById('postcodeFilter'), bezirk: document.getElementById('bezirkFilter'), banner: document.getElementById('bannerFilter'), range: document.getElementById('rangeFilter'), minReviews: document.getElementById('minReviews'), reset: document.getElementById('resetFilters'), tbody: document.querySelector('#placesTable tbody'), resultCount: document.getElementById('resultCount'), tableTitle: document.getElementById('tableTitle'), mapCount: document.getElementById('mapCount'), nearbyStatus: document.getElementById('nearbyStatus')
     };
-    const titles = { all: 'Alle Orte', removed: 'Meiste entfernte Bewertungen', ratio: 'Höchste Lösch-Quote', worst: 'Schlechtestes Worst-Case-Rating', clean: 'Orte ohne Löschbanner' };
+    const titles = { all: 'Alle Orte', removed: 'Meiste entfernte Bewertungen', ratio: 'Höchste Lösch-Quote', worst: 'Schlechtestes Worst-Case-Rating', clean: 'Orte ohne Löschbanner', nearby: 'In meiner Nähe' };
     let placesMap = null;
     let bezirkLayer = null;
     let markerLayer = null;
+    let tileLayer = null;
     let mapUnavailable = false;
     let mapHintTimer = null;
     const activeMapKeys = new Set();
+    const themeStorageKey = 'dashboardTheme';
+    const prefersDark = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : { matches: false, addEventListener: null };
+
+    function storedTheme() {
+      try {
+        const theme = localStorage.getItem(themeStorageKey);
+        return theme === 'dark' || theme === 'light' ? theme : '';
+      } catch (_) {
+        return '';
+      }
+    }
+    function currentTheme() {
+      const explicit = document.documentElement.dataset.theme;
+      if (explicit === 'dark' || explicit === 'light') return explicit;
+      return prefersDark.matches ? 'dark' : 'light';
+    }
+    function tileURL() { return 'https://{s}.basemaps.cartocdn.com/' + (currentTheme() === 'dark' ? 'dark_all' : 'light_all') + '/{z}/{x}/{y}{r}.png'; }
+    function colorVar(name, fallback) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback; }
+    function updateThemeToggle() {
+      const isDark = currentTheme() === 'dark';
+      els.themeToggle.setAttribute('aria-pressed', String(isDark));
+      els.themeToggle.setAttribute('aria-label', isDark ? 'Helles Design aktivieren' : 'Dunkles Design aktivieren');
+      els.themeToggle.querySelector('.theme-toggle-icon').textContent = isDark ? '☀' : '☾';
+      els.themeToggle.querySelector('.theme-toggle-text').textContent = isDark ? 'Hell' : 'Dunkel';
+    }
+    function updateMapTheme() {
+      if (tileLayer) tileLayer.setUrl(tileURL());
+    }
+    function setTheme(theme) {
+      document.documentElement.dataset.theme = theme;
+      try { localStorage.setItem(themeStorageKey, theme); } catch (_) {}
+      updateThemeToggle();
+      updateMapTheme();
+      if (placesMap) render();
+    }
 
     function pct(value) { return Number.isFinite(value) ? fmt1.format(value) + '%' : '–'; }
     function rating(value, digits = 1) { return Number.isFinite(value) ? (digits === 2 ? fmt2.format(value) : fmt1.format(value)) : '–'; }
     function n(value) { return Number.isFinite(value) ? fmt.format(value) : '–'; }
+    function distanceLabel(km) { return Number.isFinite(km) ? (km < 1 ? n(Math.round(km * 1000)) + ' m' : fmt1.format(km) + ' km') : '–'; }
+    function distanceKm(lat1, lng1, lat2, lng2) {
+      const toRad = value => value * Math.PI / 180;
+      const dLat = toRad(lat2 - lat1);
+      const dLng = toRad(lng2 - lng1);
+      const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+      return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+    function rowDistanceKm(row) {
+      if (!state.userLocation || !hasCoords(row)) return Infinity;
+      return distanceKm(state.userLocation.lat, state.userLocation.lng, row.lat, row.lng);
+    }
     function esc(s) { return String(s ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
     function searchText(row) { return [row.name, row.postcode, row.bezirkLabel, row.category, row.removedRange, row.removedText, row.address].join(' ').toLowerCase(); }
     function matches(row) {
@@ -287,6 +467,47 @@
       els.filterToggle.setAttribute('aria-expanded', String(!els.controls.classList.contains('is-collapsed')));
       els.filterSummary.textContent = activeFilterSummary();
     }
+    function nearbyButton() { return document.querySelector('.tab[data-mode="nearby"]'); }
+    function setNearbyStatus(message, isError = false) {
+      els.nearbyStatus.textContent = message;
+      els.nearbyStatus.hidden = !message;
+      els.nearbyStatus.classList.toggle('error', isError);
+    }
+    function setNearbyPending(pending) {
+      const button = nearbyButton();
+      if (!button) return;
+      button.disabled = pending;
+      button.textContent = pending ? 'Standort …' : 'In meiner Nähe';
+    }
+    function geolocationErrorMessage(error) {
+      if (error && error.code === 1) return 'Standortfreigabe abgelehnt. Bitte im Browser erlauben, um „In meiner Nähe“ zu nutzen.';
+      if (error && error.code === 2) return 'Standort konnte nicht bestimmt werden.';
+      if (error && error.code === 3) return 'Standort-Anfrage hat zu lange gedauert.';
+      return 'Standort konnte nicht angefragt werden.';
+    }
+    function nearbySuccessStatus() {
+      const accuracy = state.userLocation && Number.isFinite(state.userLocation.accuracy) ? ' · Genauigkeit ca. ' + n(Math.round(state.userLocation.accuracy)) + ' m' : '';
+      return 'Standort gesetzt. Orte werden nach Entfernung sortiert.' + accuracy;
+    }
+    function requestUserLocation() {
+      if (!navigator.geolocation) {
+        setNearbyStatus('Standortzugriff ist nur per HTTPS oder localhost verfügbar.', true);
+        return;
+      }
+      setNearbyPending(true);
+      setNearbyStatus('Standort wird angefragt und nur lokal im Browser verwendet …');
+      navigator.geolocation.getCurrentPosition(position => {
+        state.userLocation = { lat: position.coords.latitude, lng: position.coords.longitude, accuracy: position.coords.accuracy };
+        setNearbyPending(false);
+        setNearbyStatus(nearbySuccessStatus());
+        activateMode('nearby');
+        render();
+        document.getElementById('placesTable').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, error => {
+        setNearbyPending(false);
+        setNearbyStatus(geolocationErrorMessage(error), true);
+      }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 });
+    }
     function bannerRows(rows) { return rows.filter(row => row.hasBanner && Number.isFinite(row.removedEstimate)); }
     function cleanRows(rows) { return rows.filter(row => !row.hasBanner); }
     function defaultSortFor(mode) {
@@ -294,6 +515,7 @@
       if (mode === 'ratio') return ['deletionRatioPct', 'desc'];
       if (mode === 'worst') return ['realRatingAdjusted', 'asc'];
       if (mode === 'clean') return ['rating', 'desc'];
+      if (mode === 'nearby') return ['distanceKm', 'asc'];
       return ['rank', 'asc'];
     }
     function modeRows(rows) {
@@ -301,11 +523,13 @@
       if (state.mode === 'ratio') return bannerRows(rows).filter(row => Number.isFinite(row.deletionRatioPct));
       if (state.mode === 'worst') return bannerRows(rows).filter(row => Number.isFinite(row.realRatingAdjusted));
       if (state.mode === 'clean') return cleanRows(rows);
+      if (state.mode === 'nearby') return rows.filter(hasCoords);
       return rows;
     }
     function value(row, key, index) {
       if (key === 'rank') return index + 1;
       if (key === 'hasBanner') return row.hasBanner ? 1 : 0;
+      if (key === 'distanceKm') return rowDistanceKm(row);
       const v = row[key];
       return typeof v === 'string' ? v.toLowerCase() : (Number.isFinite(v) ? v : -Infinity);
     }
@@ -329,9 +553,9 @@
     }
     function hasCoords(row) { return Number.isFinite(row.lat) && Number.isFinite(row.lng); }
     function markerColor(row) {
-      if (!row.hasBanner) return '#2d7b3f';
-      if ((row.deletionRatioPct || 0) >= 10) return '#c9332c';
-      return '#ef7d16';
+      if (!row.hasBanner) return colorVar('--green', '#2d7b3f');
+      if ((row.deletionRatioPct || 0) >= 10) return colorVar('--red', '#c9332c');
+      return colorVar('--orange', '#ef7d16');
     }
     function markerMode(row) { return row.hasBanner ? 'ratio' : 'clean'; }
     function isMapModifier(event) { return event.ctrlKey || event.metaKey || event.altKey; }
@@ -397,7 +621,7 @@
       placesMap.getPane('bezirkPane').style.zIndex = 350;
       placesMap.createPane('placeMarkerPane');
       placesMap.getPane('placeMarkerPane').style.zIndex = 650;
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { maxZoom: 20, subdomains: 'abcd', attribution: '&copy; OpenStreetMap-Mitwirkende &copy; CARTO' }).addTo(placesMap);
+      tileLayer = L.tileLayer(tileURL(), { maxZoom: 20, subdomains: 'abcd', attribution: '&copy; OpenStreetMap-Mitwirkende &copy; CARTO' }).addTo(placesMap);
       bezirkLayer = L.layerGroup().addTo(placesMap);
       markerLayer = L.layerGroup().addTo(placesMap);
       setupMapGestureGate(root);
@@ -432,6 +656,11 @@
       bezirkLayer.clearLayers();
       const stats = bezirkStats(rows);
       const selected = selectedBezirkLabel();
+      const red = colorVar('--red', '#cf2a1b');
+      const redDark = colorVar('--red-dark', '#8c4139');
+      const muted = colorVar('--muted', '#777');
+      const orange = colorVar('--orange', '#ef7d16');
+      const blue = colorVar('--blue', '#1f6f8b');
       for (const district of BEZIRKE) {
         const stat = stats.get(district.label) || { rows: 0, banners: 0 };
         const ratio = stat.banners / Math.max(stat.rows, 1) * 100;
@@ -439,11 +668,11 @@
         const hasRows = stat.rows > 0;
         const style = {
           pane: 'bezirkPane',
-          color: isSelected ? '#cf2a1b' : (hasRows ? '#8c4139' : '#777'),
+          color: isSelected ? red : (hasRows ? redDark : muted),
           weight: isSelected ? 3 : 1,
           opacity: isSelected ? .95 : .58,
           dashArray: hasRows ? '' : '4 4',
-          fillColor: isSelected ? '#cf2a1b' : (ratio >= 15 ? '#cf2a1b' : ratio >= 8 ? '#ef7d16' : '#1f6f8b'),
+          fillColor: isSelected ? red : (ratio >= 15 ? red : ratio >= 8 ? orange : blue),
           fillOpacity: isSelected ? .18 : (hasRows ? Math.min(.16, .035 + ratio / 120) : .018),
           interactive: true
         };
@@ -451,7 +680,7 @@
         for (const polygon of district.polygons) {
           const layer = L.polygon(polygon, style);
           layer.bindTooltip(tooltip, { sticky: true, direction: 'top' });
-          layer.on('mouseover', () => layer.setStyle({ weight: Math.max(style.weight, 3), color: '#cf2a1b', fillOpacity: Math.max(style.fillOpacity, .14) }));
+          layer.on('mouseover', () => layer.setStyle({ weight: Math.max(style.weight, 3), color: red, fillOpacity: Math.max(style.fillOpacity, .14) }));
           layer.on('mouseout', () => layer.setStyle(style));
           layer.on('click', () => {
             els.bezirk.value = district.label;
@@ -466,10 +695,12 @@
       renderBezirkLayer(allFilteredRows || rows);
       markerLayer.clearLayers();
       const mapped = rows.filter(hasCoords);
+      if (state.mode === 'nearby') mapped.sort((a, b) => rowDistanceKm(a) - rowDistanceKm(b));
       els.mapCount.textContent = n(mapped.length) + ' von ' + n(rows.length);
       for (const row of mapped) {
         const marker = L.circleMarker([row.lat, row.lng], { pane: 'placeMarkerPane', radius: row.hasBanner ? 7 : 5, color: '#fff', weight: 1.5, fillColor: markerColor(row), fillOpacity: .9 });
-        marker.bindTooltip(row.name + (row.bezirkLabel ? ' · ' + row.bezirkLabel : '') + (row.hasBanner ? ' · ' + row.removedRange : ''), { direction: 'top' });
+        const distance = state.mode === 'nearby' ? ' · ' + distanceLabel(rowDistanceKm(row)) : '';
+        marker.bindTooltip(row.name + distance + (row.bezirkLabel ? ' · ' + row.bezirkLabel : '') + (row.hasBanner ? ' · ' + row.removedRange : ''), { direction: 'top' });
         marker.on('click', () => {
           activateMode(markerMode(row));
           render();
@@ -477,7 +708,14 @@
         });
         marker.addTo(markerLayer);
       }
-      if (mapped.length) {
+      if (state.userLocation) {
+        L.circleMarker([state.userLocation.lat, state.userLocation.lng], { pane: 'placeMarkerPane', radius: 9, color: '#fff', weight: 2, fillColor: '#1f6f8b', fillOpacity: .95 }).bindTooltip('Dein Standort', { direction: 'top' }).addTo(markerLayer);
+      }
+      if (state.mode === 'nearby' && state.userLocation) {
+        const points = [[state.userLocation.lat, state.userLocation.lng], ...mapped.slice(0, 25).map(row => [row.lat, row.lng])];
+        if (points.length > 1) placesMap.fitBounds(L.latLngBounds(points).pad(0.18), { maxZoom: 15, animate: false });
+        else placesMap.setView([state.userLocation.lat, state.userLocation.lng], 14);
+      } else if (mapped.length) {
         const bounds = L.latLngBounds(mapped.map(row => [row.lat, row.lng]));
         placesMap.fitBounds(bounds.pad(0.12), { maxZoom: 14, animate: false });
       } else {
@@ -525,9 +763,19 @@
     function renderTable(rows) {
       const scoped = modeRows(rows);
       const sorted = sortRows(scoped);
-      els.resultCount.textContent = n(sorted.length) + ' von ' + n(rows.length) + ' Orten im aktuellen Filter';
+      if (state.mode === 'nearby' && state.userLocation) {
+        const accuracy = Number.isFinite(state.userLocation.accuracy) ? ' · Standortgenauigkeit ca. ' + n(Math.round(state.userLocation.accuracy)) + ' m' : '';
+        const sortText = state.sortKey === 'distanceKm' ? ' · sortiert nach Entfernung' : '';
+        els.resultCount.textContent = n(sorted.length) + ' Orte mit Koordinaten im aktuellen Filter' + sortText + accuracy;
+      } else {
+        els.resultCount.textContent = n(sorted.length) + ' von ' + n(rows.length) + ' Orten im aktuellen Filter';
+      }
       els.tableTitle.textContent = titles[state.mode];
-      els.tbody.innerHTML = sorted.map((row, index) => '<tr data-entry-id="' + esc(row.id) + '"><td class="rank">' + (index + 1) + '</td><td class="name"><a href="' + esc(row.url) + '" target="_blank" rel="noopener noreferrer">' + esc(row.name) + '</a>' + (row.address ? '<span class="entry-address">' + esc(row.address) + '</span>' : '') + '</td><td>' + esc(row.bezirkLabel || '–') + '</td><td>' + esc(row.postcode) + '</td><td class="num">' + rating(row.rating) + '</td><td class="num">' + n(row.reviewCount) + '</td><td>' + (row.hasBanner ? '<span class="pill bad">Löschbanner</span>' : '<span class="pill">kein Löschbanner</span>') + '</td><td class="num">' + (row.hasBanner ? esc(row.removedRange) : '–') + '</td><td class="num">' + (row.hasBanner ? rating(row.removedEstimate) : '–') + '</td><td class="num">' + pct(row.deletionRatioPct) + '</td><td class="num">' + rating(row.realRatingAdjusted, 2) + '</td><td>' + esc(row.category) + '</td></tr>').join('');
+      els.tbody.innerHTML = sorted.map((row, index) => {
+        const distance = state.mode === 'nearby' ? '<span class="entry-address">Entfernung: ' + esc(distanceLabel(rowDistanceKm(row))) + '</span>' : '';
+        const address = row.address ? '<span class="entry-address">' + esc(row.address) + '</span>' : '';
+        return '<tr data-entry-id="' + esc(row.id) + '"><td class="rank">' + (index + 1) + '</td><td class="name"><a href="' + esc(row.url) + '" target="_blank" rel="noopener noreferrer">' + esc(row.name) + '</a>' + distance + address + '</td><td>' + esc(row.bezirkLabel || '–') + '</td><td>' + esc(row.postcode) + '</td><td class="num">' + rating(row.rating) + '</td><td class="num">' + n(row.reviewCount) + '</td><td>' + (row.hasBanner ? '<span class="pill bad">Löschbanner</span>' : '<span class="pill">kein Löschbanner</span>') + '</td><td class="num">' + (row.hasBanner ? esc(row.removedRange) : '–') + '</td><td class="num">' + (row.hasBanner ? rating(row.removedEstimate) : '–') + '</td><td class="num">' + pct(row.deletionRatioPct) + '</td><td class="num">' + rating(row.realRatingAdjusted, 2) + '</td><td>' + esc(row.category) + '</td></tr>';
+      }).join('');
       document.querySelectorAll('th button[data-sort]').forEach(button => {
         const active = button.dataset.sort === state.sortKey;
         button.classList.toggle('active', active);
@@ -546,6 +794,7 @@
     function activateMode(mode) {
       state.mode = mode;
       [state.sortKey, state.sortDir] = defaultSortFor(mode);
+      if (mode !== 'nearby' && !els.nearbyStatus.classList.contains('error')) setNearbyStatus('');
       document.querySelectorAll('.tab').forEach(tab => tab.classList.toggle('active', tab.dataset.mode === mode));
     }
     function focusEntry(entryId) {
@@ -572,6 +821,11 @@
       document.getElementById('placesTable').scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
     document.querySelectorAll('.tab').forEach(button => button.addEventListener('click', () => {
+      if (button.dataset.mode === 'nearby' && !state.userLocation) {
+        requestUserLocation();
+        return;
+      }
+      if (button.dataset.mode === 'nearby') setNearbyStatus(nearbySuccessStatus());
       activateMode(button.dataset.mode);
       render();
     }));
@@ -581,6 +835,15 @@
       else { state.sortKey = next; state.sortDir = ['name','postcode','bezirkLabel','category','rank'].includes(next) ? 'asc' : 'desc'; }
       renderTable(filtered());
     }));
+    els.themeToggle.addEventListener('click', () => setTheme(currentTheme() === 'dark' ? 'light' : 'dark'));
+    if (prefersDark.addEventListener) {
+      prefersDark.addEventListener('change', () => {
+        if (storedTheme() || document.documentElement.dataset.theme) return;
+        updateThemeToggle();
+        updateMapTheme();
+        if (placesMap) render();
+      });
+    }
     els.filterToggle.addEventListener('click', () => {
       els.controls.classList.toggle('is-collapsed');
       updateFilterToggle();
@@ -594,6 +857,7 @@
       activateMode('ratio');
       render();
     });
+    updateThemeToggle();
     render();
   </script>
 </body>
