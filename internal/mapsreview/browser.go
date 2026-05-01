@@ -69,3 +69,20 @@ func RunWithTimeout(parent context.Context, timeout time.Duration, actions ...ch
 	defer cancel()
 	return chromedp.Run(ctx, actions...)
 }
+
+// AcceptConsent clicks a Google consent button ("Alle akzeptieren", "Accept all", …).
+func AcceptConsent(ctx context.Context) error {
+	var accepted bool
+	err := RunWithTimeout(ctx, 5*time.Second, chromedp.Evaluate(`(() => {
+  const patterns = [/Alle akzeptieren/i, /Ich stimme zu/i, /Akzeptieren/i, /Accept all/i, /I agree/i];
+  const buttons = Array.from(document.querySelectorAll('button, [role="button"], input[type="submit"]'));
+  const button = buttons.find(el => patterns.some(pattern => pattern.test(el.innerText || el.textContent || el.value || el.getAttribute('aria-label') || '')));
+  if (!button) return false;
+  button.click();
+  return true;
+})()`, &accepted))
+	if accepted {
+		time.Sleep(1000 * time.Millisecond)
+	}
+	return err
+}

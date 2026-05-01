@@ -53,19 +53,7 @@ func waitForPlacePanel(ctx context.Context) error {
 }
 
 func acceptConsent(ctx context.Context) error {
-	var accepted bool
-	err := mapsreview.RunWithTimeout(ctx, 5*time.Second, chromedp.Evaluate(`(() => {
-  const patterns = [/Alle akzeptieren/i, /Ich stimme zu/i, /Akzeptieren/i, /Accept all/i, /I agree/i];
-  const buttons = Array.from(document.querySelectorAll('button, [role="button"], input[type="submit"]'));
-  const button = buttons.find(el => patterns.some(pattern => pattern.test(el.innerText || el.textContent || el.value || el.getAttribute('aria-label') || '')));
-  if (!button) return false;
-  button.click();
-  return true;
-})()`, &accepted))
-	if accepted {
-		sleep(1000)
-	}
-	return err
+	return mapsreview.AcceptConsent(ctx)
 }
 
 func readPlaceAnchors(ctx context.Context) ([]discoveredAnchor, error) {

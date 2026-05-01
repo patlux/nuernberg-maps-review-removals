@@ -149,7 +149,7 @@ func parseArgs(argv []string) (args, error) {
 	out := args{Input: mapsreview.ResultsJSON}
 	for i := 0; i < len(argv); i++ {
 		arg := argv[i]
-		key, value, consume := splitArg(argv, i)
+		key, value, consume := mapsreview.SplitArg(argv, i)
 		switch key {
 		case "--input":
 			out.Input = value
@@ -174,13 +174,4 @@ Options:
 	return out, nil
 }
 
-func splitArg(argv []string, index int) (key string, value string, consume bool) {
-	arg := argv[index]
-	if before, after, ok := strings.Cut(arg, "="); ok {
-		return before, after, false
-	}
-	if index+1 < len(argv) && !strings.HasPrefix(argv[index+1], "--") {
-		return arg, argv[index+1], true
-	}
-	return arg, "", false
-}
+

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	"nuernberg-maps-review-removals/internal/mapsreview"
@@ -48,7 +47,7 @@ func parseArgs(argv []string) (args, error) {
 	}
 
 	for i := 0; i < len(argv); i++ {
-		key, value, consume := splitArg(argv, i)
+		key, value, consume := mapsreview.SplitArg(argv, i)
 		switch key {
 		case "--postcodes":
 			if value == "" || value == "all" {
@@ -59,9 +58,9 @@ func parseArgs(argv []string) (args, error) {
 		case "--queries":
 			out.Queries = splitCSV(value)
 		case "--max-results":
-			out.MaxResults = atoi(value)
+			out.MaxResults = mapsreview.Atoi(value)
 		case "--headless":
-			out.Headless = parseBool(value, true)
+			out.Headless = mapsreview.ParseBool(value, true)
 		case "--cdp-url":
 			out.CDPURL = value
 		case "--discovery-only":
@@ -80,17 +79,17 @@ func parseArgs(argv []string) (args, error) {
 			out.AllowBannerClears = true
 			consume = false
 		case "--scrape-start", "--resume-from":
-			out.ScrapeStart = max(1, atoi(value))
+			out.ScrapeStart = max(1, mapsreview.Atoi(value))
 		case "--scrape-limit":
-			out.ScrapeLimit = max(0, atoi(value))
+			out.ScrapeLimit = max(0, mapsreview.Atoi(value))
 		case "--save-every":
-			out.SaveEvery = max(1, atoi(value))
+			out.SaveEvery = max(1, mapsreview.Atoi(value))
 		case "--notice-attempts":
-			out.NoticeAttempts = max(1, atoi(value))
+			out.NoticeAttempts = max(1, mapsreview.Atoi(value))
 		case "--delay-min":
-			out.DelayMin = atoi(value)
+			out.DelayMin = mapsreview.Atoi(value)
 		case "--delay-max":
-			out.DelayMax = atoi(value)
+			out.DelayMax = mapsreview.Atoi(value)
 		case "--out":
 			out.Out = value
 		case "--csv":
@@ -140,17 +139,6 @@ Options:
 `, strings.Join(mapsreview.DefaultQueries, ","))
 }
 
-func splitArg(argv []string, index int) (key string, value string, consume bool) {
-	arg := argv[index]
-	if before, after, ok := strings.Cut(arg, "="); ok {
-		return before, after, false
-	}
-	if index+1 < len(argv) && !strings.HasPrefix(argv[index+1], "--") {
-		return arg, argv[index+1], true
-	}
-	return arg, "", false
-}
-
 func splitCSV(value string) []string {
 	parts := strings.Split(value, ",")
 	out := make([]string, 0, len(parts))
@@ -163,14 +151,4 @@ func splitCSV(value string) []string {
 	return out
 }
 
-func atoi(value string) int {
-	n, _ := strconv.Atoi(value)
-	return n
-}
 
-func parseBool(value string, missing bool) bool {
-	if value == "" {
-		return missing
-	}
-	return value == "true" || value == "1" || value == "yes"
-}

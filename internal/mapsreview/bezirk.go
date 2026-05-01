@@ -302,6 +302,9 @@ func pointSegmentDistanceSquared(p, a, b point) float64 {
 	return px*px + py*py
 }
 
+// pointInRing uses the even-odd ray-casting algorithm.
+// Points exactly on horizontal edges (p.Y == yi == yj) are not handled;
+// in practice this is fine for real bezirk boundary data in Mercator projection.
 func pointInRing(p point, ring []point) bool {
 	inside := false
 	j := len(ring) - 1

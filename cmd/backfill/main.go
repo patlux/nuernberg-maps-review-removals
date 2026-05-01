@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"os"
 	"sort"
-	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -143,18 +141,18 @@ func run(args args) error {
 func parseArgs(argv []string) (args, error) {
 	out := args{Input: mapsreview.ResultsJSON, CSV: mapsreview.ResultsCSV, Headless: true, Concurrency: 4, OnlyMissing: true}
 	for i := 0; i < len(argv); i++ {
-		key, value, consume := splitArg(argv, i)
+		key, value, consume := mapsreview.SplitArg(argv, i)
 		switch key {
 		case "--input":
 			out.Input = value
 		case "--csv":
 			out.CSV = value
 		case "--headless":
-			out.Headless = parseBool(value, true)
+			out.Headless = mapsreview.ParseBool(value, true)
 		case "--concurrency":
-			out.Concurrency = max(1, atoi(value))
+			out.Concurrency = max(1, mapsreview.Atoi(value))
 		case "--limit":
-			out.Limit = atoi(value)
+			out.Limit = mapsreview.Atoi(value)
 		case "--all":
 			out.OnlyMissing = false
 			consume = false
@@ -184,29 +182,9 @@ Options:
   --all                   Re-read every row, not just missing addresses.`)
 }
 
-func splitArg(argv []string, index int) (key string, value string, consume bool) {
-	arg := argv[index]
-	if before, after, ok := strings.Cut(arg, "="); ok {
-		return before, after, false
-	}
-	if index+1 < len(argv) && !strings.HasPrefix(argv[index+1], "--") {
-		return arg, argv[index+1], true
-	}
-	return arg, "", false
-}
-
-func atoi(value string) int {
-	n, _ := strconv.Atoi(value)
-	return n
-}
-
-func parseBool(value string, missing bool) bool {
-	if value == "" {
-		return missing
-	}
-	return value == "true" || value == "1" || value == "yes"
-}
-
+// buildTodo prioritises banner rows first so that the most interesting
+// places are backfilled before the worker order becomes non-deterministic
+// due to concurrent goroutines.
 func buildTodo(rows []mapsreview.Place, args args) []int {
 	indexes := make([]int, 0, len(rows))
 	for i, row := range rows {
@@ -242,7 +220,7 @@ func readAddress(ctx context.Context, rawURL string) (string, error) {
 	); err != nil {
 		return "", err
 	}
-	_ = acceptConsent(ctx)
+	_ = mapsreview.AcceptConsent(ctx)
 	for i := 0; i < 14; i++ {
 		if i == 0 {
 			sleep(1800)
@@ -266,22 +244,6 @@ func readAddress(ctx context.Context, rawURL string) (string, error) {
 		}
 	}
 	return "", nil
-}
-
-func acceptConsent(ctx context.Context) error {
-	var accepted bool
-	err := mapsreview.RunWithTimeout(ctx, 5*time.Second, chromedp.Evaluate(`(() => {
-  const patterns = [/Alle akzeptieren/i, /Accept all/i, /Ich stimme zu/i, /Akzeptieren/i];
-  const buttons = Array.from(document.querySelectorAll('button, [role="button"]'));
-  const button = buttons.find(el => patterns.some(pattern => pattern.test(el.innerText || el.textContent || el.getAttribute('aria-label') || '')));
-  if (!button) return false;
-  button.click();
-  return true;
-})()`, &accepted))
-	if accepted {
-		sleep(1000)
-	}
-	return err
 }
 
 func countWithAddress(rows []mapsreview.Place) int {
