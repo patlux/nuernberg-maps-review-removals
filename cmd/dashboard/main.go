@@ -434,7 +434,7 @@ __ANALYTICS__
     .pill { display: inline-flex; align-items: center; border-radius: 3px; padding: 3px 7px; background: var(--pill-bg); color: var(--green); font-weight: 700; font-size: 12px; }
     .pill.bad { background: var(--pill-bad-bg); color: var(--red); }
     footer { margin-top: 18px; color: var(--muted); font-size: 13px; line-height: 1.5; }
-    .footer-credit { margin-top: 6px; }
+    .footer-privacy, .footer-credit { margin-top: 6px; }
     .footer-credit a { font-weight: 700; }
     @media (max-width: 1200px) { .kpis, .panel-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .controls { grid-template-columns: 1fr 1fr 1fr; } .search { grid-column: 1 / -1; } .theme-toggle { margin-left: auto; margin-right: 0; } .n-logo { position: relative; height: 76px; width: 150px; margin-left: 0; padding-top: 48px; } .n-logo::before { top: 40px; } .n-logo::after { top: 4px; } }
     @media (max-width: 720px) {
@@ -553,6 +553,7 @@ __ANALYTICS__
     </section>
     <footer>
       <div>Quelle: Google Maps, öffentlich sichtbare Banner. „Kein Banner“ heißt nur: im Scrape war kein passender Hinweis sichtbar. Snapshot: __SNAPSHOT__.</div>
+__ANALYTICS_PRIVACY__
       <div class="footer-credit">© 2026 Patrick Wozniak · <a href="https://patwoz.dev" target="_blank" rel="noopener noreferrer">patwoz.dev</a></div>
     </footer>
   </main>
@@ -1061,6 +1062,7 @@ __ANALYTICS__
 		"__BEZIRK_OPTIONS__", bezirkOptions,
 		"__RANGE_OPTIONS__", rangeOptions,
 		"__ANALYTICS__", plausibleAnalyticsSnippet(),
+		"__ANALYTICS_PRIVACY__", plausiblePrivacyNotice(),
 		"__SNAPSHOT__", time.Now().Format("02.01.2006"),
 		"__DATA__", jsonText,
 		"__BEZIRK_DATA__", bezirkText,
@@ -1068,7 +1070,7 @@ __ANALYTICS__
 }
 
 func plausibleAnalyticsSnippet() string {
-	src := strings.TrimSpace(os.Getenv("DASHBOARD_ANALYTICS_SRC"))
+	src := plausibleAnalyticsSrc()
 	if src == "" {
 		return ""
 	}
@@ -1083,6 +1085,31 @@ func plausibleAnalyticsSnippet() string {
     window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
     plausible.init()
   </script>`, escAttr(src))
+}
+
+func plausiblePrivacyNotice() string {
+	src := plausibleAnalyticsSrc()
+	if src == "" {
+		return ""
+	}
+	host := analyticsHost(src)
+	hostText := ""
+	if host != "" {
+		hostText = fmt.Sprintf(` Anbieter-Domain: <code>%s</code>.`, esc(host))
+	}
+	return fmt.Sprintf(`<div class="footer-privacy">Diese Website nutzt Plausible Analytics, eine datenschutzfreundliche Webanalyse ohne Cookies. Die Auswertung erfolgt aggregiert und ohne personenbezogene Nutzerprofile.%s</div>`, hostText)
+}
+
+func plausibleAnalyticsSrc() string {
+	return strings.TrimSpace(os.Getenv("DASHBOARD_ANALYTICS_SRC"))
+}
+
+func analyticsHost(src string) string {
+	if _, after, ok := strings.Cut(src, "://"); ok {
+		src = after
+	}
+	host, _, _ := strings.Cut(src, "/")
+	return host
 }
 
 func allBezirkLabels() []string {
