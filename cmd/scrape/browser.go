@@ -18,9 +18,10 @@ type discoveredAnchor struct {
 }
 
 type mapText struct {
-	Title string `json:"title"`
-	H1    string `json:"h1"`
-	Text  string `json:"text"`
+	Title    string `json:"title"`
+	H1       string `json:"h1"`
+	Category string `json:"category"`
+	Text     string `json:"text"`
 }
 
 func urlPathEscape(value string) string {
@@ -103,9 +104,13 @@ func readMapText(ctx context.Context) (mapText, error) {
   const attrTexts = Array.from(document.querySelectorAll('[aria-label], [alt], [data-tooltip]'))
     .flatMap(el => [el.getAttribute('aria-label'), el.getAttribute('alt'), el.getAttribute('data-tooltip')])
     .filter(Boolean);
+  const category = Array.from(document.querySelectorAll('button[jsaction*="category"]'))
+    .map(el => (el.innerText || el.textContent || '').trim())
+    .find(Boolean) || '';
   return {
     title: document.title,
     h1: document.querySelector('h1')?.textContent?.trim() || '',
+    category,
     text: [document.body.innerText, ...attrTexts].join('\n')
   };
 })()`, &out))

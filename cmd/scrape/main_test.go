@@ -127,6 +127,35 @@ func TestIsPartialMapsShell(t *testing.T) {
 	}
 }
 
+func TestExtractCategoryUsesDOMCategory(t *testing.T) {
+	got := extractCategory("H&B Döner", "Döner-Restaurant", "Restaurants in der Nähe\nH&B Döner\n4,7")
+	if got == nil || *got != "Döner-Restaurant" {
+		t.Fatalf("extractCategory = %v, want Döner-Restaurant", got)
+	}
+}
+
+func TestExtractCategoryFallsBackToHeaderText(t *testing.T) {
+	text := "Restaurants in der Nähe\nHotels\nH&B Döner\n4,7\n(263)\n\n·10–20 €\nDöner-Restaurant\nÜbersicht\nRezensionen\nInfo"
+	got := extractCategory("H&B Döner", "", text)
+	if got == nil || *got != "Döner-Restaurant" {
+		t.Fatalf("extractCategory = %v, want Döner-Restaurant", got)
+	}
+}
+
+func TestExtractCategoryDoesNotUseNavigationChips(t *testing.T) {
+	text := "Restaurants in der Nähe\nHotels\nMögliche Aktivitäten\nBars\nKaffee\nZum Mitnehmen\nLebensmittel\n2BITES Nürnberg\n4,8\n(100)\nÜbersicht"
+	if got := extractCategory("2BITES Nürnberg", "", text); got != nil {
+		t.Fatalf("extractCategory = %q, want nil", *got)
+	}
+}
+
+func TestExtractCategoryCleansInlineIconSuffix(t *testing.T) {
+	got := extractCategory("EAT HAPPY", "", "EAT HAPPY\nSushi Takeaway·\nÜbersicht\nInfo")
+	if got == nil || *got != "Sushi Takeaway" {
+		t.Fatalf("extractCategory = %v, want Sushi Takeaway", got)
+	}
+}
+
 func TestApplyNotice(t *testing.T) {
 	row := successPlace()
 	notice := &mapsreview.Notice{Text: "Zwei bis fünf Bewertungen aufgrund von Beschwerden wegen Diffamierung entfernt.", Min: 2, Max: mapsreview.IntPtr(5), Estimate: 3.5}

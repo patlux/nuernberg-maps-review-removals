@@ -11,6 +11,7 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"unicode"
 
 	"nuernberg-maps-review-removals/internal/mapsreview"
 )
@@ -283,7 +284,7 @@ func extractPlace(ctx context.Context, discovery mapsreview.Discovery) (mapsrevi
 			postcode = pc
 		}
 	}
-	category := extractCategory(overview.Text)
+	category := extractCategory(name, overview.Category, overview.Text)
 	notice := mapsreview.ParseNotice(statsText)
 	coords := mapsreview.ExtractCoordinates(discovery.URL)
 
@@ -529,19 +530,84 @@ func isRestrictedMapsView(text string) bool {
 	return true
 }
 
-func extractCategory(text string) *string {
-	top := text
-	if len(top) > 2500 {
-		top = top[:2500]
+func extractCategory(name, domCategory, text string) *string {
+	if category := cleanCategoryCandidate(domCategory, name); category != "" {
+		return mapsreview.StringPtr(category)
 	}
-	match := regexp.MustCompile(`(?i)\n([^\n]*(?:Restaurant|Café|Cafe|Bäckerei|Imbiss|Pizzeria|Bar|Küche|Döner)[^\n]*)\n`).FindStringSubmatch(top)
-	if len(match) > 1 {
-		category := strings.TrimSpace(match[1])
-		if category != "" {
+	window := text
+	if name != "" {
+		if idx := strings.Index(strings.ToLower(text), strings.ToLower(name)); idx >= 0 {
+			window = text[idx+len(name):]
+		}
+	}
+	if len(window) > 800 {
+		window = window[:800]
+	}
+	for _, stop := range []string{"\nÜbersicht\n", "\nOverview\n", "\nRezensionen\n", "\nReviews\n", "\nInfo\n", "\nRouten"} {
+		if idx := strings.Index(strings.ToLower(window), strings.ToLower(stop)); idx >= 0 {
+			window = window[:idx]
+		}
+	}
+	for _, line := range strings.Split(window, "\n") {
+		if category := cleanCategoryCandidate(line, name); category != "" {
 			return mapsreview.StringPtr(category)
 		}
 	}
 	return nil
+}
+
+func cleanCategoryCandidate(value, name string) string {
+	candidate := strings.TrimSpace(value)
+	if candidate == "" {
+		return ""
+	}
+	if idx := strings.Index(candidate, "·"); idx >= 0 {
+		candidate = candidate[:idx]
+	}
+	candidate = strings.TrimFunc(candidate, func(r rune) bool {
+		return !unicode.IsLetter(r) && !unicode.IsNumber(r)
+	})
+	candidate = strings.TrimSpace(candidate)
+	if candidate == "" {
+		return ""
+	}
+	lower := strings.ToLower(candidate)
+	if name != "" && lower == strings.ToLower(strings.TrimSpace(name)) {
+		return ""
+	}
+	blocked := map[string]bool{
+		"restaurants in der nähe":  true,
+		"restaurants in der naehe": true,
+		"hotels":                   true,
+		"mögliche aktivitäten":     true,
+		"moegliche aktivitaeten":   true,
+		"bars":                     true,
+		"kaffee":                   true,
+		"zum mitnehmen":            true,
+		"lebensmittel":             true,
+		"gespeichert":              true,
+		"zuletzt verwendet":        true,
+		"app herunterladen":        true,
+		"fotos ansehen":            true,
+		"übersicht":                true,
+		"speisekarte":              true,
+		"rezensionen":              true,
+		"info":                     true,
+		"routenplaner":             true,
+		"speichern":                true,
+		"in der nähe":              true,
+		"teilen":                   true,
+	}
+	if blocked[lower] {
+		return ""
+	}
+	if regexp.MustCompile(`(?i)^[1-5](?:[,.][0-9])?$|^\(?[0-9][0-9.]*\)?$|€|geöffnet|geschlossen|adresse|telefon|website|\.de\b|\b9\d{4}\b`).MatchString(candidate) {
+		return ""
+	}
+	if !regexp.MustCompile(`\p{L}`).MatchString(candidate) {
+		return ""
+	}
+	return candidate
 }
 
 func scrapePlaces(ctx context.Context, discoveries []mapsreview.Discovery, args args) ([]mapsreview.Place, error) {
