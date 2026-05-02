@@ -1,62 +1,42 @@
 #!/usr/bin/env python3
-"""Fix categories in existing places.json by applying cleanCategoryCandidate + normalizeCategory logic."""
+"""Fix categories in existing places.json using category_rules.json config."""
 
 import json
 import csv
 import re
 import sys
 from pathlib import Path
+from collections import Counter
 
-OUTPUT_DIR = Path("output")
+SCRIPT_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = SCRIPT_DIR.parent
+OUTPUT_DIR = PROJECT_ROOT / "output"
+RULES_PATH = PROJECT_ROOT / "internal" / "mapsreview" / "data" / "category_rules.json"
 PLACES_JSON = OUTPUT_DIR / "places.json"
 PLACES_CSV = OUTPUT_DIR / "places.csv"
 
-# ----- Blocked list (exact lowercased match → reject) -----
-BLOCKED = {
-    "restaurants in der nähe", "restaurants in der naehe",
-    "verfügbarkeit prüfen", "verfuegbarkeit pruefen",
-    "hotels", "mögliche aktivitäten", "moegliche aktivitaeten",
-    "bars", "kaffee", "zum mitnehmen", "lebensmittel",
-    "gespeichert", "zuletzt verwendet", "app herunterladen",
-    "fotos ansehen", "übersicht", "speisekarte", "rezensionen",
-    "info", "routenplaner", "speichern", "in der nähe",
-    "in der naehe", "teilen", "bewertungen",
-    "sortieren", "filtern", "alle anzeigen", "mehr anzeigen",
-    "anrufen", "website", "route", "öffnet um", "oeffnet um",
-    "geöffnet", "geschlossen", "heute geöffnet",
-    "dauerhaft geschlossen", "vorübergehend geschlossen",
-    "einkaufen", "dienstleistungen",
-}
 
-REVIEW_WORDS = [
-    "schmeckt", "lecker", "sehr gut", "super", "top", "klasse",
-    "komme", "wieder", "bedienung", "freundlich", "preise",
-    "bestellt", "gegessen", "empfehlen", "enttäuscht",
-    "der kaffee", "das essen", "die pizza", "der döner",
-    "trinkgeld", "parkplatz", "bestellung", "lieferung",
-    "zubereitet", "frisch", "atmosphäre", "gemütlich",
-    "ich war", "ich bin", "ich kann", "wir haben", "wir waren",
-]
+def load_rules():
+    with open(RULES_PATH) as f:
+        return json.load(f)
 
 
 from typing import Optional
 
-def clean_category(value: str) -> Optional[str]:
-    """Replicates cleanCategoryCandidate logic. Returns cleaned string or None if rejected."""
+def clean_category(value: str, rules: dict) -> Optional[str]:
+    """Replicates cleanCategoryCandidate logic using rules from JSON."""
     candidate = value.strip()
     if not candidate:
         return None
 
-    # Strip Google Maps UI decorations like "·Restaurant·" or "·€€·Restaurant"
+    # Strip Google Maps UI decorations
     candidate = re.sub(r"[·•]€?€?[·•]?", "", candidate)
-
     # Strip private-use Unicode (U+E000–U+F8FF) and box-drawing (U+2500–U+257F)
     candidate = "".join(
         c for c in candidate
         if not (0xE000 <= ord(c) <= 0xF8FF or 0x2500 <= ord(c) <= 0x257F)
     ).strip()
 
-    # Trim leading/trailing non-letter/number
     while candidate and not (candidate[0].isalpha() or candidate[0].isdigit()):
         candidate = candidate[1:]
     while candidate and not (candidate[-1].isalpha() or candidate[-1].isdigit()):
@@ -72,12 +52,13 @@ def clean_category(value: str) -> Optional[str]:
     if re.search(r"(?i)\.(de|com|net|org|io|info)\b|https?://|www\.", candidate):
         return None
 
-    # Reject too-long strings (review snippets)
+    # Reject too-long strings
     if len(candidate) > 50:
         return None
 
-    # Reject review-like text
-    if sum(1 for w in REVIEW_WORDS if w in lower) >= 2:
+    # Reject review-like text (2+ review keyword hits)
+    review_hits = sum(1 for w in rules["review_keywords"] if w in lower)
+    if review_hits >= 2:
         return None
 
     # Reject business names containing |
@@ -85,7 +66,7 @@ def clean_category(value: str) -> Optional[str]:
         return None
 
     # Reject exact blocked matches
-    if lower in BLOCKED:
+    if lower in set(rules["blocked_strings"]):
         return None
 
     # Reject numbers, prices, postcodes, etc.
@@ -95,170 +76,43 @@ def clean_category(value: str) -> Optional[str]:
     ):
         return None
 
-    # Reject strings with no letters
     if not any(c.isalpha() for c in candidate):
         return None
 
     return candidate
 
 
-# ----- Normalization to 12 canonical categories -----
-
-def normalize(cat: str) -> str:
+def normalize(cat: str, rules: dict) -> str:
+    """Normalize using the ordered category buckets from rules JSON."""
     lower = cat.lower()
-
-    # 1. Café / Konditorei
-    if any(kw in lower for kw in [
-        "café", "cafe", "kaffee", "coffee", "espresso",
-        "eisdiele", "eiscafé", "eiscafe", "ice cream",
-        "teeladen", "tea", "bubble-tea", "bubble tea",
-        "frühstück", "fruehstueck", "brunch",
-        "konditorei", "patisserie", "confiserie",
-        "tortenbäckerei", "tortenbaeckerei",
-        "schokoladencafé", "schokoladencafe",
-        "schokoladengeschäft", "schokoladengeschaeft",
-        "süßwarengeschäft", "suesswarengeschaeft",
-        "süßwaren", "suesswaren",
-        "süßigkeiten", "suessigkeiten",
-        "keksgeschäft", "keksgeschaeft",
-        "donut-shop", "donut shop",
-        "cafetek", "kindercafé", "kindercafe",
-        "saftbar", "café mit frucht", "cafe mit frucht",
-        "kunst-café", "kunst-cafe",
-    ]):
-        return "Café / Konditorei"
-
-    # 2. Bäckerei
-    if any(kw in lower for kw in [
-        "bäckerei", "baeckerei", "backbedarf",
-        "brezel", "bretzel",
-        "großbäckerei", "grossbaeckerei",
-        "hochzeitstortenbäckerei", "hochzeitstortenbaeckerei",
-    ]):
-        return "Bäckerei"
-
-    # 3. Pizzeria
-    if any(kw in lower for kw in [
-        "pizzeria", "pizza-lieferdienst", "pizza lieferdienst", "pizza",
-    ]):
-        return "Pizzeria"
-
-    # 4. Burger
-    if "burger" in lower:
-        return "Burger"
-
-    # 5. Sushi
-    if "sushi" in lower:
-        return "Sushi"
-
-    # 6. Döner / Kebab
-    if any(kw in lower for kw in [
-        "döner", "doener", "kebab",
-        "türkisches restaurant", "tuerkisches restaurant",
-    ]):
-        return "Döner / Kebab"
-
-    # 7. Asiatisch
-    if any(kw in lower for kw in [
-        "asiatisch", "chinesisch", "thailändisch", "thailaendisch",
-        "vietnamesisch", "japanisch", "koreanisch",
-        "indisch", "persisch", "ramen", "pho", "poke",
-        "pan-asiatisch", "malaysisch", "hawaiianisch",
-        "sri lanka", "afghanisch",
-    ]):
-        return "Asiatisch"
-
-    # 8. Restaurant
-    if any(kw in lower for kw in [
-        "restaurant", "restaurants",
-        "griechisch", "italienisch", "italienische",
-        "deutsch", "fränkisch", "fraenkisch", "bayerisch",
-        "mexikanisch", "spanisch",
-        "mediterran", "orientalisch", "arabisch",
-        "afrikanisch", "äthiopisch", "aethiopisch",
-        "marokkanisch", "tunesisch", "ägyptisch", "aegyptisch",
-        "libanesisch", "israelisch", "syrisch",
-        "französisch", "franzoesisch",
-        "österreichisch", "oesterreichisch", "tschechisch",
-        "ukrainisch", "russisch", "polnisch",
-        "rumänisch", "rumaenisch", "serbisch",
-        "bulgarisch", "ungarisch",
-        "argentinisch", "brasilianisch",
-        "amerikanisch", "georgisch", "armenisch",
-        "lateinamerikanisch", "tex-mex",
-        "gourmetrestaurant", "gourmet",
-        "steakhaus", "steak", "grillrestaurant", "grill",
-        "fischrestaurant", "fisch", "meeresfrüchte", "meeresfruechte",
-        "familienrestaurant", "familien",
-        "mittagsrestaurant", "mittag",
-        "halalrestaurant", "halal",
-        "veganes restaurant", "vegan", "vegetarisch",
-        "suppenrestaurant", "suppen",
-        "tapasbar", "tapas", "buffet-restaurant", "buffet",
-        "bratwurst", "diner",
-        "food-court", "food court",
-        "gaststätte", "gaststaette",
-        "speiselokal", "gasthaus", "gasthof",
-        "bistro",
-    ]):
-        return "Restaurant"
-
-    # 9. Imbiss
-    if any(kw in lower for kw in [
-        "imbiss", "imbissrestaurant", "schnellimbiss",
-        "fast-food", "fast food",
-        "takeaway", "take-away", "take away",
-        "zum mitnehmen",
-        "lieferdienst", "lieferservice", "bringdienst",
-        "catering",
-        "sandwich", "falafel",
-        "salat-shop", "salat shop",
-        "hähnchen", "haehnchen", "chicken",
-        "kantine",
-    ]):
-        return "Imbiss"
-
-    # 10. Bar
-    if any(kw in lower for kw in [
-        "bar", "bars",
-        "biergarten", "bier",
-        "kneipe", "gastrokneipe",
-        "pub", "shisha",
-        "cocktail", "lounge",
-        "weinstube", "weinlokal",
-        "stehbar",
-        "brauerei", "brauereischänke", "brauereischaenke",
-        "nachtclub",
-    ]):
-        return "Bar"
-
-    # 11. Lebensmittel
-    if any(kw in lower for kw in [
-        "supermarkt", "discounter",
-        "lebensmittel", "bioladen",
-        "feinkost", "delikatessen",
-        "fleischerei", "metzgerei",
-        "fischgeschäft", "fischgeschaeft",
-        "obst", "gemüse", "gemuese",
-        "getränke", "getraenke", "weinhandlung",
-        "kiosk",
-    ]):
-        return "Lebensmittel"
-
-    # 12. Sonstiges
-    return "Sonstiges"
+    for bucket in rules["categories"]:
+        if not bucket["keywords"]:  # catch-all (last bucket)
+            return bucket["name"]
+        for kw in bucket["keywords"]:
+            if kw in lower:
+                return bucket["name"]
+    return rules["categories"][-1]["name"]
 
 
-def fix_category(cat: Optional[str]) -> Optional[str]:
+def fix_category(cat: Optional[str], rules: dict) -> Optional[str]:
     if cat is None or cat.strip() == "":
         return None
-    cleaned = clean_category(cat)
+    # If the category is already a canonical bucket name, don't re-clean it.
+    # The clean stage blocks raw Maps UI strings that happen to match bucket names
+    # (e.g. "Lebensmittel" as a navigation chip vs "Lebensmittel" as our bucket).
+    canonical_names = {b["name"].lower() for b in rules["categories"]}
+    if cat.lower() in canonical_names:
+        return cat
+    cleaned = clean_category(cat, rules)
     if cleaned is None:
-        return None  # removed as garbage
-    return normalize(cleaned)
+        return None
+    return normalize(cleaned, rules)
 
 
-# ----- Write CSV -----
+def has_name_keyword(name: str, rules: dict) -> bool:
+    lower = name.lower()
+    return any(kw in lower for kw in rules["name_keywords"])
+
 
 CSV_COLUMNS = [
     "id", "name", "postcode", "address", "rating", "reviewCount",
@@ -275,47 +129,33 @@ def write_csv(rows: list[dict], path: Path):
         w.writerow(CSV_COLUMNS)
         for row in rows:
             w.writerow([
-                row.get("id", ""),
-                row.get("name", ""),
-                row.get("postcode") or "",
-                row.get("address") or "",
-                _float_str(row.get("rating")),
-                _int_str(row.get("reviewCount")),
+                row.get("id", ""), row.get("name", ""),
+                row.get("postcode") or "", row.get("address") or "",
+                str(row.get("rating") or ""), str(row.get("reviewCount") or ""),
                 row.get("category") or "",
-                _float_str(row.get("lat")),
-                _float_str(row.get("lng")),
-                row.get("bezirkId") or "",
-                row.get("bezirkName") or "",
+                str(row.get("lat") or ""), str(row.get("lng") or ""),
+                row.get("bezirkId") or "", row.get("bezirkName") or "",
                 str(row.get("hasDefamationNotice", False)).lower(),
-                _int_str(row.get("removedMin")),
-                _int_str(row.get("removedMax")),
-                _float_str(row.get("removedEstimate")),
-                _float_str(row.get("deletionRatioPct")),
-                _float_str(row.get("realRatingAdjusted")),
+                str(row.get("removedMin") or ""), str(row.get("removedMax") or ""),
+                str(row.get("removedEstimate") or ""),
+                str(row.get("deletionRatioPct") or ""),
+                str(row.get("realRatingAdjusted") or ""),
                 row.get("removedText") or "",
-                row.get("url", ""),
-                row.get("readAt", ""),
-                row.get("placeState", ""),
-                row.get("status", ""),
+                row.get("url", ""), row.get("readAt", ""),
+                row.get("placeState", ""), row.get("status", ""),
                 row.get("error") or "",
             ])
 
 
-def _float_str(v) -> str:
-    if v is None:
-        return ""
-    return str(v)
-
-
-def _int_str(v) -> str:
-    if v is None:
-        return ""
-    return str(v)
-
-
-# ----- Main -----
-
 def main():
+    rules = load_rules()
+    print(f"Loaded rules from {RULES_PATH}")
+    print(f"  {len(rules['categories'])} category buckets")
+    print(f"  {len(rules['blocked_strings'])} blocked strings")
+    print(f"  {len(rules['review_keywords'])} review keywords")
+    print(f"  {len(rules['name_keywords'])} name keywords")
+    print()
+
     print(f"Reading {PLACES_JSON} ...")
     with open(PLACES_JSON) as f:
         places = json.load(f)
@@ -324,7 +164,12 @@ def main():
     removed = 0
     for place in places:
         old = place.get("category")
-        new = fix_category(old)
+        new = fix_category(old, rules)
+        if new is None and old is not None and place.get("status") == "success":
+            # Try name-based inference as last resort
+            name = place.get("name", "")
+            if has_name_keyword(name, rules):
+                new = normalize(name, rules)
         if old != new:
             changed += 1
             if new is None:
@@ -334,7 +179,10 @@ def main():
     print(f"Changed: {changed} categories ({removed} removed as garbage)")
     print(f"Total:   {len(places)} places")
 
-    # Sort (postcode then name)
+    if changed == 0:
+        print("Nothing to do.")
+        return
+
     places.sort(key=lambda p: (p.get("postcode") or "", p.get("name") or ""))
 
     print(f"\nWriting {PLACES_JSON} ...")
@@ -345,14 +193,14 @@ def main():
     print(f"Writing {PLACES_CSV} ...")
     write_csv(places, PLACES_CSV)
 
-    # Show new distribution
-    from collections import Counter
     cats = Counter()
+    nulls = 0
     for p in places:
         c = p.get("category")
-        cats[c if c else "(leer)"] += 1
+        if c: cats[c] += 1
+        else: nulls += 1
 
-    print(f"\n=== Neue Kategorien ({len(cats)}) ===")
+    print(f"\n=== Categories ({len(cats)} buckets, {nulls} null) ===")
     for cat, count in cats.most_common():
         print(f"  {count:5d}  {cat}")
 

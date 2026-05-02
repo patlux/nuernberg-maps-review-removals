@@ -588,24 +588,8 @@ func inferCategoryFromName(name string) string {
 		return ""
 	}
 	lower := strings.ToLower(name)
-	// Only use name fallback if it contains a clear category-indicating keyword.
-	categoryNameKeywords := []string{
-		"café", "cafe", "caffè", "caffe", "kaffee", "coffee", "espresso",
-		"bäckerei", "baeckerei", "konditorei", "backstube",
-		"restaurant", "ristorante", "trattoria", "osteria",
-		"pizzeria", "pizza",
-		"burger",
-		"sushi",
-		"döner", "doener", "kebab",
-		"imbiss", "grill", "hähnchen", "haehnchen", "chicken",
-		"bar", "pub", "kneipe", "biergarten", "brauerei",
-		"hotel", "pension", "gasthof", "gasthaus", "gästehaus", "gaestehaus",
-		"bistro",
-		"eis", "eisdiele", "eiscafé", "eiscafe",
-		"steak",
-	}
 	hasKeyword := false
-	for _, kw := range categoryNameKeywords {
+	for _, kw := range mapsreview.NameKeywords() {
 		if strings.Contains(lower, kw) {
 			hasKeyword = true
 			break
@@ -614,13 +598,11 @@ func inferCategoryFromName(name string) string {
 	if !hasKeyword {
 		return ""
 	}
-	// Pass the name through cleanCategoryCandidate (without the name check)
-	// and then normalize to get the canonical category.
 	candidate := cleanCategoryCandidate(name, "")
 	if candidate == "" {
 		candidate = name
 	}
-	return normalizeCategory(candidate)
+	return mapsreview.NormalizeCategory(candidate)
 }
 
 func cleanCategoryCandidate(value, name string) string {
@@ -661,50 +643,7 @@ func cleanCategoryCandidate(value, name string) string {
 	if isBusinessName(candidate) {
 		return ""
 	}
-	blocked := map[string]bool{
-		// Google Maps UI elements (not real categories)
-		"restaurants in der nähe":   true,
-		"restaurants in der naehe":  true,
-		"verfügbarkeit prüfen":      true,
-		"verfuegbarkeit pruefen":    true,
-		"hotels":                    true,
-		"mögliche aktivitäten":      true,
-		"moegliche aktivitaeten":    true,
-		"bars":                      true,
-		"kaffee":                    true,
-		"zum mitnehmen":             true,
-		"lebensmittel":              true,
-		"gespeichert":               true,
-		"zuletzt verwendet":         true,
-		"app herunterladen":         true,
-		"fotos ansehen":             true,
-		"übersicht":                 true,
-		"speisekarte":               true,
-		"rezensionen":               true,
-		"info":                      true,
-		"routenplaner":              true,
-		"speichern":                 true,
-		"in der nähe":               true,
-		"in der naehe":              true,
-		"teilen":                    true,
-		"bewertungen":               true,
-		"sortieren":                  true,
-		"filtern":                   true,
-		"alle anzeigen":             true,
-		"mehr anzeigen":             true,
-		"anrufen":                   true,
-		"website":                   true,
-		"route":                     true,
-		"öffnet um":                 true,
-		"oeffnet um":                true,
-		"geöffnet":                  true,
-		"geschlossen":               true,
-		"heute geöffnet":            true,
-		"dauerhaft geschlossen":     true,
-		"vorübergehend geschlossen": true,
-		"einkaufen":                 true,
-		"dienstleistungen":          true,
-	}
+	blocked := mapsreview.BlockedCategorySet()
 	if blocked[lower] {
 		return ""
 	}
@@ -714,7 +653,7 @@ func cleanCategoryCandidate(value, name string) string {
 	if !regexp.MustCompile(`\p{L}`).MatchString(candidate) {
 		return ""
 	}
-	return normalizeCategory(candidate)
+	return mapsreview.NormalizeCategory(candidate)
 }
 
 // stripPrivateUseChars removes Unicode private-use area characters
@@ -737,22 +676,12 @@ func stripPrivateUseChars(s string) string {
 // than a category name. Checks for German food-review vocabulary and sentence-like
 // structure.
 func isReviewSnippet(lower string) bool {
-	reviewWords := []string{
-		"schmeckt", "lecker", "sehr gut", "super", "top", "klasse",
-		"komme", "wieder", "bedienung", "freundlich", "preise",
-		"bestellt", "gegessen", "empfehlen", "enttäuscht",
-		"der kaffee", "das essen", "die pizza", "der döner",
-		"trinkgeld", "parkplatz", "bestellung", "lieferung",
-		"zubereitet", "frisch", "atmosphäre", "gemütlich",
-		"ich war", "ich bin", "ich kann", "wir haben", "wir waren",
-	}
 	wordCount := 0
-	for _, word := range reviewWords {
+	for _, word := range mapsreview.ReviewKeywords() {
 		if strings.Contains(lower, word) {
 			wordCount++
 		}
 	}
-	// If 2+ review keywords are found, it's likely a review snippet
 	return wordCount >= 2
 }
 
@@ -773,177 +702,6 @@ func isBusinessName(candidate string) bool {
 }
 
 // normalizeCategory maps all category names to 12 canonical buckets.
-func normalizeCategory(candidate string) string {
-	lower := strings.ToLower(candidate)
-
-	// --- 1. Café ---
-	if containsAny(lower,
-		"café", "cafe", "kaffee", "coffee", "espresso",
-		"eisdiele", "eiscafé", "eiscafe", "ice cream",
-		"teeladen", "tea", "bubble-tea", "bubble tea",
-		"frühstück", "fruehstueck", "brunch",
-		"konditorei", "patisserie", "confiserie", "tortenbäckerei", "tortenbaeckerei",
-		"schokoladencafé", "schokoladencafe", "schokoladengeschäft", "schokoladengeschaeft",
-		"süßwarengeschäft", "suesswarengeschaeft", "süßwaren", "suesswaren",
-		"süßigkeiten", "suessigkeiten", "keksgeschäft", "keksgeschaeft",
-		"donut-shop", "donut shop",
-		"cafetek", "kindercafé", "kindercafe",
-		"saftbar", "café mit frucht", "cafe mit frucht",
-		"kunst-café", "kunst-cafe",
-	) {
-		return "Café / Konditorei"
-	}
-
-	// --- 2. Bäckerei ---
-	if containsAny(lower,
-		"bäckerei", "baeckerei", "backbedarf",
-		"brezel", "bretzel",
-		"backstube",
-		"großbäckerei", "grossbaeckerei",
-		"hochzeitstortenbäckerei", "hochzeitstortenbaeckerei",
-	) {
-		return "Bäckerei"
-	}
-
-	// --- 3. Pizzeria ---
-	if containsAny(lower,
-		"pizzeria", "pizza-lieferdienst", "pizza lieferdienst",
-		"pizza",
-	) {
-		return "Pizzeria"
-	}
-
-	// --- 4. Burger ---
-	if containsAny(lower, "burger") {
-		return "Burger"
-	}
-
-	// --- 5. Sushi ---
-	if containsAny(lower, "sushi") {
-		return "Sushi"
-	}
-
-	// --- 6. Döner / Kebab ---
-	if containsAny(lower,
-		"döner", "doener", "kebab",
-		"türkisches restaurant", "tuerkisches restaurant",
-	) {
-		return "Döner / Kebab"
-	}
-
-	// --- 7. Asiatisch ---
-	if containsAny(lower,
-		"asiatisch", "chinesisch", "thailändisch", "thailaendisch",
-		"vietnamesisch", "japanisch", "koreanisch",
-		"indisch", "persisch",
-		"ramen", "pho", "poke",
-		"pan-asiatisch", "malaysisch", "hawaiianisch",
-		"sri lanka", "afghanisch",
-		"bubble-tea", "bubble tea", // already caught by Café above, but just in case
-	) {
-		return "Asiatisch"
-	}
-
-	// --- 8. Imbiss ---
-	if containsAny(lower,
-		"imbiss", "imbissrestaurant", "schnellimbiss",
-		"fast-food", "fast food",
-		"takeaway", "take-away", "take away",
-		"zum mitnehmen",
-		"lieferdienst", "lieferservice", "bringdienst",
-		"catering",
-		"sandwich",
-		"falafel",
-		"salat-shop", "salat shop",
-		"hähnchen", "haehnchen", "chicken",
-		"grill", "grillrestaurant",
-		"kantine",
-	) {
-		return "Imbiss"
-	}
-
-	// --- 9. Restaurant (all other cuisines) ---
-	if containsAny(lower,
-		"restaurant", "restaurants",
-		"griechisch", "italienisch", "italienische",
-		"deutsch", "fränkisch", "fraenkisch", "bayerisch",
-		"mexikanisch", "spanisch",
-		"mediterran", "orientalisch", "arabisch",
-		"afrikanisch", "äthiopisch", "aethiopisch",
-		"marokkanisch", "tunesisch", "ägyptisch", "aegyptisch",
-		"libanesisch", "israelisch", "syrisch",
-		"französisch", "franzoesisch",
-		"österreichisch", "oesterreichisch", "tschechisch",
-		"ukrainisch", "russisch", "polnisch",
-		"rumänisch", "rumaenisch", "serbisch",
-		"bulgarisch", "ungarisch",
-		"argentinisch", "brasilianisch",
-		"amerikanisch", "georgisch", "armenisch",
-		"lateinamerikanisch", "tex-mex",
-		"gourmetrestaurant", "gourmet",
-		"steakhaus", "steak", "grillrestaurant", "grill",
-		"fischrestaurant", "fisch", "meeresfrüchte", "meeresfruechte",
-		"familienrestaurant", "familien",
-		"mittagsrestaurant", "mittag",
-		"halalrestaurant", "halal",
-		"veganes restaurant", "vegan", "vegetarisch",
-		"suppenrestaurant", "suppen",
-		"tapasbar", "tapas",
-		"buffet-restaurant", "buffet",
-		"bratwurst",
-		"diner",
-		"food-court", "food court",
-		"gaststätte", "gaststaette",
-		"speiselokal", "gasthaus", "gasthof",
-		"bistro",
-	) {
-		return "Restaurant"
-	}
-
-	// --- 10. Bar ---
-	if containsAny(lower,
-		"bar", "bars",
-		"biergarten", "bier",
-		"kneipe", "gastrokneipe",
-		"pub",
-		"shisha",
-		"cocktail", "lounge",
-		"weinstube", "weinlokal",
-		"stehbar",
-		"brauerei", "brauereischänke", "brauereischaenke",
-		"nachtclub",
-	) {
-		return "Bar"
-	}
-
-	// --- 11. Lebensmittel ---
-	if containsAny(lower,
-		"supermarkt", "discounter",
-		"lebensmittel",
-		"bioladen",
-		"feinkost", "delikatessen",
-		"fleischerei", "metzgerei",
-		"fischgeschäft", "fischgeschaeft",
-		"obst", "gemüse", "gemuese",
-		"getränke", "getraenke", "weinhandlung",
-		"kiosk",
-	) {
-		return "Lebensmittel"
-	}
-
-	// --- 12. Sonstiges (catch-all for non-food) ---
-	return "Sonstiges"
-}
-
-func containsAny(lower string, keywords ...string) bool {
-	for _, kw := range keywords {
-		if strings.Contains(lower, kw) {
-			return true
-		}
-	}
-	return false
-}
-
 func scrapePlaces(ctx context.Context, discoveries []mapsreview.Discovery, args args) ([]mapsreview.Place, error) {
 	previous, err := mapsreview.ReadJSON(args.Out, []mapsreview.Place{})
 	if err != nil {

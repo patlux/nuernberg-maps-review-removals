@@ -1,0 +1,218 @@
+{
+  "blocked_strings": [
+    "restaurants in der nähe",
+    "restaurants in der naehe",
+    "verfügbarkeit prüfen",
+    "verfuegbarkeit pruefen",
+    "hotels",
+    "mögliche aktivitäten",
+    "moegliche aktivitaeten",
+    "bars",
+    "kaffee",
+    "zum mitnehmen",
+    "lebensmittel",
+    "gespeichert",
+    "zuletzt verwendet",
+    "app herunterladen",
+    "fotos ansehen",
+    "übersicht",
+    "speisekarte",
+    "rezensionen",
+    "info",
+    "routenplaner",
+    "speichern",
+    "in der nähe",
+    "in der naehe",
+    "teilen",
+    "bewertungen",
+    "sortieren",
+    "filtern",
+    "alle anzeigen",
+    "mehr anzeigen",
+    "anrufen",
+    "website",
+    "route",
+    "öffnet um",
+    "oeffnet um",
+    "geöffnet",
+    "geschlossen",
+    "heute geöffnet",
+    "dauerhaft geschlossen",
+    "vorübergehend geschlossen",
+    "einkaufen",
+    "dienstleistungen"
+  ],
+  "review_keywords": [
+    "schmeckt", "lecker", "sehr gut", "super", "top", "klasse",
+    "komme", "wieder", "bedienung", "freundlich", "preise",
+    "bestellt", "gegessen", "empfehlen", "enttäuscht",
+    "der kaffee", "das essen", "die pizza", "der döner",
+    "trinkgeld", "parkplatz", "bestellung", "lieferung",
+    "zubereitet", "frisch", "atmosphäre", "gemütlich",
+    "ich war", "ich bin", "ich kann", "wir haben", "wir waren"
+  ],
+  "name_keywords": [
+    "café", "cafe", "caffè", "caffe", "kaffee", "coffee", "espresso",
+    "bäckerei", "baeckerei", "konditorei", "backstube",
+    "restaurant", "ristorante", "trattoria", "osteria",
+    "pizzeria", "pizza",
+    "burger",
+    "sushi",
+    "döner", "doener", "kebab",
+    "imbiss", "grill", "hähnchen", "haehnchen", "chicken",
+    "bar", "pub", "kneipe", "biergarten", "brauerei",
+    "hotel", "pension", "gasthof", "gasthaus", "gästehaus", "gaestehaus",
+    "bistro",
+    "eis", "eisdiele", "eiscafé", "eiscafe",
+    "steak"
+  ],
+  "categories": [
+    {
+      "name": "Café / Konditorei",
+      "keywords": [
+        "café", "cafe", "kaffee", "coffee", "espresso",
+        "eisdiele", "eiscafé", "eiscafe", "ice cream",
+        "teeladen", "tea", "bubble-tea", "bubble tea",
+        "frühstück", "fruehstueck", "brunch",
+        "konditorei", "patisserie", "confiserie", "tortenbäckerei", "tortenbaeckerei",
+        "schokoladencafé", "schokoladencafe", "schokoladengeschäft", "schokoladengeschaeft",
+        "süßwarengeschäft", "suesswarengeschaeft", "süßwaren", "suesswaren",
+        "süßigkeiten", "suessigkeiten", "keksgeschäft", "keksgeschaeft",
+        "donut-shop", "donut shop",
+        "cafetek", "kindercafé", "kindercafe",
+        "saftbar", "café mit frucht", "cafe mit frucht",
+        "kunst-café", "kunst-cafe"
+      ]
+    },
+    {
+      "name": "Bäckerei",
+      "keywords": [
+        "bäckerei", "baeckerei", "backbedarf",
+        "brezel", "bretzel",
+        "backstube",
+        "großbäckerei", "grossbaeckerei",
+        "hochzeitstortenbäckerei", "hochzeitstortenbaeckerei"
+      ]
+    },
+    {
+      "name": "Pizzeria",
+      "keywords": [
+        "pizzeria", "pizza-lieferdienst", "pizza lieferdienst",
+        "pizza"
+      ]
+    },
+    {
+      "name": "Burger",
+      "keywords": ["burger"]
+    },
+    {
+      "name": "Sushi",
+      "keywords": ["sushi"]
+    },
+    {
+      "name": "Döner / Kebab",
+      "keywords": [
+        "döner", "doener", "kebab",
+        "türkisches restaurant", "tuerkisches restaurant"
+      ]
+    },
+    {
+      "name": "Asiatisch",
+      "keywords": [
+        "asiatisch", "chinesisch", "thailändisch", "thailaendisch",
+        "vietnamesisch", "japanisch", "koreanisch",
+        "indisch", "persisch",
+        "ramen", "pho", "poke",
+        "pan-asiatisch", "malaysisch", "hawaiianisch",
+        "sri lanka", "afghanisch"
+      ]
+    },
+    {
+      "name": "Imbiss",
+      "keywords": [
+        "imbiss", "imbissrestaurant", "schnellimbiss",
+        "fast-food", "fast food",
+        "takeaway", "take-away", "take away",
+        "zum mitnehmen",
+        "lieferdienst", "lieferservice", "bringdienst",
+        "catering",
+        "sandwich",
+        "falafel",
+        "salat-shop", "salat shop",
+        "hähnchen", "haehnchen", "chicken",
+        "grill", "grillrestaurant",
+        "kantine"
+      ]
+    },
+    {
+      "name": "Restaurant",
+      "keywords": [
+        "restaurant", "restaurants",
+        "griechisch", "italienisch", "italienische",
+        "deutsch", "fränkisch", "fraenkisch", "bayerisch",
+        "mexikanisch", "spanisch",
+        "mediterran", "orientalisch", "arabisch",
+        "afrikanisch", "äthiopisch", "aethiopisch",
+        "marokkanisch", "tunesisch", "ägyptisch", "aegyptisch",
+        "libanesisch", "israelisch", "syrisch",
+        "französisch", "franzoesisch",
+        "österreichisch", "oesterreichisch", "tschechisch",
+        "ukrainisch", "russisch", "polnisch",
+        "rumänisch", "rumaenisch", "serbisch",
+        "bulgarisch", "ungarisch",
+        "argentinisch", "brasilianisch",
+        "amerikanisch", "georgisch", "armenisch",
+        "lateinamerikanisch", "tex-mex",
+        "gourmetrestaurant", "gourmet",
+        "steakhaus", "steak",
+        "fischrestaurant", "fisch", "meeresfrüchte", "meeresfruechte",
+        "familienrestaurant", "familien",
+        "mittagsrestaurant", "mittag",
+        "halalrestaurant", "halal",
+        "veganes restaurant", "vegan", "vegetarisch",
+        "suppenrestaurant", "suppen",
+        "tapasbar", "tapas",
+        "buffet-restaurant", "buffet",
+        "bratwurst",
+        "diner",
+        "food-court", "food court",
+        "gaststätte", "gaststaette",
+        "speiselokal", "gasthaus", "gasthof",
+        "bistro"
+      ]
+    },
+    {
+      "name": "Bar",
+      "keywords": [
+        "bar", "bars",
+        "biergarten", "bier",
+        "kneipe", "gastrokneipe",
+        "pub",
+        "shisha",
+        "cocktail", "lounge",
+        "weinstube", "weinlokal",
+        "stehbar",
+        "brauerei", "brauereischänke", "brauereischaenke",
+        "nachtclub"
+      ]
+    },
+    {
+      "name": "Lebensmittel",
+      "keywords": [
+        "supermarkt", "discounter",
+        "lebensmittel",
+        "bioladen",
+        "feinkost", "delikatessen",
+        "fleischerei", "metzgerei",
+        "fischgeschäft", "fischgeschaeft",
+        "obst", "gemüse", "gemuese",
+        "getränke", "getraenke", "weinhandlung",
+        "kiosk"
+      ]
+    },
+    {
+      "name": "Sonstiges",
+      "keywords": []
+    }
+  ]
+}
