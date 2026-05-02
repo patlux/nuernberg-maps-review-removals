@@ -508,7 +508,7 @@ __ANALYTICS__
       <article class="card panel"><h2>Meiste entfernte Bewertungen</h2><p>Sortiert nach geschätztem Mittelpunkt.</p><div class="bars" id="barsRemoved"></div></article>
       <article class="card panel"><h2>Höchste Lösch-Quote</h2><p>Entfernte / sichtbare + entfernte Bewertungen.</p><div class="bars" id="barsRatio"></div></article>
       <article class="card panel"><h2>Schlechtestes Worst-Case-Rating</h2><p>Modell: alle entfernten Bewertungen waren 1★.</p><div class="bars" id="barsWorst"></div></article>
-      <article class="card panel"><h2>Beste Orte ohne Löschbanner</h2><p>Ohne sichtbaren Diffamierungs-Löschbanner, Rating zuerst.</p><div class="bars" id="barsClean"></div></article>
+      <article class="card panel"><h2>Beste Orte ohne Löschbanner</h2><p>Ohne sichtbaren Diffamierungs-Löschbanner, Rating zuerst — ab 100 Rezensionen.</p><div class="bars" id="barsClean"></div></article>
     </section>
 
     <section class="card dist" aria-label="Verteilung"><h2>Verteilung der Lösch-Stufen</h2><div id="distribution"></div></section>

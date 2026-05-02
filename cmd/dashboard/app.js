@@ -143,8 +143,10 @@ function requestUserLocation() {
     setNearbyStatus(geolocationErrorMessage(error), true);
   }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 });
 }
+const MIN_CLEAN_RANKING_REVIEWS = 100;
 function bannerRows(rows) { return rows.filter(row => row.hasBanner && Number.isFinite(row.removedEstimate)); }
 function cleanRows(rows) { return rows.filter(row => !row.hasBanner); }
+function cleanRankingRows(rows) { return cleanRows(rows).filter(row => Number.isFinite(row.rating) && Number.isFinite(row.reviewCount) && row.reviewCount >= MIN_CLEAN_RANKING_REVIEWS); }
 function defaultSortFor(mode) {
   if (mode === 'removed') return ['removedEstimate', 'desc'];
   if (mode === 'ratio') return ['deletionRatioPct', 'desc'];
@@ -393,7 +395,7 @@ function updatePanels(rows) {
   renderBars('barsRemoved', 'removed', [...banners].sort((a,b) => b.removedEstimate - a.removedEstimate), row => row.removedEstimate, row => row.removedRange + ' · ' + n(row.removedEstimate), '', 300);
   renderBars('barsRatio', 'ratio', [...banners].sort((a,b) => (b.deletionRatioPct ?? -1) - (a.deletionRatioPct ?? -1)), row => row.deletionRatioPct || 0, row => pct(row.deletionRatioPct), '', Math.max(10, ...banners.map(row => row.deletionRatioPct || 0)));
   renderBars('barsWorst', 'worst', [...banners].filter(row => Number.isFinite(row.realRatingAdjusted)).sort((a,b) => a.realRatingAdjusted - b.realRatingAdjusted), row => 5 - row.realRatingAdjusted, row => rating(row.rating) + '★ → ' + rating(row.realRatingAdjusted, 2) + '★', 'orange', 4);
-  renderBars('barsClean', 'clean', [...cleanRows(rows)].sort((a,b) => b.rating - a.rating || b.reviewCount - a.reviewCount), row => row.rating, row => rating(row.rating) + ' · ' + n(row.reviewCount), 'green', 5);
+  renderBars('barsClean', 'clean', [...cleanRankingRows(rows)].sort((a,b) => b.rating - a.rating || b.reviewCount - a.reviewCount), row => row.rating, row => rating(row.rating) + '★ · ' + n(row.reviewCount) + ' Rezensionen', 'green', 5);
   renderDistribution(rows);
 }
 function renderTable(rows) {

@@ -1,4 +1,4 @@
-.PHONY: setup test check validate scrape backfill charts dashboard site deploy-pages all
+.PHONY: setup test check validate scrape backfill charts dashboard dashboard-build open-dashboard site deploy-pages all
 
 setup:
 	go mod download
@@ -22,10 +22,22 @@ backfill:
 charts:
 	go run ./cmd/charts $(ARGS)
 
-dashboard:
+dashboard: dashboard-build open-dashboard
+
+dashboard-build:
 	go run ./cmd/dashboard $(ARGS)
 
-site: charts dashboard
+open-dashboard:
+	@file="$$(pwd)/output/charts/nuernberg_dashboard.html"; \
+	if command -v open >/dev/null 2>&1; then \
+		open "$$file"; \
+	elif command -v xdg-open >/dev/null 2>&1; then \
+		xdg-open "$$file" >/dev/null 2>&1 & \
+	else \
+		echo "Dashboard geschrieben: $$file"; \
+	fi
+
+site: charts dashboard-build
 	rm -rf public
 	mkdir -p public/charts public/data
 	touch public/.nojekyll

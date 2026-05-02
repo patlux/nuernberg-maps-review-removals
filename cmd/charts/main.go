@@ -203,7 +203,7 @@ func makeChart(rows []mapsreview.Place, scope string, args args) string {
 		func(row mapsreview.Place) float64 { return mapsreview.FloatValue(row.Rating) },
 		5,
 		func(row mapsreview.Place) string {
-			return mapsreview.FormatPtrFloat(row.Rating, 1) + "★  (" + mapsreview.FormatPtrInt(row.ReviewCount) + ")"
+			return mapsreview.FormatPtrFloat(row.Rating, 1) + "★  (" + mapsreview.FormatPtrInt(row.ReviewCount) + " Rezensionen)"
 		},
 		"Rating (★)",
 	))
