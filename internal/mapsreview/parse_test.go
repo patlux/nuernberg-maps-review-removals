@@ -132,6 +132,27 @@ func TestParsePlaceStatsIgnoresReviewerProfileCounts(t *testing.T) {
 	}
 }
 
+func TestParsePlaceStatsIgnoresReviewerProfileCountsWithoutVerifiedMarker(t *testing.T) {
+	stats := ParsePlaceStats("EAT HAPPY\n5,0 Sterne\n1 Rezension\nIsabella Staudenmaier Local Guide · 621 Rezensionen · 5.064 Fotos")
+	if stats.ReviewCount == nil || *stats.ReviewCount != 1 {
+		t.Fatalf("reviewCount = %v, want 1", stats.ReviewCount)
+	}
+}
+
+func TestParsePlaceStatsDropsReviewCountWithoutRating(t *testing.T) {
+	stats := ParsePlaceStats("Irgendwas\n621 Berichte")
+	if stats.Rating != nil || stats.ReviewCount != nil {
+		t.Fatalf("stats = %#v, want nil rating/reviewCount", stats)
+	}
+}
+
+func TestExtractAddressIgnoresSuggestedPlacesSection(t *testing.T) {
+	address := ExtractAddress("EAT HAPPY\nWird auch oft gesucht\nHaDaCo Sushi Thai Wok\nKirchenweg 5, 90419 Nürnberg")
+	if address != nil {
+		t.Fatalf("address = %v, want nil", *address)
+	}
+}
+
 func TestParseGermanNumber(t *testing.T) {
 	tests := map[string]float64{
 		"1.234": 1234,

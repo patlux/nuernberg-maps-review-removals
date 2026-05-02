@@ -182,6 +182,7 @@ func numberFromToken(token string) (int, bool) {
 
 func ParsePlaceStats(text string) PlaceStats {
 	text = TrimMapsAncillarySections(text)
+	text = TrimAfterReviewSummary(text)
 	var rating *float64
 	var reviewCount *int
 	compactRatingReviewRe := regexp.MustCompile(`(?i)([1-5][,.][0-9])([0-9][0-9.]*)[\s\x{00a0}]*(?:Rezensionen|Berichte)\b`)
@@ -245,6 +246,9 @@ func ParsePlaceStats(text string) PlaceStats {
 			}
 		}
 	}
+	if rating == nil && reviewCount != nil && *reviewCount > 0 {
+		reviewCount = nil
+	}
 	return PlaceStats{Rating: rating, ReviewCount: reviewCount}
 }
 
@@ -257,6 +261,24 @@ func TrimMapsAncillarySections(text string) string {
 		"web results",
 		"erläuterungen zu diesen daten",
 		"die möglichkeiten von google maps voll ausschöpfen",
+	}
+	cut := len(text)
+	for _, marker := range cutMarkers {
+		if idx := strings.Index(lower, marker); idx >= 0 && idx < cut {
+			cut = idx
+		}
+	}
+	return text[:cut]
+}
+
+func TrimAfterReviewSummary(text string) string {
+	lower := strings.ToLower(text)
+	cutMarkers := []string{
+		"rezensionen werden nicht überprüft",
+		"reviews are not verified",
+		"in rezensionen suchen",
+		"search reviews",
+		"local guide",
 	}
 	cut := len(text)
 	for _, marker := range cutMarkers {
@@ -312,6 +334,7 @@ func parseRatingNearReviewCount(text string, reviewCount int) (float64, bool) {
 }
 
 func ExtractAddress(text string) *string {
+	text = TrimMapsAncillarySections(text)
 	patterns := []string{
 		`(?i)Adresse:\s*([^\n]*\b9\d{4}\s+[^\n]*)`,
 		`(?i)\n([^\n]*,\s*9\d{4}\s+[^\n]*)\n`,
