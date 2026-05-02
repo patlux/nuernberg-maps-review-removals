@@ -1,6 +1,6 @@
 # Nürnberg — Orte sortiert nach geschätzter Anzahl entfernter Bewertungen
 
-Quelle: Google Maps, öffentlich sichtbare Diffamierungs-Banner. Snapshot: 03.05.2026.
+Quelle: Google Maps, öffentlich sichtbare Diffamierungs-Banner. Snapshot: 02.05.2026.
 
 Sortierung: geschätzter Mittelpunkt der Google-Bereiche absteigend. „Über 250“ wird als 300 geschätzt.
 
