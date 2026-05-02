@@ -262,7 +262,17 @@ func extractPlace(ctx context.Context, discovery mapsreview.Discovery) (mapsrevi
 	}
 
 	statsText := reviews.Text
-	stats := mapsreview.ParsePlaceStats(statsText)
+	// Prefer structured DOM extraction over text parsing
+	stats := mapsreview.PlaceStats{Rating: reviews.Rating, ReviewCount: reviews.ReviewCount}
+	if stats.Rating == nil || stats.ReviewCount == nil {
+		parsed := mapsreview.ParsePlaceStats(statsText)
+		if stats.Rating == nil {
+			stats.Rating = parsed.Rating
+		}
+		if stats.ReviewCount == nil {
+			stats.ReviewCount = parsed.ReviewCount
+		}
+	}
 	if stats.Rating == nil || stats.ReviewCount == nil {
 		fallbackStats := mapsreview.ParsePlaceStats(rawText)
 		if stats.Rating == nil {

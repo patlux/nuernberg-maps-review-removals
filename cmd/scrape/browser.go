@@ -18,10 +18,12 @@ type discoveredAnchor struct {
 }
 
 type mapText struct {
-	Title    string `json:"title"`
-	H1       string `json:"h1"`
-	Category string `json:"category"`
-	Text     string `json:"text"`
+	Title       string   `json:"title"`
+	H1          string   `json:"h1"`
+	Category    string   `json:"category"`
+	Text        string   `json:"text"`
+	Rating      *float64 `json:"rating"`
+	ReviewCount *int     `json:"reviewCount"`
 }
 
 func urlPathEscape(value string) string {
@@ -95,11 +97,47 @@ func readMapText(ctx context.Context) (mapText, error) {
   const category = Array.from(document.querySelectorAll('button[jsaction*="category"]'))
     .map(el => (el.innerText || el.textContent || '').trim())
     .find(Boolean) || '';
+
+  // Extract rating and review count from structured DOM near h1
+  let rating = null, reviewCount = null;
+  const h1 = document.querySelector('h1');
+  if (h1) {
+    const placeSection = h1.closest('[jsaction]') || h1.parentElement;
+    // Rating: aria-label like "5,0 Sterne" or "4,5 stars"
+    const allRatingLabels = Array.from(document.querySelectorAll('[aria-label*="Sterne" i], [aria-label*="stars" i], [aria-label*="★"]'))
+      .map(el => el.getAttribute('aria-label') || '');
+    // Prefer the one closest to h1 (not in suggestions/reviews section)
+    const ownRating = allRatingLabels.find(label => {
+      const el = [...document.querySelectorAll('[aria-label="' + label.replace(/"/g, '') + '" i]')][0];
+      if (!el) return true;
+      const dist = Math.abs((el.getBoundingClientRect().top || 0) - (h1.getBoundingClientRect().top || 0));
+      return dist < 300;
+    });
+    if (ownRating) {
+      const match = ownRating.match(/([\d,]+)\s*(?:Sterne|stars)/i);
+      if (match) rating = match[1].replace(',', '.');
+    }
+    // Review count: aria-label like "1 Rezension" or "173 reviews"
+    const reviewLabels = Array.from(document.querySelectorAll('[aria-label*="Rezension" i], [aria-label*="review" i]'))
+      .map(el => ({ el, label: el.getAttribute('aria-label') || '', text: el.textContent || '' }));
+    const ownReview = reviewLabels.find(r => {
+      if (!r.el) return false;
+      const dist = Math.abs((r.el.getBoundingClientRect().top || 0) - (h1.getBoundingClientRect().top || 0));
+      return dist < 300;
+    });
+    if (ownReview) {
+      const match = ownReview.label.match(/([\d.]+)\s*Rezension/i) || ownReview.text.match(/([\d]+)/);
+      if (match) reviewCount = match[1].replace(/\./g, '');
+    }
+  }
+
   return {
     title: document.title,
     h1: document.querySelector('h1')?.textContent?.trim() || '',
     category,
-    text: [document.body.innerText, ...attrTexts].join('\n')
+    text: [document.body.innerText, ...attrTexts].join('\n'),
+    rating: rating ? parseFloat(rating) : null,
+    reviewCount: reviewCount ? parseInt(reviewCount, 10) : null
   };
 })()`, &out))
 	return out, err
