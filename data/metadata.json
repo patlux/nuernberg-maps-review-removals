@@ -1,5 +1,5 @@
 {
-  "readAt": "2026-05-02T08:51:04Z",
+  "readAt": "2026-05-02T14:38:56Z",
   "postcodes": [
     "90402",
     "90403",
@@ -56,11 +56,11 @@
   "saveEvery": 1,
   "delayMin": 2500,
   "delayMax": 6000,
-  "output": "output/verify-dom.json",
-  "csv": "output/verify-dom.csv",
+  "output": "output/places.json",
+  "csv": "output/places.csv",
   "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36",
-  "discovered": 19,
-  "rows": 19,
-  "success": 19,
+  "discovered": 2248,
+  "rows": 2248,
+  "success": 2248,
   "errors": 0
 }
