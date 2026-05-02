@@ -356,13 +356,13 @@ __ANALYTICS__
     .hero-title { width: min(760px, 100%); padding: 24px 28px; background: var(--hero-title-bg); color: #fff; font-size: clamp(32px, 4vw, 52px); line-height: 1.12; font-weight: 400; }
     .hero-subtitle { width: min(760px, 100%); margin-top: 14px; padding: 18px 22px; background: var(--surface-raised); border-radius: 5px; box-shadow: var(--shadow); color: var(--muted); font-size: 20px; line-height: 1.45; }
     main { width: min(1320px, calc(100vw - 32px)); margin: 0 auto 70px; }
-    .controls { position: sticky; top: 0; z-index: 2000; display: grid; grid-template-columns: minmax(260px, 1fr) 120px 190px 150px 160px 140px auto; gap: 12px; align-items: end; padding: 16px; margin: 0 0 24px; background: var(--surface-raised); border: 1px solid var(--line); box-shadow: 0 2px 8px rgba(0,0,0,.12); }
+    .controls { position: sticky; top: 0; z-index: 2000; display: grid; grid-template-columns: minmax(200px, 1fr) 120px 170px 130px 130px 130px 95px auto; gap: 12px; align-items: end; padding: 16px; margin: 0 0 24px; background: var(--surface-raised); border: 1px solid var(--line); box-shadow: 0 2px 8px rgba(0,0,0,.12); }
     .filter-toggle { display: none; }
     label { display: block; margin-bottom: 6px; color: var(--muted); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
     input, select, button { font: inherit; }
     input, select { width: 100%; height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 5px; background: var(--input-bg); color: var(--input-text); outline: none; }
     input:focus, select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px var(--focus-blue); }
-    .reset { height: 44px; border: 0; border-radius: 5px; padding: 0 18px; background: var(--control-bg); color: var(--control-text); font-weight: 700; cursor: pointer; }
+    .reset { height: 34px; border: 0; border-radius: 5px; padding: 0 10px; background: var(--control-bg); color: var(--control-text); font-size: 13px; font-weight: 700; cursor: pointer; align-self: end; }
     .grid { display: grid; gap: 16px; }
     .kpis { grid-template-columns: repeat(5, minmax(0, 1fr)); }
     .card { background: var(--surface); border: 1px solid var(--line); overflow: hidden; }
@@ -467,7 +467,7 @@ __ANALYTICS__
       .search { grid-column: 1 / -1; }
       label { margin-bottom: 4px; font-size: 10px; letter-spacing: .04em; }
       input, select { height: 38px; padding: 0 9px; font-size: 15px; }
-      .reset { height: 38px; padding: 0 12px; font-size: 15px; }
+      .reset { height: 34px; padding: 0 10px; font-size: 13px; }
       .hero { min-height: 300px; }
       .hero-inner { padding-top: 92px; }
       .hero-title { font-size: 32px; padding: 18px; }
