@@ -96,7 +96,7 @@ func readMapText(ctx context.Context) (mapText, error) {
     .filter(Boolean);
   const category = Array.from(document.querySelectorAll('button[jsaction*="category"]'))
     .map(el => (el.innerText || el.textContent || '').trim())
-    .find(Boolean) || '';
+    .find(t => t && !/Verfügbarkeit|prüfen|gespeichert|zuletzt|herunterladen|in der Nähe|Restaurants in der|Aktivitäten|teilen/i.test(t)) || '';
 
   // Extract rating and review count from structured DOM near h1
   let rating = null, reviewCount = null;

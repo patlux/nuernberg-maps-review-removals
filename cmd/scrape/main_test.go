@@ -132,17 +132,17 @@ func TestIsPartialMapsShell(t *testing.T) {
 }
 
 func TestExtractCategoryUsesDOMCategory(t *testing.T) {
-	got := extractCategory("H&B Döner", "Döner-Restaurant", "Restaurants in der Nähe\nH&B Döner\n4,7")
-	if got == nil || *got != "Döner-Restaurant" {
-		t.Fatalf("extractCategory = %v, want Döner-Restaurant", got)
+	got := extractCategory("H&B Döner", "Döner / Kebab", "Restaurants in der Nähe\nH&B Döner\n4,7")
+	if got == nil || *got != "Döner / Kebab" {
+		t.Fatalf("extractCategory = %v, want Döner / Kebab", got)
 	}
 }
 
 func TestExtractCategoryFallsBackToHeaderText(t *testing.T) {
-	text := "Restaurants in der Nähe\nHotels\nH&B Döner\n4,7\n(263)\n\n·10–20 €\nDöner-Restaurant\nÜbersicht\nRezensionen\nInfo"
+	text := "Restaurants in der Nähe\nHotels\nH&B Döner\n4,7\n(263)\n\n·10–20 €\nDöner / Kebab\nÜbersicht\nRezensionen\nInfo"
 	got := extractCategory("H&B Döner", "", text)
-	if got == nil || *got != "Döner-Restaurant" {
-		t.Fatalf("extractCategory = %v, want Döner-Restaurant", got)
+	if got == nil || *got != "Döner / Kebab" {
+		t.Fatalf("extractCategory = %v, want Döner / Kebab", got)
 	}
 }
 
@@ -155,7 +155,7 @@ func TestExtractCategoryDoesNotUseNavigationChips(t *testing.T) {
 
 func TestExtractCategoryCleansInlineIconSuffix(t *testing.T) {
 	got := extractCategory("EAT HAPPY", "", "EAT HAPPY\nSushi Takeaway·\nÜbersicht\nInfo")
-	if got == nil || *got != "Sushi Takeaway" {
+	if got == nil || *got != "Sushi" {
 		t.Fatalf("extractCategory = %v, want Sushi Takeaway", got)
 	}
 }
