@@ -473,6 +473,7 @@ func classifyPlaceState(rawText, directReviewsText string) string {
 }
 
 func directReviewsTextHasNoPublicReviews(text string) bool {
+	text = mapsreview.TrimMapsAncillarySections(text)
 	compact := strings.ToLower(strings.Join(strings.Fields(text), " "))
 	if strings.Contains(compact, "noch keine rezensionen") || strings.Contains(compact, "no reviews") {
 		return true

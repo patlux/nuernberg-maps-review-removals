@@ -110,6 +110,10 @@ func TestDirectReviewsTextHasNoPublicReviews(t *testing.T) {
 	if !directReviewsTextHasNoPublicReviews(text) {
 		t.Fatal("no-review-tab place was not detected")
 	}
+	textWithBerichteInSuggestions := "EAT HAPPY\nÜbersicht\nInfo\nRoutenplaner\nRezension schreiben\nWird auch oft gesucht\nIrgendwo\n4,5\n621 Berichte"
+	if !directReviewsTextHasNoPublicReviews(textWithBerichteInSuggestions) {
+		t.Fatal("suggestion reviews should not make place look like it has public reviews")
+	}
 	withReviews := "Zu den zwei goldenen Hirschen\nÜbersicht\nRezensionen\nInfo\n4,6\n447 Berichte\nSortieren"
 	if directReviewsTextHasNoPublicReviews(withReviews) {
 		t.Fatal("reviews panel detected as no-review page")

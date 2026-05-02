@@ -118,6 +118,20 @@ func TestParsePlaceStatsDoesNotTreatReviewCountAsCompactRating(t *testing.T) {
 	}
 }
 
+func TestParsePlaceStatsIgnoresSuggestedPlacesSection(t *testing.T) {
+	stats := ParsePlaceStats("EAT HAPPY\nÜbersicht\nInfo\nRoutenplaner\nRezension schreiben\nWird auch oft gesucht\nHaDaCo Sushi Thai Wok\n4,5(105)")
+	if stats.Rating != nil || stats.ReviewCount != nil {
+		t.Fatalf("stats = %#v, want nil rating/reviewCount", stats)
+	}
+}
+
+func TestParsePlaceStatsIgnoresReviewerProfileCounts(t *testing.T) {
+	stats := ParsePlaceStats("EAT HAPPY\n5,0\n1 Rezension\nRezensionen werden nicht überprüft\nIsabella Staudenmaier Local Guide · 621 Rezensionen · 5.064 Fotos")
+	if stats.ReviewCount == nil || *stats.ReviewCount != 1 {
+		t.Fatalf("reviewCount = %v, want 1", stats.ReviewCount)
+	}
+}
+
 func TestParseGermanNumber(t *testing.T) {
 	tests := map[string]float64{
 		"1.234": 1234,

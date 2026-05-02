@@ -181,6 +181,7 @@ func numberFromToken(token string) (int, bool) {
 }
 
 func ParsePlaceStats(text string) PlaceStats {
+	text = TrimMapsAncillarySections(text)
 	var rating *float64
 	var reviewCount *int
 	compactRatingReviewRe := regexp.MustCompile(`(?i)([1-5][,.][0-9])([0-9][0-9.]*)[\s\x{00a0}]*(?:Rezensionen|Berichte)\b`)
@@ -193,7 +194,7 @@ func ParsePlaceStats(text string) PlaceStats {
 		}
 	}
 	reviewPatterns := []*regexp.Regexp{
-		regexp.MustCompile(`(?i)(?:^|\n|\s|\x{00a0}|\()([0-9][0-9.]*)\)?[\s\x{00a0}]*(?:Rezensionen|Berichte)\b`),
+		regexp.MustCompile(`(?i)(?:^|\n|\s|\x{00a0}|\()([0-9][0-9.]*)\)?[\s\x{00a0}]*(?:Berichte)\b`),
 		regexp.MustCompile(`(?m)^[1-5][,.][0-9]\s*\n\s*\(([0-9][0-9.]*)\)\s*$`),
 	}
 	for _, reviewRe := range reviewPatterns {
@@ -210,6 +211,11 @@ func ParsePlaceStats(text string) PlaceStats {
 		}
 		if reviewCount != nil {
 			break
+		}
+	}
+	if reviewCount == nil {
+		if n, ok := parseReviewCountNearRating(text); ok {
+			reviewCount = IntPtr(n)
 		}
 	}
 
@@ -240,6 +246,43 @@ func ParsePlaceStats(text string) PlaceStats {
 		}
 	}
 	return PlaceStats{Rating: rating, ReviewCount: reviewCount}
+}
+
+func TrimMapsAncillarySections(text string) string {
+	lower := strings.ToLower(text)
+	cutMarkers := []string{
+		"wird auch oft gesucht",
+		"you might also search for",
+		"webergebnisse",
+		"web results",
+		"erläuterungen zu diesen daten",
+		"die möglichkeiten von google maps voll ausschöpfen",
+	}
+	cut := len(text)
+	for _, marker := range cutMarkers {
+		if idx := strings.Index(lower, marker); idx >= 0 && idx < cut {
+			cut = idx
+		}
+	}
+	return text[:cut]
+}
+
+func parseReviewCountNearRating(text string) (int, bool) {
+	patterns := []string{
+		`(?i)([1-5][,.][0-9])[\s\x{00a0}]*(?:Sterne|stars|★)?\s*\n\s*\(?(\d[\d.]*)\)?\s*(?:Rezension(?:en)?|Berichte)\b`,
+		`(?i)([1-5][,.][0-9])[\s\x{00a0}]*(?:Sterne|stars|★).{0,80}(\d[\d.]*)\s*(?:Rezension(?:en)?|Berichte)\b`,
+	}
+	for _, pattern := range patterns {
+		if match := regexp.MustCompile(pattern).FindStringSubmatch(text); len(match) > 2 {
+			if _, ok := ParseGermanNumber(match[1]); !ok {
+				continue
+			}
+			if count, ok := ParseGermanNumber(match[2]); ok && count >= 0 {
+				return int(count), true
+			}
+		}
+	}
+	return 0, false
 }
 
 func parseRatingNearReviewCount(text string, reviewCount int) (float64, bool) {
