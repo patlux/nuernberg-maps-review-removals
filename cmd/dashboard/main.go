@@ -197,6 +197,13 @@ func makeHTML(data []clientRow) string {
 			rangeOptions += fmt.Sprintf(`<option value="%s">%s</option>`, escAttr(r), esc(r))
 		}
 	}
+	categories := uniqueSorted(data, func(row clientRow) string { return row.Category })
+	categoryOptions := ""
+	for _, cat := range categories {
+		if cat != "" {
+			categoryOptions += fmt.Sprintf(`<option value="%s">%s</option>`, escAttr(cat), esc(cat))
+		}
+	}
 
 	page := `<!doctype html>
 <html lang="de">
@@ -492,6 +499,7 @@ __ANALYTICS__
       <div class="control"><label for="bezirkFilter">Bezirk</label><select id="bezirkFilter"><option value="">Alle Bezirke</option>__BEZIRK_OPTIONS__</select></div>
       <div class="control"><label for="bannerFilter">Banner</label><select id="bannerFilter"><option value="all">Alle</option><option value="banner">Mit Banner</option><option value="clean">Ohne Banner</option></select></div>
       <div class="control"><label for="rangeFilter">Gelöscht</label><select id="rangeFilter"><option value="">Alle Bereiche</option>__RANGE_OPTIONS__</select></div>
+      <div class="control"><label for="categoryFilter">Kategorie</label><select id="categoryFilter"><option value="">Alle Kategorien</option>__CATEGORY_OPTIONS__</select></div>
       <div class="control"><label for="minReviews">Min. Rezensionen</label><input id="minReviews" type="number" min="0" step="1" value="0"></div>
       <button class="reset" id="resetFilters" type="button">Reset</button>
     </section>
@@ -573,6 +581,7 @@ __DASHBOARD_JS__
 		"__POSTCODE_OPTIONS__", postcodeOptions,
 		"__BEZIRK_OPTIONS__", bezirkOptions,
 		"__RANGE_OPTIONS__", rangeOptions,
+		"__CATEGORY_OPTIONS__", categoryOptions,
 		"__DASHBOARD_JS__", dashboardJS,
 		"__ANALYTICS__", plausibleAnalyticsSnippet(),
 		"__ANALYTICS_PRIVACY__", plausiblePrivacyNotice(),

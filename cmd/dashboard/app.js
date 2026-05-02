@@ -7,7 +7,7 @@ const fmt2 = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 2, minimumF
 const fmtDateTime = new Intl.DateTimeFormat('de-DE', { dateStyle: 'short', timeStyle: 'short' });
 const state = { mode: 'ratio', sortKey: 'deletionRatioPct', sortDir: 'desc', userLocation: null };
 const els = {
-  themeToggle: document.getElementById('themeToggle'), controls: document.getElementById('dashboardFilterControls'), filterToggle: document.getElementById('filterToggle'), filterSummary: document.getElementById('filterSummary'), search: document.getElementById('searchInput'), postcode: document.getElementById('postcodeFilter'), bezirk: document.getElementById('bezirkFilter'), banner: document.getElementById('bannerFilter'), range: document.getElementById('rangeFilter'), minReviews: document.getElementById('minReviews'), reset: document.getElementById('resetFilters'), tbody: document.querySelector('#placesTable tbody'), resultCount: document.getElementById('resultCount'), tableTitle: document.getElementById('tableTitle'), mapCount: document.getElementById('mapCount'), nearbyStatus: document.getElementById('nearbyStatus')
+  themeToggle: document.getElementById('themeToggle'), controls: document.getElementById('dashboardFilterControls'), filterToggle: document.getElementById('filterToggle'), filterSummary: document.getElementById('filterSummary'), search: document.getElementById('searchInput'), postcode: document.getElementById('postcodeFilter'), bezirk: document.getElementById('bezirkFilter'), banner: document.getElementById('bannerFilter'), range: document.getElementById('rangeFilter'), category: document.getElementById('categoryFilter'), minReviews: document.getElementById('minReviews'), reset: document.getElementById('resetFilters'), tbody: document.querySelector('#placesTable tbody'), resultCount: document.getElementById('resultCount'), tableTitle: document.getElementById('tableTitle'), mapCount: document.getElementById('mapCount'), nearbyStatus: document.getElementById('nearbyStatus')
 };
 const titles = { all: 'Alle Orte', removed: 'Meiste entfernte Bewertungen', ratio: 'Höchste Lösch-Quote', worst: 'Schlechtestes Worst-Case-Rating', clean: 'Orte ohne Löschbanner', nearby: 'In meiner Nähe' };
 let placesMap = null;
@@ -83,6 +83,7 @@ function matches(row) {
   if (els.banner.value === 'banner' && !row.hasBanner) return false;
   if (els.banner.value === 'clean' && row.hasBanner) return false;
   if (els.range.value && row.removedRange !== els.range.value) return false;
+  if (els.category.value && row.category !== els.category.value) return false;
   if (Number(row.reviewCount || 0) < Number(els.minReviews.value || 0)) return false;
   return true;
 }
@@ -95,6 +96,7 @@ function activeFilterSummary() {
   if (els.bezirk.value) parts.push(els.bezirk.value === '__none__' ? 'Ohne Bezirk' : selectedOptionLabel(els.bezirk));
   if (els.banner.value !== 'all') parts.push(selectedOptionLabel(els.banner));
   if (els.range.value) parts.push(els.range.value);
+  if (els.category.value) parts.push(selectedOptionLabel(els.category));
   if (Number(els.minReviews.value || 0) > 0) parts.push('ab ' + n(Number(els.minReviews.value)) + ' Rezensionen');
   return parts.length ? parts.join(' · ') : 'Keine aktiven Filter';
 }
@@ -486,12 +488,12 @@ els.filterToggle.addEventListener('click', () => {
   els.controls.classList.toggle('is-collapsed');
   updateFilterToggle();
 });
-[els.search, els.postcode, els.bezirk, els.banner, els.range, els.minReviews].forEach(input => {
+[els.search, els.postcode, els.bezirk, els.banner, els.range, els.category, els.minReviews].forEach(input => {
   input.addEventListener('input', render);
   input.addEventListener('change', render);
 });
 els.reset.addEventListener('click', () => {
-  els.search.value = ''; els.postcode.value = ''; els.bezirk.value = ''; els.banner.value = 'all'; els.range.value = ''; els.minReviews.value = 0;
+  els.search.value = ''; els.postcode.value = ''; els.bezirk.value = ''; els.banner.value = 'all'; els.range.value = ''; els.category.value = ''; els.minReviews.value = 0;
   activateMode('ratio');
   render();
 });
