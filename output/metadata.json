@@ -1,5 +1,5 @@
 {
-  "readAt": "2026-04-30T17:30:47Z",
+  "readAt": "2026-05-01T23:59:19Z",
   "postcodes": [
     "90402",
     "90403",
@@ -44,12 +44,16 @@
     "brunch"
   ],
   "maxResults": 0,
-  "headless": false,
+  "headless": true,
   "discoveryOnly": false,
   "scrapeOnly": true,
   "rescrapeAll": true,
-  "scrapeStart": 2088,
-  "scrapeLimit": 200,
+  "bannerAuditOnly": false,
+  "allowBannerClears": false,
+  "noticeAttempts": 2,
+  "scrapeStart": 1,
+  "scrapeLimit": 0,
+  "saveEvery": 25,
   "delayMin": 4000,
   "delayMax": 9000,
   "output": "output/places.json",
