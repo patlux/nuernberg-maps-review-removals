@@ -10,6 +10,7 @@ import (
 )
 
 type args struct {
+	City              string
 	Postcodes         []string
 	Queries           []string
 	MaxResults        int
@@ -28,11 +29,14 @@ type args struct {
 	DelayMax          int
 	Out               string
 	CSV               string
+	Discovery         string
+	Metadata          string
 }
 
 func parseArgs(argv []string) (args, error) {
 	csvSet := false
 	out := args{
+		City:           mapsreview.DefaultCity,
 		Postcodes:      mapsreview.NurembergPostcodes,
 		Queries:        mapsreview.DefaultQueries,
 		Headless:       false,
@@ -42,6 +46,8 @@ func parseArgs(argv []string) (args, error) {
 		NoticeAttempts: 2,
 		Out:            mapsreview.ResultsJSON,
 		CSV:            mapsreview.ResultsCSV,
+		Discovery:      mapsreview.DiscoveryJSON,
+		Metadata:       mapsreview.MetadataJSON,
 		MaxResults:     0,
 		ScrapeStart:    1,
 	}
@@ -49,6 +55,8 @@ func parseArgs(argv []string) (args, error) {
 	for i := 0; i < len(argv); i++ {
 		key, value, consume := mapsreview.SplitArg(argv, i)
 		switch key {
+		case "--city":
+			out.City = value
 		case "--postcodes":
 			if value == "" || value == "all" {
 				out.Postcodes = mapsreview.NurembergPostcodes
@@ -95,6 +103,10 @@ func parseArgs(argv []string) (args, error) {
 		case "--csv":
 			out.CSV = value
 			csvSet = true
+		case "--discovery":
+			out.Discovery = value
+		case "--metadata":
+			out.Metadata = value
 		case "--help", "-h":
 			printHelp()
 			os.Exit(0)
@@ -117,7 +129,8 @@ func printHelp() {
   go run ./cmd/scrape --postcodes 90402,90403 --queries restaurant,café,imbiss
 
 Options:
-  --postcodes <all|csv>     Nürnberg PLZ list. Default: all known Nürnberg PLZ.
+  --city <name>             City name for discovery. Default: %s.
+  --postcodes <all|csv>     PLZ list. Default: all known Nürnberg PLZ.
   --queries <csv>           Google Maps search terms. Default: %s.
   --max-results <n>         Stop after n discovered places. 0 = unlimited.
   --headless <true|false>   Chrome headless mode. Default: false; safer for consent/CAPTCHA.
@@ -136,7 +149,9 @@ Options:
   --delay-max <ms>          Maximum delay between place pages. Default: 6000.
   --out <path>              Results JSON path. Default: output/places.json.
   --csv <path>              Results CSV path. Default: output/places.csv.
-`, strings.Join(mapsreview.DefaultQueries, ","))
+  --discovery <path>        Discovery JSON path. Default: output/discovery.json.
+  --metadata <path>         Metadata JSON path. Default: output/metadata.json.
+`, mapsreview.DefaultCity, strings.Join(mapsreview.DefaultQueries, ","))
 }
 
 func splitCSV(value string) []string {
@@ -150,5 +165,3 @@ func splitCSV(value string) []string {
 	}
 	return out
 }
-
-

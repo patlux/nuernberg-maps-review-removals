@@ -23,6 +23,7 @@ const (
 )
 
 type args struct {
+	City   string
 	Input  string
 	Output string
 }
@@ -74,7 +75,7 @@ func run(args args) error {
 	if err := os.MkdirAll(filepath.Dir(args.Output), 0o755); err != nil {
 		return err
 	}
-	if err := os.WriteFile(args.Output, []byte(makeHTML(data)), 0o644); err != nil {
+	if err := os.WriteFile(args.Output, []byte(makeHTML(args, data)), 0o644); err != nil {
 		return err
 	}
 	fmt.Printf("wrote %s\n", args.Output)
@@ -82,10 +83,12 @@ func run(args args) error {
 }
 
 func parseArgs(argv []string) (args, error) {
-	out := args{Input: defaultInput, Output: defaultOutput}
+	out := args{City: mapsreview.DefaultCity, Input: defaultInput, Output: defaultOutput}
 	for i := 0; i < len(argv); i++ {
 		key, value, consume := splitArg(argv, i)
 		switch key {
+		case "--city":
+			out.City = value
 		case "--input":
 			out.Input = value
 		case "--output":
@@ -165,7 +168,7 @@ func makeClientRows(rows []mapsreview.Place) []clientRow {
 	return out
 }
 
-func makeHTML(data []clientRow) string {
+func makeHTML(args args, data []clientRow) string {
 	postcodes := uniqueSorted(data, func(row clientRow) string { return row.Postcode })
 	bezirke := allBezirkLabels()
 	if len(bezirke) == 0 {
@@ -210,7 +213,7 @@ func makeHTML(data []clientRow) string {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Nürnberg Google-Maps-Bewertungen Dashboard</title>
+  <title>` + args.City + ` Google-Maps-Bewertungen Dashboard</title>
 __ANALYTICS__
   <script>
     (function () {
@@ -480,13 +483,13 @@ __ANALYTICS__
     <div class="sitebar-inner">
       <div class="top-icons" aria-hidden="true"><span>●</span><span>☝</span><span>▰</span></div>
       <button class="theme-toggle" id="themeToggle" type="button" aria-label="Dunkles Design aktivieren" aria-pressed="false"><span class="theme-toggle-icon" aria-hidden="true">☾</span><span class="theme-toggle-text">Dunkel</span></button>
-      <div class="n-logo">Nürnberg</div>
+      <div class="n-logo">` + args.City + `</div>
     </div>
   </div>
 
   <section class="hero" aria-label="Seitentitel">
     <div class="hero-inner">
-      <div class="hero-title">Nürnberg Google-Maps-Bewertungen</div>
+      <div class="hero-title">` + args.City + ` Google-Maps-Bewertungen</div>
       <div class="hero-subtitle">Interaktives Daten-Dashboard zu sichtbaren Hinweisen auf entfernte Bewertungen wegen Diffamierungsbeschwerden.</div>
     </div>
   </section>

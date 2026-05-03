@@ -8,6 +8,8 @@ const (
 	MetadataJSON  = "output/metadata.json"
 )
 
+var DefaultCity = "Nürnberg"
+
 var NurembergPostcodes = []string{
 	"90402", "90403", "90408", "90409", "90411", "90419", "90425", "90427",
 	"90429", "90431", "90439", "90441", "90443", "90449", "90451", "90453",

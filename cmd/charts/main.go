@@ -28,6 +28,7 @@ const (
 )
 
 type args struct {
+	City            string
 	Input           string
 	OutDir          string
 	PNG             bool
@@ -58,7 +59,7 @@ func run(args args) error {
 	if err := os.MkdirAll(args.OutDir, 0o755); err != nil {
 		return err
 	}
-	if err := writeMostRemovedList(rows, args.OutDir); err != nil {
+	if err := writeMostRemovedList(rows, args); err != nil {
 		return err
 	}
 
@@ -99,10 +100,17 @@ func run(args args) error {
 }
 
 func parseArgs(argv []string) (args, error) {
-	out := args{Input: mapsreview.ResultsJSON, OutDir: "output/charts", Top: 30, MinCleanReviews: 100}
+	out := args{
+		City:            mapsreview.DefaultCity,
+		Input:           mapsreview.ResultsJSON,
+		OutDir:          "output/charts",
+		Top:             30,
+		MinCleanReviews: 100}
 	for i := 0; i < len(argv); i++ {
 		key, value, consume := mapsreview.SplitArg(argv, i)
 		switch key {
+		case "--city":
+			out.City = value
 		case "--input":
 			out.Input = value
 		case "--out-dir":
@@ -128,16 +136,17 @@ func parseArgs(argv []string) (args, error) {
 }
 
 func printHelp() {
-	fmt.Println(`Usage:
+	fmt.Printf(`Usage:
   go run ./cmd/charts --png
   go run ./cmd/charts --input output/places.json --out-dir output/charts --top 50
 
 Options:
+  --city <name>               Displayed city name. Default: %s.
   --input <path>              Scrape results JSON. Default: output/places.json.
   --out-dir <path>            Chart output directory. Default: output/charts.
   --top <n>                   Rows per bar chart. Default: 30.
   --min-clean-reviews <n>     Minimum reviews for clean ranking. Default: 100.
-  --png                       Export PNGs with ImageMagick's magick command, when available.`)
+  --png                       Export PNGs with ImageMagick's magick command, when available.\n`, mapsreview.DefaultCity)
 }
 
 func makeChart(rows []mapsreview.Place, scope string, args args) string {
@@ -167,10 +176,10 @@ func makeChart(rows []mapsreview.Place, scope string, args args) string {
 	})
 	cleanRanking = take(cleanRanking, args.Top)
 
-	title := "Nürnberg — Gesamtstadt"
+	title := fmt.Sprintf("%s — Gesamtstadt", args.City)
 	subtitle := "Alle erfassten PLZ — gelöschte Rezensionen wegen „Diffamierung“"
 	if scope != "overall" {
-		title = "Postleitzahl " + scope + " — Nürnberg"
+		title = fmt.Sprintf("Postleitzahl %s — %s", scope, args.City)
 		subtitle = "Google-Maps-Orte: gelöschte Rezensionen wegen „Diffamierung“"
 	}
 	stats := fmt.Sprintf("%s Orte erfasst · %s mit sichtbarem Banner (%s%%) · %s in der „Über“-Stufe",
@@ -298,7 +307,7 @@ func drawDistribution(rows []mapsreview.Place, x, y int, titleText string) strin
 	return b.String()
 }
 
-func writeMostRemovedList(rows []mapsreview.Place, outDir string) error {
+func writeMostRemovedList(rows []mapsreview.Place, args args) error {
 	ranked := filter(mapsreview.ValidRows(rows), func(row mapsreview.Place) bool { return row.HasDefamationNotice && row.RemovedMin != nil })
 	sort.SliceStable(ranked, func(i, j int) bool {
 		if mapsreview.RemovedSortValue(ranked[i]) != mapsreview.RemovedSortValue(ranked[j]) {
@@ -312,18 +321,18 @@ func writeMostRemovedList(rows []mapsreview.Place, outDir string) error {
 		}
 		return ranked[i].Name < ranked[j].Name
 	})
-	if err := writeMostRemovedCSV(filepath.Join(outDir, "nuernberg_most_removed.csv"), ranked); err != nil {
+	if err := writeMostRemovedCSV(filepath.Join(args.OutDir, "nuernberg_most_removed.csv"), ranked); err != nil {
 		return err
 	}
-	if err := writeMostRemovedMD(filepath.Join(outDir, "nuernberg_most_removed.md"), ranked); err != nil {
+	if err := writeMostRemovedMD(filepath.Join(args.OutDir, "nuernberg_most_removed.md"), ranked, args); err != nil {
 		return err
 	}
-	if err := writeMostRemovedHTML(filepath.Join(outDir, "nuernberg_most_removed.html"), ranked, rows); err != nil {
+	if err := writeMostRemovedHTML(filepath.Join(args.OutDir, "nuernberg_most_removed.html"), ranked, rows, args); err != nil {
 		return err
 	}
-	fmt.Printf("wrote %s\n", filepath.Join(outDir, "nuernberg_most_removed.csv"))
-	fmt.Printf("wrote %s\n", filepath.Join(outDir, "nuernberg_most_removed.md"))
-	fmt.Printf("wrote %s\n", filepath.Join(outDir, "nuernberg_most_removed.html"))
+	fmt.Printf("wrote %s\n", filepath.Join(args.OutDir, "nuernberg_most_removed.csv"))
+	fmt.Printf("wrote %s\n", filepath.Join(args.OutDir, "nuernberg_most_removed.md"))
+	fmt.Printf("wrote %s\n", filepath.Join(args.OutDir, "nuernberg_most_removed.html"))
 	return nil
 }
 
@@ -349,9 +358,9 @@ func writeMostRemovedCSV(file string, rows []mapsreview.Place) error {
 	return w.Error()
 }
 
-func writeMostRemovedMD(file string, rows []mapsreview.Place) error {
+func writeMostRemovedMD(file string, rows []mapsreview.Place, args args) error {
 	lines := []string{
-		"# Nürnberg — Orte sortiert nach geschätzter Anzahl entfernter Bewertungen",
+		fmt.Sprintf("# %s — Orte sortiert nach geschätzter Anzahl entfernter Bewertungen", args.City),
 		"",
 		"Quelle: Google Maps, öffentlich sichtbare Diffamierungs-Banner. Snapshot: " + time.Now().Format("02.01.2006") + ".",
 		"",
@@ -370,14 +379,15 @@ func writeMostRemovedMD(file string, rows []mapsreview.Place) error {
 	return os.WriteFile(file, []byte(strings.Join(lines, "\n")+"\n"), 0o644)
 }
 
-func writeMostRemovedHTML(file string, ranked []mapsreview.Place, allRows []mapsreview.Place) error {
+func writeMostRemovedHTML(file string, ranked []mapsreview.Place, allRows []mapsreview.Place, args args) error {
 	var body strings.Builder
 	for i, row := range ranked {
 		body.WriteString(fmt.Sprintf(`<tr><td class="num">%d</td><td><a href="%s" target="_blank" rel="noopener noreferrer">%s</a><small>%s</small></td><td>%s</td><td class="num">%s</td><td class="num">%s</td><td class="num">%s</td><td class="num">%s</td><td class="num">%s%%</td><td class="num">%s</td></tr>`,
 			i+1, esc(row.URL), esc(row.Name), esc(mapsreview.StringValue(row.Address)), esc(mapsreview.StringValue(row.Postcode)), mapsreview.FormatPtrFloat(row.Rating, 1), mapsreview.FormatPtrInt(row.ReviewCount), esc(mapsreview.RemovedRange(row)), mapsreview.FormatGermanFloat(mapsreview.RemovedSortValue(row), 1), mapsreview.FormatPtrFloat(row.DeletionRatioPct, 1), mapsreview.FormatPtrFloat(row.RealRatingAdjusted, 2)))
 	}
-	htmlText := fmt.Sprintf(`<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Nürnberg — meist entfernte Google-Maps-Bewertungen</title><style>
-:root{--red:#c9332c;--text:#202124;--muted:#687078;--line:#dce5eb;--bg:#eef6fa}*{box-sizing:border-box}body{margin:0;font-family:Georgia,serif;background:linear-gradient(180deg,#d9e8f2,#f7fbfd 48%%,#e1e7ec);color:var(--text)}main{width:min(1450px,calc(100vw - 40px));margin:42px auto 80px}h1{font-size:clamp(34px,5vw,64px);line-height:1;margin:0 0 12px;letter-spacing:-.04em}.lead{max-width:900px;color:var(--muted);font:18px/1.5 system-ui,sans-serif}.stats{display:flex;gap:12px;flex-wrap:wrap;margin:24px 0}.stat{background:#fff;border:1px solid var(--line);border-left:8px solid var(--red);padding:14px 18px}.stat strong{display:block;font:700 30px/1 system-ui,sans-serif}.table-wrap{overflow:auto;background:#fff;border:1px solid var(--line);box-shadow:0 14px 42px rgba(60,80,95,.16)}table{width:100%%;border-collapse:collapse;min-width:1100px}th,td{padding:12px 14px;border-bottom:1px solid #edf2f5;text-align:left;font:14px system-ui,sans-serif}th{position:sticky;top:0;background:#f8fbfd;font-weight:800}.num{text-align:right;font-variant-numeric:tabular-nums}a{color:var(--red);font-weight:800;text-decoration:none}a:hover{text-decoration:underline}small{display:block;color:var(--muted);margin-top:4px}</style></head><body><main><h1>Nürnberg — meist entfernte Google-Maps-Bewertungen</h1><p class="lead">Orte mit sichtbarem Google-Maps-Hinweis auf entfernte Bewertungen wegen Beschwerden wegen Diffamierung. Namen sind direkt zur jeweiligen Google-Maps-Seite verlinkt.</p><div class="stats"><div class="stat"><strong>%s</strong><span>Einträge mit Banner</span></div><div class="stat"><strong>%s</strong><span>erfasste Orte</span></div><div class="stat"><strong>%s%%</strong><span>mit sichtbarem Banner</span></div></div><section class="table-wrap"><table><thead><tr><th class="num">Rang</th><th>Name / Google Maps</th><th>PLZ</th><th class="num">Rating</th><th class="num">Rezensionen</th><th class="num">Gelöscht</th><th class="num">Schätzwert</th><th class="num">Löschquote</th><th class="num">Worst-Case</th></tr></thead><tbody>%s</tbody></table></section></main></body></html>`,
+	htmlText := fmt.Sprintf(`<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>%s — meist entfernte Google-Maps-Bewertungen</title><style>
+:root{--red:#c9332c;--text:#202124;--muted:#687078;--line:#dce5eb;--bg:#eef6fa}*{box-sizing:border-box}body{margin:0;font-family:Georgia,serif;background:linear-gradient(180deg,#d9e8f2,#f7fbfd 48%%,#e1e7ec);color:var(--text)}main{width:min(1450px,calc(100vw - 40px));margin:42px auto 80px}h1{font-size:clamp(34px,5vw,64px);line-height:1;margin:0 0 12px;letter-spacing:-.04em}.lead{max-width:900px;color:var(--muted);font:18px/1.5 system-ui,sans-serif}.stats{display:flex;gap:12px;flex-wrap:wrap;margin:24px 0}.stat{background:#fff;border:1px solid var(--line);border-left:8px solid var(--red);padding:14px 18px}.stat strong{display:block;font:700 30px/1 system-ui,sans-serif}.table-wrap{overflow:auto;background:#fff;border:1px solid var(--line);box-shadow:0 14px 42px rgba(60,80,95,.16)}table{width:100%%;border-collapse:collapse;min-width:1100px}th,td{padding:12px 14px;border-bottom:1px solid #edf2f5;text-align:left;font:14px system-ui,sans-serif}th{position:sticky;top:0;background:#f8fbfd;font-weight:800}.num{text-align:right;font-variant-numeric:tabular-nums}a{color:var(--red);font-weight:800;text-decoration:none}a:hover{text-decoration:underline}small{display:block;color:var(--muted);margin-top:4px}</style></head><body><main><h1>%s — meist entfernte Google-Maps-Bewertungen</h1><p class="lead">Orte mit sichtbarem Google-Maps-Hinweis auf entfernte Bewertungen wegen Beschwerden wegen Diffamierung. Namen sind direkt zur jeweiligen Google-Maps-Seite verlinkt.</p><div class="stats"><div class="stat"><strong>%s</strong><span>Einträge mit Banner</span></div><div class="stat"><strong>%s</strong><span>erfasste Orte</span></div><div class="stat"><strong>%s%%</strong><span>mit sichtbarem Banner</span></div></div><section class="table-wrap"><table><thead><tr><th class="num">Rang</th><th>Name / Google Maps</th><th>PLZ</th><th class="num">Rating</th><th class="num">Rezensionen</th><th class="num">Gelöscht</th><th class="num">Schätzwert</th><th class="num">Löschquote</th><th class="num">Worst-Case</th></tr></thead><tbody>%s</tbody></table></section></main></body></html>`,
+		args.City, args.City,
 		mapsreview.FormatGermanInt(len(ranked)), mapsreview.FormatGermanInt(len(mapsreview.ValidRows(allRows))), mapsreview.FormatGermanFloat(float64(len(ranked))/math.Max(float64(len(mapsreview.ValidRows(allRows))), 1)*100, 1), body.String())
 	return os.WriteFile(file, []byte(htmlText), 0o644)
 }
