@@ -80,6 +80,7 @@ func newScrapeBrowserContext(args args) (context.Context, context.CancelFunc) {
 
 type metadata struct {
 	ReadAt            string   `json:"readAt"`
+	City              string   `json:"city"`
 	Postcodes         []string `json:"postcodes"`
 	Queries           []string `json:"queries"`
 	MaxResults        int      `json:"maxResults"`
@@ -108,6 +109,7 @@ type metadata struct {
 func writeMetadata(args args, discoveries []mapsreview.Discovery, rows []mapsreview.Place) error {
 	m := metadata{
 		ReadAt:            mapsreview.NowISO(),
+		City:              args.City,
 		Postcodes:         args.Postcodes,
 		Queries:           args.Queries,
 		MaxResults:        args.MaxResults,
@@ -162,7 +164,7 @@ func discoverPlaces(ctx context.Context, args args) ([]mapsreview.Discovery, err
 				stop = true
 				break
 			}
-			search := fmt.Sprintf("%s %s Nürnberg", query, postcode)
+			search := fmt.Sprintf("%s %s %s", query, postcode, args.City)
 			url := "https://www.google.com/maps/search/" + urlPathEscape(search) + "?hl=de"
 			fmt.Printf("\nDiscover: %s\n", search)
 			if err := navigate(ctx, url, 60*time.Second); err != nil {
