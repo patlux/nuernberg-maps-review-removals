@@ -29,6 +29,8 @@ type args struct {
 	DelayMax          int
 	Out               string
 	CSV               string
+	Discovery         string
+	Metadata          string
 }
 
 func parseArgs(argv []string) (args, error) {
@@ -44,6 +46,8 @@ func parseArgs(argv []string) (args, error) {
 		NoticeAttempts: 2,
 		Out:            mapsreview.ResultsJSON,
 		CSV:            mapsreview.ResultsCSV,
+		Discovery:      mapsreview.DiscoveryJSON,
+		Metadata:       mapsreview.MetadataJSON,
 		MaxResults:     0,
 		ScrapeStart:    1,
 	}
@@ -99,6 +103,10 @@ func parseArgs(argv []string) (args, error) {
 		case "--csv":
 			out.CSV = value
 			csvSet = true
+		case "--discovery":
+			out.Discovery = value
+		case "--metadata":
+			out.Metadata = value
 		case "--help", "-h":
 			printHelp()
 			os.Exit(0)
@@ -141,6 +149,8 @@ Options:
   --delay-max <ms>          Maximum delay between place pages. Default: 6000.
   --out <path>              Results JSON path. Default: output/places.json.
   --csv <path>              Results CSV path. Default: output/places.csv.
+  --discovery <path>        Discovery JSON path. Default: output/discovery.json.
+  --metadata <path>         Metadata JSON path. Default: output/metadata.json.
 `, mapsreview.DefaultCity, strings.Join(mapsreview.DefaultQueries, ","))
 }
 

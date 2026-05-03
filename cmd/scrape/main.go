@@ -31,9 +31,15 @@ func main() {
 }
 
 func run(args args) error {
-	if err := mapsreview.EnsureDirForPath(mapsreview.OutputDir); err != nil {
-		return err
+	// create all output folders
+	for _, file := range []string{args.Out, args.CSV, args.Discovery, args.Metadata} {
+		// get dir from file
+		dir := filepath.Dir(file)
+		if err := mapsreview.EnsureDirForPath(dir); err != nil {
+			return err
+		}
 	}
+
 	if err := mapsreview.EnsureDirForPath("debug"); err != nil {
 		return err
 	}
@@ -44,7 +50,7 @@ func run(args args) error {
 	discoveries := []mapsreview.Discovery{}
 	var err error
 	if args.ScrapeOnly {
-		discoveries, err = mapsreview.ReadJSON(mapsreview.DiscoveryJSON, []mapsreview.Discovery{})
+		discoveries, err = mapsreview.ReadJSON(args.Discovery, []mapsreview.Discovery{})
 	} else {
 		discoveries, err = discoverPlaces(browserCtx, args)
 	}
@@ -139,11 +145,11 @@ func writeMetadata(args args, discoveries []mapsreview.Discovery, rows []mapsrev
 			m.Errors++
 		}
 	}
-	return mapsreview.WriteJSON(mapsreview.MetadataJSON, m)
+	return mapsreview.WriteJSON(args.Metadata, m)
 }
 
 func discoverPlaces(ctx context.Context, args args) ([]mapsreview.Discovery, error) {
-	existing, err := mapsreview.ReadJSON(mapsreview.DiscoveryJSON, []mapsreview.Discovery{})
+	existing, err := mapsreview.ReadJSON(args.Discovery, []mapsreview.Discovery{})
 	if err != nil {
 		return nil, err
 	}
@@ -211,7 +217,7 @@ func discoverPlaces(ctx context.Context, args args) ([]mapsreview.Discovery, err
 				_ = scrollResults(ctx)
 				sleep(1400)
 			}
-			if err := mapsreview.WriteJSON(mapsreview.DiscoveryJSON, discoveries); err != nil {
+			if err := mapsreview.WriteJSON(args.Discovery, discoveries); err != nil {
 				return nil, err
 			}
 			fmt.Printf("\n  saved %d discoveries\n", len(discoveries))
