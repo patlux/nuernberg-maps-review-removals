@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://nuernberg-maps-review-removals.patwoz.dev/sitemap.xml
