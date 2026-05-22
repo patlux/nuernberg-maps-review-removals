@@ -241,9 +241,15 @@
     .n-logo::before { content: ""; position: absolute; left: 14px; right: 14px; top: 58px; height: 2px; background: #fff; opacity: .9; }
     .n-logo::after { content: "⌂⌂"; position: absolute; right: 13px; top: 20px; color: #fff; font-size: 36px; letter-spacing: -12px; transform: scaleX(1.4); }
     .hero { min-height: 380px; margin: 0 0 30px; background: var(--hero-bg); display: flex; align-items: end; }
-    .hero-inner { width: min(1320px, calc(100vw - 32px)); margin: 0 auto; padding: 140px 0 42px; }
+    .hero-inner { width: min(1320px, calc(100vw - 32px)); margin: 0 auto; padding: 120px 0 42px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 440px); gap: 22px; align-items: end; }
     .hero-title { width: min(760px, 100%); margin: 0; padding: 24px 28px; background: var(--hero-title-bg); color: #fff; font-size: clamp(32px, 4vw, 52px); line-height: 1.12; font-weight: 400; }
     .hero-subtitle { width: min(760px, 100%); margin-top: 14px; padding: 18px 22px; background: var(--surface-raised); border-radius: 5px; box-shadow: var(--shadow); color: var(--muted); font-size: 20px; line-height: 1.45; }
+    .appeal-box { padding: 18px; border: 1px solid var(--line); border-top: 5px solid var(--blue); background: var(--surface-raised); box-shadow: var(--shadow); color: var(--text); }
+    .appeal-box h2 { margin: 0 0 8px; color: var(--heading); font-size: 20px; line-height: 1.2; }
+    .appeal-box p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.45; }
+    .appeal-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+    .appeal-actions a { display: inline-flex; align-items: center; min-height: 34px; padding: 0 11px; border-radius: 4px; background: var(--control-bg); color: var(--control-text); font-size: 13px; font-weight: 700; text-decoration: none; }
+    .appeal-actions a:hover, .appeal-actions a:focus-visible { background: var(--red); color: #fff; outline: none; }
     main { width: min(1320px, calc(100vw - 32px)); margin: 0 auto 70px; }
     .controls { position: sticky; top: 0; z-index: 2000; display: grid; grid-template-columns: minmax(200px, 1fr) 120px 170px 130px 130px 130px 95px auto; gap: 12px; align-items: end; padding: 16px; margin: 0 0 24px; background: var(--surface-raised); border: 1px solid var(--line); box-shadow: 0 2px 8px rgba(0,0,0,.12); }
     .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 14px; }
@@ -296,6 +302,8 @@
     .fill.orange { background: var(--orange); }
     .fill.green { background: var(--green); }
     .dist { padding: 18px; margin-top: 18px; }
+    .dist-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 22px; }
+    .dist-panel p { margin: 0 0 12px; color: var(--muted); font-size: 13px; line-height: 1.45; }
     .dist-row { display: grid; grid-template-columns: 130px minmax(0, 1fr) 90px; gap: 12px; align-items: center; margin: 8px 0; font-size: 13px; }
     .bezirk-summary { padding: 18px; margin-top: 18px; }
     .bezirk-summary h2 { margin: 0 0 8px; color: var(--heading); font-size: 22px; font-weight: 700; }
@@ -307,6 +315,7 @@
     .bezirk-row span { color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; }
     .dist-track { height: 12px; background: var(--track-bg); overflow: hidden; }
     .dist-fill { height: 100%; background: var(--red); }
+    .dist-note { margin-top: 10px !important; color: var(--muted); font-size: 12px !important; }
     .map-panel { margin-top: 18px; padding: 18px; }
     .map-panel h2 { margin: 0 0 8px; color: var(--heading); font-size: 22px; font-weight: 700; }
     .map-panel p { margin: 0 0 16px; color: var(--muted); font-size: 13px; }
@@ -355,10 +364,23 @@
     .show-more { display: block; min-width: 220px; height: 42px; margin: 14px auto 0; padding: 0 18px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface-raised); color: var(--heading); font-weight: 700; cursor: pointer; }
     .show-more:hover, .show-more:focus-visible { border-color: var(--red); color: var(--red); outline: none; }
     .show-more[hidden] { display: none; }
+    .related-dashboards { padding: 18px; margin-top: 18px; }
+    .related-dashboards h2 { margin: 0 0 8px; color: var(--heading); font-size: 22px; font-weight: 700; }
+    .related-dashboards p { margin: 0 0 14px; color: var(--muted); font-size: 13px; line-height: 1.45; }
+    .related-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+    .related-link { display: block; min-height: 82px; padding: 12px; border: 1px solid var(--line); background: var(--surface-muted); color: var(--text); text-decoration: none; }
+    .related-link:hover, .related-link:focus-visible { border-color: var(--red); background: var(--row-hover); outline: none; text-decoration: none; }
+    .related-link strong { display: block; margin-bottom: 6px; color: var(--heading); font-size: 15px; line-height: 1.2; }
+    .related-link span { display: block; color: var(--muted); font-size: 12px; line-height: 1.35; overflow-wrap: anywhere; }
     footer { margin-top: 18px; color: var(--muted); font-size: 13px; line-height: 1.5; }
     .footer-privacy, .footer-credit { margin-top: 6px; }
     .footer-credit a { font-weight: 700; }
-    @media (max-width: 1200px) { .kpis, .panel-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .controls { grid-template-columns: 1fr 1fr 1fr; } .search { grid-column: 1 / -1; } .theme-toggle { margin-left: auto; margin-right: 0; } .n-logo { position: relative; height: 76px; width: 150px; margin-left: 0; padding-top: 48px; } .n-logo::before { top: 40px; } .n-logo::after { top: 4px; } }
+    @media (min-width: 1600px) {
+      .table-wrap { margin: 0 calc(-1 * (100vw - min(1320px, calc(100vw - 32px))) / 2); }
+      table { min-width: 0; table-layout: auto; }
+      col.rank, col.name, col.bezirk, col.plz, col.rating, col.reviews, col.banner, col.removed, col.estimate, col.ratio, col.real, col.checked, col.category { width: auto; }
+    }
+    @media (max-width: 1200px) { .hero-inner { grid-template-columns: 1fr; } .appeal-box { width: min(760px, 100%); } .kpis, .panel-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .related-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } .controls { grid-template-columns: 1fr 1fr 1fr; } .search { grid-column: 1 / -1; } .theme-toggle { margin-left: auto; margin-right: 0; } .n-logo { position: relative; height: 76px; width: 150px; margin-left: 0; padding-top: 48px; } .n-logo::before { top: 40px; } .n-logo::after { top: 4px; } }
     @media (max-width: 720px) {
       .sitebar-inner, main, .hero-inner { width: min(100vw - 20px, 1320px); }
       .sitebar-inner { gap: 14px; }
@@ -366,7 +388,7 @@
       .theme-toggle { width: 42px; padding: 0; justify-content: center; }
       .theme-toggle-text { display: none; }
       .n-logo { width: 128px; font-size: 18px; padding-left: 10px; padding-right: 10px; }
-      .kpis, .panel-grid, .seo-facts { grid-template-columns: 1fr; }
+      .kpis, .panel-grid, .seo-facts, .dist-grid, .related-grid { grid-template-columns: 1fr; }
       .controls { position: sticky; top: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px 10px; padding: 10px; margin-bottom: 14px; }
       .filter-toggle { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 42px; padding: 8px 12px; border: 0; border-radius: 5px; background: var(--control-bg); color: var(--control-text); text-align: left; cursor: pointer; }
       .filter-toggle strong { display: block; font-size: 15px; line-height: 1.1; }
@@ -379,9 +401,11 @@
       input, select { height: 38px; padding: 0 9px; font-size: 15px; }
       .reset { height: 34px; padding: 0 10px; font-size: 13px; }
       .hero { min-height: 300px; }
-      .hero-inner { padding-top: 92px; }
+      .hero-inner { padding-top: 92px; gap: 14px; }
       .hero-title { font-size: 32px; padding: 18px; }
       .hero-subtitle { font-size: 16px; }
+      .appeal-box { padding: 16px; }
+      .appeal-box h2 { font-size: 19px; }
     }
   </style>
 </head>
@@ -396,8 +420,15 @@
 
   <section class="hero" aria-label="Seitentitel">
     <div class="hero-inner">
-      <h1 class="hero-title">Nürnberg Google-Maps-Bewertungen</h1>
-      <div class="hero-subtitle">Interaktives Daten-Dashboard zu sichtbaren Hinweisen auf entfernte Bewertungen wegen Diffamierungsbeschwerden.</div>
+      <div class="hero-copy">
+        <h1 class="hero-title">Nürnberg Google-Maps-Bewertungen</h1>
+        <div class="hero-subtitle">Interaktives Daten-Dashboard zu sichtbaren Hinweisen auf entfernte Bewertungen wegen Diffamierungsbeschwerden.</div>
+      </div>
+      <aside class="appeal-box" aria-label="Hilfe bei entfernter eigener Bewertung">
+        <h2>Eigene Bewertung entfernt?</h2>
+        <p>Wenn eine eigene Google-Maps-Bewertung aus deiner Sicht zu Unrecht entfernt wurde, kannst du bei Google Einspruch einlegen. Keine Erfolgsgarantie.</p>
+        <div class="appeal-actions"><a href="https://support.google.com/maps/answer/16673099?hl=de" target="_blank" rel="noopener noreferrer">Google-Einspruch</a></div>
+      </aside>
     </div>
   </section>
 
@@ -443,7 +474,12 @@
       <article class="card panel"><h2>Beste Orte ohne Löschbanner</h2><p>Ohne sichtbaren Diffamierungs-Löschbanner, Rating zuerst — ab 100 Rezensionen.</p><div class="bars" id="barsClean"></div></article>
     </section>
 
-    <section class="card dist" aria-label="Verteilung"><h2>Verteilung der Lösch-Stufen</h2><div id="distribution"></div></section>
+    <section class="card dist" aria-label="Verteilungen">
+      <div class="dist-grid">
+        <div class="dist-panel"><h2>Verteilung der Lösch-Stufen</h2><div id="distribution"></div></div>
+        <div class="dist-panel"><h2>Einordnung der Löschquote</h2><p>Nur Orte mit sichtbarem Banner und mindestens 50 sichtbaren Rezensionen im aktuellen Filter.</p><div id="ratioHistogram"></div></div>
+      </div>
+    </section>
 
     <section class="card bezirk-summary" aria-label="Bezirks-Gruppen"><h2>Gruppierung nach statistischem Bezirk</h2><p>Top-Bezirke im aktuellen Filter, sortiert nach Banner-Anteil. Anklicken setzt den Bezirksfilter.</p><div class="bezirk-list" id="bezirkSummary"></div></section>
 
@@ -489,7 +525,21 @@
       </table>
     </section>
     <button class="show-more" id="showMoreRows" type="button" hidden>Mehr Zeilen anzeigen</button>
+
+    <section class="card related-dashboards" aria-label="Weitere regionale Dashboards">
+      <h2>Weitere regionale Dashboards</h2>
+      <p>Öffentlich verfügbare Dashboards anderer Regionen zum gleichen Google-Maps-Löschbanner-Thema.</p>
+      <div class="related-grid">
+        <a class="related-link" href="https://bewertungsradar-saar.de/" target="_blank" rel="noopener noreferrer"><strong>Saarland</strong><span>bewertungsradar-saar.de</span></a>
+        <a class="related-link" href="https://nekronomekron.github.io/landshut-maps-review-removals/" target="_blank" rel="noopener noreferrer"><strong>Landshut</strong><span>nekronomekron.github.io</span></a>
+        <a class="related-link" href="https://cooljackgi.github.io/giessen-maps-review-removals/" target="_blank" rel="noopener noreferrer"><strong>Gießen</strong><span>cooljackgi.github.io</span></a>
+        <a class="related-link" href="https://berlintrustindex.com/" target="_blank" rel="noopener noreferrer"><strong>Berlin Trust Index</strong><span>berlintrustindex.com</span></a>
+        <a class="related-link" href="https://hermes7654.github.io/ibbenbueren-review-removals/" target="_blank" rel="noopener noreferrer"><strong>Ibbenbüren / Münster</strong><span>hermes7654.github.io</span></a>
+      </div>
+    </section>
+
     <footer>
+      <div>Dashboard basiert auf der MIT-lizenzierten Vorlage von Patrick Wozniak.</div>
       <div>Quelle: Google Maps, öffentlich sichtbare Banner. „Kein Banner“ heißt nur: im Scrape war kein passender Hinweis sichtbar. Snapshot: 13.05.2026.</div>
 <div class="footer-privacy">Diese Website nutzt Plausible Analytics, eine datenschutzfreundliche Webanalyse ohne Cookies. Die Auswertung erfolgt aggregiert und ohne personenbezogene Nutzerprofile. Anbieter-Domain: <code>a.patwoz.dev</code>.</div>
       <div class="footer-credit">© 2026 Patrick Wozniak · <a href="https://patwoz.dev" target="_blank" rel="noopener noreferrer">patwoz.dev</a></div>
@@ -1000,6 +1050,30 @@ function renderDistribution(rows) {
   const max = Math.max(1, ...counts.map(item => item.count));
   document.getElementById('distribution').innerHTML = counts.map(item => '<div class="dist-row"><strong>' + esc(item.bin) + '</strong><div class="dist-track"><div class="dist-fill" style="width:' + (item.count / max * 100) + '%"></div></div><span>' + n(item.count) + '</span></div>').join('') || '<p>Keine Banner im Filter.</p>';
 }
+function renderRatioHistogram(rows) {
+  const root = document.getElementById('ratioHistogram');
+  if (!root) return;
+  const minReviews = 50;
+  const scoped = bannerRows(rows).filter(row => Number.isFinite(row.deletionRatioPct) && Number.isFinite(row.reviewCount) && row.reviewCount >= minReviews);
+  if (scoped.length === 0) {
+    root.innerHTML = '<p>Keine passenden Orte im Filter.</p>';
+    return;
+  }
+  const bins = [
+    { label: '< 1%', min: -Infinity, max: 1 },
+    { label: '1–2%', min: 1, max: 2 },
+    { label: '2–5%', min: 2, max: 5 },
+    { label: '5–10%', min: 5, max: 10 },
+    { label: '10–20%', min: 10, max: 20 },
+    { label: '> 20%', min: 20, max: Infinity }
+  ];
+  const counts = bins.map(bin => ({
+    label: bin.label,
+    count: scoped.filter(row => row.deletionRatioPct >= bin.min && row.deletionRatioPct < bin.max).length
+  }));
+  const max = Math.max(1, ...counts.map(item => item.count));
+  root.innerHTML = counts.map(item => '<div class="dist-row"><strong>' + esc(item.label) + '</strong><div class="dist-track"><div class="dist-fill" style="width:' + (item.count / max * 100) + '%"></div></div><span>' + n(item.count) + '</span></div>').join('') + '<p class="dist-note">' + n(scoped.length) + ' Orte in dieser Einordnung.</p>';
+}
 function renderBezirkSummary(rows) {
   const groups = new Map();
   for (const row of rows) {
@@ -1037,6 +1111,7 @@ function updatePanels(rows) {
   renderBars('barsWorst', 'worst', [...banners].filter(row => Number.isFinite(row.realRatingAdjusted)).sort((a,b) => a.realRatingAdjusted - b.realRatingAdjusted), row => 5 - row.realRatingAdjusted, row => rating(row.rating) + '★ → ' + rating(row.realRatingAdjusted, 2) + '★', 'orange', 4);
   renderBars('barsClean', 'clean', [...cleanRankingRows(rows)].sort((a,b) => b.rating - a.rating || b.reviewCount - a.reviewCount), row => row.rating, row => rating(row.rating) + '★ · ' + n(row.reviewCount) + ' Rezensionen', 'green', 5);
   renderDistribution(rows);
+  renderRatioHistogram(rows);
 }
 function renderTable(rows) {
   const scoped = modeRows(rows);
