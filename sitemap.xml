@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://nuernberg-maps-review-removals.patwoz.dev/</loc><lastmod>2026-05-22</lastmod><changefreq>weekly</changefreq><priority>1.0</priority></url>
-  <url><loc>https://nuernberg-maps-review-removals.patwoz.dev/charts/nuernberg_most_removed.html</loc><lastmod>2026-05-22</lastmod><changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://nuernberg-maps-review-removals.patwoz.dev/</loc><lastmod>2026-05-23</lastmod><changefreq>weekly</changefreq><priority>1.0</priority></url>
+  <url><loc>https://nuernberg-maps-review-removals.patwoz.dev/methodik.html</loc><lastmod>2026-05-23</lastmod><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://nuernberg-maps-review-removals.patwoz.dev/korrektur.html</loc><lastmod>2026-05-23</lastmod><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://nuernberg-maps-review-removals.patwoz.dev/impressum.html</loc><lastmod>2026-05-23</lastmod><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://nuernberg-maps-review-removals.patwoz.dev/datenschutz.html</loc><lastmod>2026-05-23</lastmod><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://nuernberg-maps-review-removals.patwoz.dev/charts/nuernberg_most_removed.html</loc><lastmod>2026-05-23</lastmod><changefreq>weekly</changefreq><priority>0.6</priority></url>
 </urlset>

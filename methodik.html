@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Methodik und Einordnung · Nürnberg Google-Maps-Bewertungen</title>
+  <meta name="description" content="Methodik und Grenzen des Dashboards zu öffentlich sichtbaren Google-Maps-Hinweisen.">
+  <style>body{margin:0;font-family:Arial,Helvetica,sans-serif;color:#333;background:#fff}main{width:min(920px,calc(100vw - 32px));margin:42px auto 70px;line-height:1.6}nav{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:30px}a{color:#cf2a1b;font-weight:700;text-decoration:none}a:hover{text-decoration:underline}h1{font-size:clamp(30px,5vw,48px);line-height:1.1;margin:0 0 18px}h2{margin-top:30px;color:#222}.note,.card{padding:16px;border-left:5px solid #1f6f8b;background:#f6f6f6}@media(prefers-color-scheme:dark){body{color:#e7e2dc;background:#0e0c0b}h2{color:#fff5ec}.note,.card{background:#171412}}</style>
+</head>
+<body><main>
+  <nav aria-label="Navigation"><a href="/">Dashboard</a><a href="methodik.html">Methodik</a><a href="korrektur.html">Korrektur melden</a><a href="impressum.html">Impressum</a><a href="datenschutz.html">Datenschutz</a></nav>
+<h1>Methodik und Einordnung</h1>
+  <p class="note">Diese Seite dokumentiert öffentlich sichtbare Google-Hinweise in Unternehmensprofilen zum Abrufzeitpunkt. Sie behauptet nicht, dass Betriebe rechtswidrig gehandelt, Bewertungen missbräuchlich entfernen ließen oder legitime Kritik unterdrückt wurde.</p>
+  <h2>Was gemessen wurde</h2>
+  <p>Google Maps zeigt auf betroffenen Unternehmensprofilen einen öffentlichen Hinweis, dass Bewertungen aufgrund von Beschwerden wegen Diffamierung entfernt wurden. Nach dem von Google Maps angezeigten Hinweis bezieht sich diese Spanne auf Bewertungen, die <strong>in den letzten 365 Tagen</strong> entfernt wurden. Google nennt dabei keine exakte Zahl, sondern einen Bereich, zum Beispiel <em>2–5</em>, <em>6–10</em>, <em>11–20</em>, <em>21–50</em>, <em>51–100</em>, <em>101–150</em>, <em>151–200</em>, <em>201–250</em> oder <em>über 250</em>.</p>
+  <p>Das Dashboard erfasst diese öffentlich sichtbaren Hinweise für Google-Maps-Orte im Raum Nürnberg. Es sammelt, speichert und veröffentlicht keine Rezensionstexte, keine Namen von Bewertenden, keine Namen von Beschwerdeführenden und keine Angaben zu Kanzleien in Einzelfällen.</p>
+  <h2>Erhebung</h2>
+  <p>Die Orte werden über Google-Maps-Suchen mit konfigurierten Kategoriebegriffen und Postleitzahlen gefunden, dedupliziert und anschließend einzeln geprüft. Optional kann die offizielle Google Places API nur für die Ortssuche verwendet werden; die Hinweis-Erkennung selbst erfolgt im Browser auf öffentlich sichtbaren Google-Maps-Seiten.</p>
+  <p>Pro Ort werden insbesondere Name, Google-Maps-URL beziehungsweise Place-ID, aktuelle sichtbare Sternebewertung, sichtbare Rezensionszahl, Kategorie, Postleitzahl, Bezirk soweit zuordenbar, sichtbare Google-Hinweisspanne und Abrufzeitpunkt gespeichert.</p>
+  <p>Google Maps wurde deutschsprachig ausgewertet. Die Erkennung der Hinweise, Tab-Beschriftungen und Rezensionszahlen ist auf deutsche Google-Maps-Ausgaben ausgelegt.</p>
+  <h2>Berechnungen</h2>
+  <p>Die sichtbare Rezensionszahl ist die aktuell von Google angezeigte Zahl sichtbarer Rezensionen. Entfernte Rezensionen sind darin nach dieser Modellierung nicht enthalten. Für den Hinweis-Anteil nutzt das Dashboard daher: <code>Näherungswert / (sichtbare Rezensionen + Näherungswert)</code>.</p>
+  <p>Für geschlossene Bereiche nutzt das Dashboard den Mittelpunkt der angezeigten Spanne als Näherungswert. Beispiel: Aus <em>21–50</em> wird 35,5. Für <em>über 250</em> ist kein oberes Ende bekannt; das Dashboard verwendet für Sortierung und Näherungswert derzeit 300. Der tatsächliche Wert kann höher liegen.</p>
+  <p>Alle aus Spannen abgeleiteten Kennzahlen sind Näherungen. Sie sollen Größenordnungen vergleichbar machen, sind aber keine exakten Zählwerte.</p>
+  <h2>Hypothetisches Worst-Case-Rating</h2>
+  <p>Das hypothetische Worst-Case-Rating ist eine mathematische Untergrenze, kein realer Wert. Es nimmt an, dass alle in der sichtbaren Google-Spanne enthaltenen entfernten Bewertungen 1-Stern-Bewertungen gewesen wären, und rechnet diese hypothetisch in den Durchschnitt ein.</p>
+  <p>Das Worst-Case-Rating ist <strong>keine Tatsachenbehauptung</strong> über die entfernten Bewertungen, <strong>keine Aussage über die Qualität des Betriebs</strong> und keine Bewertung, ob einzelne Beschwerden berechtigt waren. Eine Sortierung nach diesem Wert ist kein Ranking nach Betriebsqualität, sondern nach der rechnerischen Auswirkung einer worst-case-Annahme.</p>
+  <h2>Grenzen der Aussage</h2>
+  <p>Die Stichprobe entsteht aus Google-Maps-Suchergebnissen. Diese Ergebnisse sind nach Googles eigener Sichtbarkeit, Relevanz und Prominenz sortiert und bilden nicht notwendigerweise alle Betriebe im Raum Nürnberg ab. Sichtbare Orte haben tendenziell mehr Online-Präsenz und mehr Rezensionen.</p>
+  <p>Ein fehlender Hinweis bedeutet nicht sicher, dass nie Bewertungen entfernt wurden. Ein sichtbarer Hinweis bedeutet nicht, dass eine Beschwerde unberechtigt oder missbräuchlich war. Der Hinweis dokumentiert nur, dass Google zum Abrufzeitpunkt einen entsprechenden öffentlichen Hinweis angezeigt hat.</p>
+  <p>Die Daten sind eine Momentaufnahme. Hinweise, Rezensionen und Bewertungen können sich ändern; auch Googles Oberfläche, Spracheinstellungen oder Sichtbarkeitsregeln können die Erkennung beeinflussen.</p>
+  <h2>Was die Daten zeigen — und was nicht</h2>
+  <p>Die Daten zeigen, bei welchen erfassten Google-Maps-Orten öffentlich sichtbare Hinweise auf entfernte Bewertungen wegen Diffamierungsbeschwerden angezeigt wurden und in welcher Spanne Google diese Hinweise ausweist.</p>
+  <p>Die Daten zeigen nicht, ob entfernte Bewertungen legitim waren, ob Beschwerden berechtigt waren oder ob ein Betrieb rechtswidrig gehandelt hat. Ein hoher Hinweiswert ist keine Feststellung von Fehlverhalten. Umgekehrt kann ein Betrieb auch legitime Gründe gehabt haben, gegen falsche oder koordinierte negative Bewertungen vorzugehen.</p>
+  <h2>Heilberufe und personenbezogene Einzelpraxen</h2>
+  <p>Profile von Ärztinnen und Ärzten, Therapeutinnen und Therapeuten, Anwältinnen und Anwälten und vergleichbaren personenbezogenen Einzelpraxen sind nach der Rechtsprechung des Bundesgerichtshofs (BGH-Jameda-Entscheidungen) besonders schutzwürdig. Sichtbare Google-Hinweise auf solchen Profilen sind Tatsachen aus Google Maps, aber ihre Aufnahme in ein Dashboard berührt die berufliche Reputation der namentlich erfassten Person stärker als bei einem reinen Geschäftsprofil.</p>
+  <p>Für diese Profile gilt deshalb besonders: Es wird keine Aussage über fachliche Qualität, Behandlungsstandards oder Berufsausübung getroffen. Betroffene Heilberufler und Einzelpraxen können Einträge bevorzugt über die Korrekturseite prüfen und auf plausible Beanstandung hin vorläufig ausblenden lassen.</p>
+  <h2>Quelle und Reproduzierbarkeit</h2>
+  <p>Alle Dashboard-Zahlen stammen aus öffentlich sichtbaren Google-Maps-Angaben zum Abrufzeitpunkt und aus daraus abgeleiteten Berechnungen. Quelle für die 365-Tage-Einordnung ist der öffentlich sichtbare Google-Maps-Hinweis im jeweiligen Unternehmensprofil selbst; die betroffenen Google-Maps-Profile sind im Dashboard pro Eintrag verlinkt. Der Hinweis kann sich ändern oder verschwinden, wenn Google die Oberfläche oder den Profilstatus ändert. Statistische Bezirke werden nur zur räumlichen Gruppierung verwendet. Die Veröffentlichung enthält keine Rezensionstexte und keine Rohdaten-CSV.</p>
+  <p>Der konkrete Datenstand steht im Dashboard-Footer. Korrekturhinweise können über die Korrekturseite gemeldet werden.</p>
+  <h2>Journalistische Sorgfalt (§ 19 MStV)</h2>
+  <p>Das Dashboard wird als journalistisch-redaktionelles Telemedienangebot betrieben (siehe Impressum nach § 18 Abs. 2 MStV). Nachrichten werden vor ihrer Veröffentlichung mit der nach den Umständen gebotenen Sorgfalt auf Inhalt, Herkunft und Wahrheit überprüft (§ 19 Abs. 1 Satz 1 MStV). Erkennbare Unrichtigkeiten werden unverzüglich richtiggestellt (§ 19 Abs. 2 MStV); hierzu dient insbesondere die Korrekturseite. Meinungen werden als solche kenntlich gemacht; Tatsachen und Modellrechnungen — namentlich das hypothetische Worst-Case-Rating — sind in dieser Methodik-Seite gesondert ausgewiesen.</p>
+  <p><a href="/">Zurück zum Dashboard</a></p>
+</main></body>
+</html>
