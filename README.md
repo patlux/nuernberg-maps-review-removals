@@ -11,7 +11,7 @@ Reproduzierbarer lokaler Go-Workflow, um öffentlich sichtbare Google-Maps-Ortsd
 - Nur für private Recherche / Journalismus gedacht. Google-Maps-Bedingungen und geltendes Recht beachten.
 - Der Scraper speichert nur, was zum Scrape-Zeitpunkt öffentlich sichtbar ist. Manuell geprüfte Abweichungen können als Overrides in `internal/mapsreview/data/place_overrides.json` gepflegt werden.
 - Kein Banner ≠ definitiv keine entfernten Bewertungen. Es bedeutet nur: Beim Scrape wurde kein passender sichtbarer Hinweis erkannt.
-- Das Dashboard und die Diagramme veröffentlichen keine berechneten Ersatz-Sterne-Ratings. Sterne und genaue Anzahl entfernter Rezensionen sind unbekannt. Ältere Quelldaten können das frühere Modellfeld noch enthalten; sie werden durch diese Änderung nicht nachträglich verändert.
+- Das Dashboard zeigt ein ausdrücklich als Modell gekennzeichnetes **1-Stern-Szenario**, kein tatsächliches oder „wahres“ Rating und keine gesicherte Untergrenze. Sterne und genaue Anzahl entfernter Rezensionen sind unbekannt. Separate Diagramme und Exporte bleiben ohne synthetische Sterne-Ratings. Ältere Quelldaten können das frühere Modellfeld noch enthalten; sie werden nicht nachträglich verändert.
 - Langsame Delays verwenden. Wenn Google ein CAPTCHA zeigt: stoppen oder im sichtbaren Browser manuell lösen.
 
 ## Einrichtung
@@ -19,7 +19,7 @@ Reproduzierbarer lokaler Go-Workflow, um öffentlich sichtbare Google-Maps-Ortsd
 Voraussetzungen:
 
 - Go 1.25+
-- Node.js 22+ für die browserfreien Consent-Regressionstests
+- Node.js 22+ für die browserfreien Dashboard-Regressionstests
 - Chrome oder Chromium im `PATH` oder an einem Standard-Installationsort
 - Optional als experimentelles CDP-Backend: Lightpanda
 - Optional für Places-API-Discovery: Google Places API (New)-API-Key in `config.toml`
@@ -327,6 +327,8 @@ go run ./cmd/validate
 Jede Grafik enthält den Datenzeitraum aus den gespeicherten Abrufzeiten und die wesentlichen Einschränkungen. Das Erstellungsdatum wird nicht als neuer Datenstand ausgegeben. Die lokalen HTML-/Markdown-Exporte zeigen Spannen und Abrufzeitpunkte statt synthetischer Sterne-Ratings.
 
 Das Dashboard enthält zusätzlich einen ausdrücklich bezeichneten **Modellanteil**: `Spannen-Näherungswert / (sichtbare Rezensionen + Näherungswert)`. Das ist keine gemessene Löschquote: Hinweiszeitraum und sichtbarer Rezensionsbestand haben unterschiedliche Zeitbezüge.
+
+Das **1-Stern-Szenario** ist im Dashboard als Übersichtskachel, Tabellenansicht und sortierbare Spalte verfügbar: `(Google-Rating × sichtbare Rezensionen + Näherungswert × 1) / (sichtbare Rezensionen + Näherungswert)`. Es verwendet Spannenmittelpunkte und für „über 250“ den frei gewählten Rechenwert 300, nicht die unbekannte tatsächliche Anzahl oder Sternezahl. Es ist kein tatsächliches Rating und keine gesicherte Untergrenze. Ausgangsrating und Eingaben sind bereits gerundet; zwei Nachkommastellen sind keine Genauigkeitszusage. Die Berechnung erfolgt im Browser aus den vorhandenen Eingaben, ohne das frühere Modellfeld aus den Quelldaten zu übernehmen. Ohne beobachteten Hinweis oder gültige Eingaben wird kein Szenariowert angezeigt. Die Methodik erläutert Annahmen, unterschiedliche Zeitbezüge und ein Rechenbeispiel.
 
 ## Veröffentlichungsgrenzen und offene Prüfungen
 

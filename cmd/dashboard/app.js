@@ -17,7 +17,7 @@ const state = { mode: 'removed', sortKey: 'removedEstimate', sortDir: 'desc', us
 const els = {
   themeToggle: document.getElementById('themeToggle'), controls: document.getElementById('dashboardFilterControls'), filterToggle: document.getElementById('filterToggle'), filterSummary: document.getElementById('filterSummary'), search: document.getElementById('searchInput'), postcode: document.getElementById('postcodeFilter'), bezirk: document.getElementById('bezirkFilter'), banner: document.getElementById('bannerFilter'), range: document.getElementById('rangeFilter'), category: document.getElementById('categoryFilter'), minReviews: document.getElementById('minReviews'), reset: document.getElementById('resetFilters'), tbody: document.querySelector('#placesTable tbody'), resultCount: document.getElementById('resultCount'), tableTitle: document.getElementById('tableTitle'), mapCount: document.getElementById('mapCount'), nearbyStatus: document.getElementById('nearbyStatus'), showMore: document.getElementById('showMoreRows')
 };
-const titles = { all: 'Alle Orte', removed: 'Höchste Hinweisspannen', ratio: 'Geschätzter Modellanteil', clean: 'Orte ohne beobachteten Google-Hinweis', nearby: 'In meiner Nähe' };
+const titles = { all: 'Alle Orte', removed: 'Höchste Hinweisspannen', ratio: 'Geschätzter Modellanteil', scenario: '1-Stern-Szenario', clean: 'Orte ohne beobachteten Google-Hinweis', nearby: 'In meiner Nähe' };
 
 function finiteNumber(value) { return Number.isFinite(value) ? value : null; }
 function decodeCoord(base, offset) { return Number.isFinite(offset) ? base + offset / COORD_SCALE : null; }
@@ -33,11 +33,16 @@ function decodeAddress(value, postcode) {
   if (value[0] === '!') return value.slice(1);
   return value + ', ' + postcode + ' ' + DASHBOARD_CITY;
 }
+function oneStarScenario(visibleRating, reviewCount, removedEstimate) {
+  if (![visibleRating, reviewCount, removedEstimate].every(Number.isFinite) || visibleRating < 1 || visibleRating > 5 || reviewCount <= 0 || removedEstimate <= 0) return null;
+  return (visibleRating * reviewCount + removedEstimate) / (reviewCount + removedEstimate);
+}
 function decodePlaceRow(row, index, dicts) {
   const postcode = dictValue(dicts, 0, row[2]);
   const hasBanner = row.length > 12;
+  const removedRange = hasBanner ? dictValue(dicts, 4, row[12]) : '';
   return {
-    id: String(index), name: row[1] || '', postcode, lat: decodeCoord(49, row[3]), lng: decodeCoord(11, row[4]), bezirkLabel: dictValue(dicts, 1, row[5]), rating: finiteNumber(row[6]), reviewCount: finiteNumber(row[7]), category: dictValue(dicts, 2, row[8]), parentCategory: dictValue(dicts, 3, row[9]), hasBanner, removedRange: hasBanner ? dictValue(dicts, 4, row[12]) : '', removedEstimate: hasBanner ? finiteNumber(row[13]) || 0 : 0, deletionRatioPct: hasBanner ? finiteNumber(row[14]) : null, address: decodeAddress(row[10] || '', postcode), readAt: Number.isFinite(row[11]) ? row[11] * 60000 : 0, url: googleMapsURL(row[0], row[1])
+    id: String(index), name: row[1] || '', postcode, lat: decodeCoord(49, row[3]), lng: decodeCoord(11, row[4]), bezirkLabel: dictValue(dicts, 1, row[5]), rating: finiteNumber(row[6]), reviewCount: finiteNumber(row[7]), category: dictValue(dicts, 2, row[8]), parentCategory: dictValue(dicts, 3, row[9]), hasBanner, removedRange, removedEstimate: hasBanner ? finiteNumber(row[13]) || 0 : 0, deletionRatioPct: hasBanner ? finiteNumber(row[14]) : null, oneStarScenario: removedRange ? oneStarScenario(row[6], row[7], row[13]) : null, address: decodeAddress(row[10] || '', postcode), readAt: Number.isFinite(row[11]) ? row[11] * 60000 : 0, url: googleMapsURL(row[0], row[1])
   };
 }
 function getBezirke() {
@@ -221,11 +226,13 @@ function requestUserLocation() {
 }
 const MIN_CLEAN_RANKING_REVIEWS = 100;
 function bannerRows(rows) { return rows.filter(row => row.hasBanner && Number.isFinite(row.removedEstimate)); }
+function scenarioRows(rows) { return bannerRows(rows).filter(row => Number.isFinite(row.oneStarScenario)); }
 function cleanRows(rows) { return rows.filter(row => !row.hasBanner); }
 function cleanRankingRows(rows) { return cleanRows(rows).filter(row => Number.isFinite(row.rating) && Number.isFinite(row.reviewCount) && row.reviewCount >= MIN_CLEAN_RANKING_REVIEWS); }
 function defaultSortFor(mode) {
   if (mode === 'removed') return ['removedEstimate', 'desc'];
   if (mode === 'ratio') return ['deletionRatioPct', 'desc'];
+  if (mode === 'scenario') return ['oneStarScenario', 'asc'];
   if (mode === 'clean') return ['rating', 'desc'];
   if (mode === 'nearby') return ['distanceKm', 'asc'];
   return ['rank', 'asc'];
@@ -233,6 +240,7 @@ function defaultSortFor(mode) {
 function modeRows(rows) {
   if (state.mode === 'removed') return bannerRows(rows);
   if (state.mode === 'ratio') return bannerRows(rows).filter(row => Number.isFinite(row.deletionRatioPct));
+  if (state.mode === 'scenario') return scenarioRows(rows);
   if (state.mode === 'clean') return cleanRows(rows);
   if (state.mode === 'nearby') return rows.filter(hasCoords);
   return rows;
@@ -247,10 +255,15 @@ function value(row, key, index) {
 }
 function sortRows(rows) {
   return rows.map((row, index) => ({ row, index })).sort((a, b) => {
+    if (state.sortKey === 'oneStarScenario') {
+      const aMissing = !Number.isFinite(a.row.oneStarScenario);
+      const bMissing = !Number.isFinite(b.row.oneStarScenario);
+      if (aMissing || bMissing) return Number(aMissing) - Number(bMissing);
+    }
     const av = value(a.row, state.sortKey, a.index);
     const bv = value(b.row, state.sortKey, b.index);
     const result = typeof av === 'string' ? av.localeCompare(bv, 'de') : av - bv;
-    if (result === 0 && state.sortKey === 'removedEstimate') return a.row.name.localeCompare(b.row.name, 'de');
+    if (result === 0 && ['removedEstimate', 'oneStarScenario'].includes(state.sortKey)) return a.row.name.localeCompare(b.row.name, 'de');
     return state.sortDir === 'asc' ? result : -result;
   }).map(item => item.row);
 }
@@ -556,6 +569,7 @@ function updatePanels(rows) {
   const banners = bannerRows(rows);
   renderBars('barsRemoved', 'removed', [...banners].sort((a,b) => b.removedEstimate - a.removedEstimate || a.name.localeCompare(b.name, 'de')), row => row.removedEstimate, row => esc(row.removedRange), '', 300);
   renderBars('barsRatio', 'ratio', [...banners].sort((a,b) => (b.deletionRatioPct ?? -1) - (a.deletionRatioPct ?? -1)), row => row.deletionRatioPct || 0, row => pct(row.deletionRatioPct), '', Math.max(10, ...banners.map(row => row.deletionRatioPct || 0)));
+  renderBars('barsScenario', 'scenario', [...scenarioRows(rows)].sort((a,b) => a.oneStarScenario - b.oneStarScenario || a.name.localeCompare(b.name, 'de')), row => row.oneStarScenario, row => 'Google ' + rating(row.rating) + '★ · Modell ' + rating(row.oneStarScenario, 2) + '★', '', 5);
   renderBars('barsClean', 'clean', [...cleanRankingRows(rows)].sort((a,b) => b.rating - a.rating || b.reviewCount - a.reviewCount), row => row.rating, row => rating(row.rating) + '★ · ' + n(row.reviewCount) + ' Rezensionen', 'green', 5);
   renderDistribution(rows);
   renderRatioHistogram(rows);
@@ -584,7 +598,7 @@ function renderTable(rows) {
     const rank = index + 1;
     const distance = state.mode === 'nearby' ? '<span class="entry-address">Entfernung: ' + esc(distanceLabel(rowDistanceKm(row))) + '</span>' : '';
     const address = row.address ? '<span class="entry-address">' + esc(row.address) + '</span>' : '';
-    return '<tr data-entry-id="' + esc(row.id) + '"><td class="rank">' + rank + '</td><td class="name"><a href="' + esc(row.url) + '" target="_blank" rel="noopener noreferrer">' + esc(row.name) + '</a>' + distance + address + '</td><td>' + esc(row.bezirkLabel || '–') + '</td><td>' + esc(row.postcode) + '</td><td class="num">' + rating(row.rating) + '</td><td class="num">' + n(row.reviewCount) + '</td><td>' + (row.hasBanner ? '<span class="pill bad">Google-Hinweis</span>' : '<span class="pill">beim Abruf kein Hinweis</span>') + '</td><td class="num">' + (row.hasBanner ? esc(row.removedRange) : '–') + '</td><td class="num">' + (row.hasBanner ? rating(row.removedEstimate) : '–') + '</td><td class="num">' + pct(row.deletionRatioPct) + '</td><td>' + esc(readAtLabel(row.readAt)) + '</td><td>' + esc(row.category) + '</td></tr>';
+    return '<tr data-entry-id="' + esc(row.id) + '"><td class="rank">' + rank + '</td><td class="name"><a href="' + esc(row.url) + '" target="_blank" rel="noopener noreferrer">' + esc(row.name) + '</a>' + distance + address + '</td><td>' + esc(row.bezirkLabel || '–') + '</td><td>' + esc(row.postcode) + '</td><td class="num">' + rating(row.rating) + '</td><td class="num">' + n(row.reviewCount) + '</td><td>' + (row.hasBanner ? '<span class="pill bad">Google-Hinweis</span>' : '<span class="pill">beim Abruf kein Hinweis</span>') + '</td><td class="num">' + (row.hasBanner ? esc(row.removedRange) : '–') + '</td><td class="num">' + (row.hasBanner ? rating(row.removedEstimate) : '–') + '</td><td class="num">' + pct(row.deletionRatioPct) + '</td><td class="num">' + rating(row.oneStarScenario, 2) + '</td><td>' + esc(readAtLabel(row.readAt)) + '</td><td>' + esc(row.category) + '</td></tr>';
   }).join('');
   document.querySelectorAll('th button[data-sort]').forEach(button => {
     const active = button.dataset.sort === state.sortKey;
@@ -653,7 +667,7 @@ document.querySelectorAll('.tab').forEach(button => button.addEventListener('cli
 document.querySelectorAll('th button[data-sort]').forEach(button => button.addEventListener('click', () => {
   const next = button.dataset.sort;
   if (next === state.sortKey) state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
-  else { state.sortKey = next; state.sortDir = ['name','postcode','bezirkLabel','category','rank'].includes(next) ? 'asc' : 'desc'; }
+  else { state.sortKey = next; state.sortDir = ['name','postcode','bezirkLabel','category','rank','oneStarScenario'].includes(next) ? 'asc' : 'desc'; }
   resetTableLimit();
   renderTable(filtered());
 }));
@@ -727,6 +741,12 @@ function updateSubChips(mode) {
       { label: '🍽️ Nur Gastro', test: () => els.category.value === 'parent:Gastronomie', apply: v => { els.category.value = v ? 'parent:Gastronomie' : ''; } },
       { label: '🏨 Nur Hotels', test: () => els.category.value === 'parent:Beherbergung', apply: v => { els.category.value = v ? 'parent:Beherbergung' : ''; } },
       { label: 'Spanne 51–100', test: () => els.range.value === '51–100', apply: v => { els.range.value = v ? '51–100' : ''; } },
+    ],
+    scenario: [
+      { label: 'Min. 50 Rez.', test: () => Number(els.minReviews.value) === 50, apply: v => { els.minReviews.value = v ? 50 : 0; } },
+      { label: 'Min. 100 Rez.', test: () => Number(els.minReviews.value) === 100, apply: v => { els.minReviews.value = v ? 100 : 0; } },
+      { label: 'Min. 200 Rez.', test: () => Number(els.minReviews.value) === 200, apply: v => { els.minReviews.value = v ? 200 : 0; } },
+      { label: '🍽️ Nur Gastro', test: () => els.category.value === 'parent:Gastronomie', apply: v => { els.category.value = v ? 'parent:Gastronomie' : ''; } },
     ],
     clean: [
       { label: 'Min. 200 Rez.', test: () => Number(els.minReviews.value) === 200, apply: v => { els.minReviews.value = v ? 200 : 0; } },

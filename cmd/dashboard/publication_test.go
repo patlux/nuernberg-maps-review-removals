@@ -46,9 +46,9 @@ func TestSiteDoesNotPublishLegacyExports(t *testing.T) {
 	}
 }
 
-func TestPublicDashboardOmitsSyntheticRatings(t *testing.T) {
+func TestPublicDashboardOmitsUnsupportedRatingClaims(t *testing.T) {
 	page := makeHTML(args{City: "Nürnberg"}, nil)
-	for _, forbidden := range []string{"Worst-Case", "Untergrenze", "realRatingAdjusted", "barsWorst", "Schlechtestes", "overall_summary.png"} {
+	for _, forbidden := range []string{"Worst-Case", "Mathematische Untergrenze", "realRatingAdjusted", "barsWorst", "Schlechtestes", "overall_summary.png"} {
 		if strings.Contains(page, forbidden) {
 			t.Errorf("public dashboard contains %q", forbidden)
 		}

@@ -980,7 +980,7 @@ __ANALYTICS__
     .kpi:nth-child(5) { border-top-color: var(--green); }
     .kpi .value { display: block; color: var(--heading); font-size: clamp(30px, 3vw, 44px); font-weight: 400; line-height: 1; }
     .kpi .label { display: block; margin-top: 8px; color: var(--muted); font-size: 14px; }
-    .panel-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: stretch; margin-top: 18px; }
+    .panel-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: stretch; margin-top: 18px; }
     .panel { padding: 18px; min-height: 330px; }
     .panel h2, .dist h2 { margin: 0 0 8px; color: var(--heading); font-size: 22px; font-weight: 700; }
     .panel p { margin: 0 0 16px; color: var(--muted); font-size: 13px; }
@@ -1043,7 +1043,7 @@ __ANALYTICS__
     .table-head strong { color: var(--heading); font-size: 22px; }
     .table-wrap { overflow: auto; background: var(--surface); border: 1px solid var(--line); }
     table { width: 100%; min-width: 1570px; border-collapse: collapse; table-layout: fixed; }
-    col.rank { width: 70px; } col.name { width: 360px; } col.bezirk { width: 210px; } col.plz { width: 90px; } col.rating { width: 95px; } col.reviews { width: 125px; } col.banner { width: 100px; } col.removed { width: 120px; } col.estimate { width: 125px; } col.ratio { width: 120px; } col.checked { width: 130px; } col.category { width: 175px; }
+    col.rank { width: 70px; } col.name { width: 360px; } col.bezirk { width: 210px; } col.plz { width: 90px; } col.rating { width: 95px; } col.reviews { width: 125px; } col.banner { width: 100px; } col.removed { width: 120px; } col.estimate { width: 125px; } col.ratio { width: 120px; } col.scenario { width: 170px; } col.checked { width: 130px; } col.category { width: 175px; }
     th { position: sticky; top: 0; z-index: 2; padding: 0; background: var(--table-head-bg); border-bottom: 2px solid var(--line); color: var(--heading); font-size: 13px; text-align: left; }
     th button { display: flex; align-items: center; gap: 5px; width: 100%; min-height: 44px; padding: 12px; border: 0; background: transparent; color: inherit; font: inherit; font-weight: 700; text-align: inherit; cursor: pointer; }
     th.num button, th.rank button { justify-content: flex-end; text-align: right; }
@@ -1078,7 +1078,7 @@ __ANALYTICS__
     @media (min-width: 1600px) {
       .table-wrap { margin: 0 calc(-1 * (100vw - min(1320px, calc(100vw - 32px))) / 2); }
       table { min-width: 0; table-layout: auto; }
-      col.rank, col.name, col.bezirk, col.plz, col.rating, col.reviews, col.banner, col.removed, col.estimate, col.ratio, col.checked, col.category { width: auto; }
+      col.rank, col.name, col.bezirk, col.plz, col.rating, col.reviews, col.banner, col.removed, col.estimate, col.ratio, col.scenario, col.checked, col.category { width: auto; }
     }
     @media (max-width: 1200px) { .hero-inner { grid-template-columns: 1fr; } .appeal-box { width: min(760px, 100%); } .kpis, .panel-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .related-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } .controls { grid-template-columns: 1fr 1fr 1fr; } .search { grid-column: 1 / -1; } .theme-toggle { margin-left: auto; margin-right: 0; } .n-logo { position: relative; height: 76px; width: 150px; margin-left: 0; padding-top: 48px; } .n-logo::before { top: 40px; } .n-logo::after { top: 4px; } }
     @media (max-width: 720px) {
@@ -1169,6 +1169,7 @@ __SEO_SUMMARY__
     <section class="grid panel-grid" aria-label="Top-Rankings">
       <article class="card panel"><h2>Höchste Hinweisspannen</h2><p>Beobachtete Google-Spannen; innerhalb derselben Spanne alphabetisch. Keine Aussage über Betriebsqualität.</p><div class="bars" id="barsRemoved"></div></article>
       <article class="card panel"><h2>Geschätzter Modellanteil</h2><p>Modellanteil: Spannen-Näherungswert / (sichtbare Rezensionen + Näherungswert). Keine gemessene Löschquote; unterschiedliche Zeitbezüge.</p><div class="bars" id="barsRatio"></div></article>
+      <article class="card panel"><h2>1-Stern-Szenario</h2><p>Modell: Spannenmittelpunkt; für „über 250“ der Rechenwert 300. Jeweils 1 Stern angenommen, nicht beobachtet. Kein tatsächliches Rating und keine gesicherte Untergrenze. Niedrigste Modellwerte zuerst; keine Aussage über Betriebsqualität.</p><div class="bars" id="barsScenario"></div></article>
       <article class="card panel"><h2>Ohne beobachteten Google-Hinweis</h2><p>Im Abruf war kein passender Google-Hinweis sichtbar. Sortiert nach Rating ab 100 Rezensionen. Keine Qualitätsaussage gegenüber anderen Orten.</p><div class="bars" id="barsClean"></div></article>
     </section>
 
@@ -1194,6 +1195,7 @@ __SEO_SUMMARY__
     <nav class="tabs" aria-label="Tabellen-Presets">
       <button class="tab active" data-mode="removed">Höchste Spannen</button>
       <button class="tab" data-mode="ratio">Modellanteil</button>
+      <button class="tab" data-mode="scenario">1-Stern-Szenario</button>
       <button class="tab" data-mode="clean">Ohne Hinweis</button>
       <button class="tab" data-mode="nearby">In meiner Nähe</button>
     </nav>
@@ -1201,9 +1203,10 @@ __SEO_SUMMARY__
     <div class="nearby-status" id="nearbyStatus" role="status" aria-live="polite" hidden></div>
 
     <div class="table-head"><strong id="tableTitle">Höchste Hinweisspannen</strong><span id="resultCount">–</span></div>
+    <p id="scenarioExplanation">1-Stern-Szenario: angenommene Anzahl entfernter Rezensionen (Spannenmittelpunkt; für „über 250“ der Rechenwert 300), jeweils mit 1 Stern. Kein tatsächliches Rating und keine gesicherte Untergrenze. Anzahl und Sterne der entfernten Rezensionen sind unbekannt.</p>
     <section class="table-wrap" aria-label="Daten-Explorer">
       <table id="placesTable">
-        <colgroup><col class="rank"><col class="name"><col class="bezirk"><col class="plz"><col class="rating"><col class="reviews"><col class="banner"><col class="removed"><col class="estimate"><col class="ratio"><col class="checked"><col class="category"></colgroup>
+        <colgroup><col class="rank"><col class="name"><col class="bezirk"><col class="plz"><col class="rating"><col class="reviews"><col class="banner"><col class="removed"><col class="estimate"><col class="ratio"><col class="scenario"><col class="checked"><col class="category"></colgroup>
         <thead><tr>
           <th class="rank"><button data-sort="rank">Rang <span class="arrow"></span></button></th>
           <th><button data-sort="name">Name / Google Maps <span class="arrow"></span></button></th>
@@ -1215,6 +1218,7 @@ __SEO_SUMMARY__
           <th class="num"><button data-sort="removedEstimate">Spanne <span class="arrow"></span></button></th>
           <th class="num"><button data-sort="removedEstimate">Näherungswert <span class="arrow"></span></button></th>
           <th class="num"><button data-sort="deletionRatioPct">Modellanteil <span class="arrow"></span></button></th>
+          <th class="num"><button data-sort="oneStarScenario" aria-describedby="scenarioExplanation" title="Modell mit angenommener Anzahl entfernter Rezensionen und jeweils 1 Stern; kein tatsächliches Rating und keine gesicherte Untergrenze.">1-Stern-Szenario (Modell) <span class="arrow"></span></button></th>
           <th><button data-sort="readAt">Datenabruf <span class="arrow"></span></button></th>
           <th><button data-sort="category">Kategorie <span class="arrow"></span></button></th>
         </tr></thead>
@@ -1525,7 +1529,7 @@ func makeSEOStats(data []clientRow, snapshot string) seoStats {
 func seoSummaryHTML(stats seoStats, city string) string {
 	return fmt.Sprintf(`<section class="card seo-summary" aria-labelledby="data-overview-title">
       <h2 id="data-overview-title">Datenstand: Google-Maps-Bewertungen und Google-Hinweise in %s</h2>
-      <p>Dieses Dashboard macht öffentlich sichtbare Hinweise auf wegen Diffamierungsbeschwerden entfernte Google-Maps-Bewertungen in %s durchsuchbar. Die Karte, Filter und Ranglisten zeigen sichtbare Google-Hinweise, öffentlich angezeigte Spannen, Näherungswerte und ausdrücklich als Modell gekennzeichnete Anteile je Ort.</p>
+      <p>Dieses Dashboard macht öffentlich sichtbare Hinweise auf wegen Diffamierungsbeschwerden entfernte Google-Maps-Bewertungen in %s durchsuchbar. Die Karte, Filter und Ranglisten zeigen sichtbare Google-Hinweise, öffentlich angezeigte Spannen, Näherungswerte, ausdrücklich als Modell gekennzeichnete Anteile und ein hypothetisches 1-Stern-Szenario je Ort.</p>
       <ul class="seo-facts">
         <li><strong>%s</strong> erfasste Orte</li>
         <li><strong>%s</strong> mit beobachtetem Google-Hinweis</li>
@@ -1634,6 +1638,7 @@ func structuredDataJSON(stats seoStats, snapshot time.Time, city string, meta da
 					"sichtbare Google-Hinweise",
 					"Näherungswert aus Google-Spannen",
 					"Modellanteil (keine gemessene Quote)",
+					"1-Stern-Szenario (Modellwert, kein tatsächliches Rating)",
 				},
 				"size": fmt.Sprintf("%d Orte, %d sichtbare Google-Hinweise", stats.Total, stats.Banners),
 				"creator": map[string]interface{}{

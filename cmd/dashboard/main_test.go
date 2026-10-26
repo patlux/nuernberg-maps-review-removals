@@ -219,10 +219,10 @@ func TestMakeHTMLAvoidsSuperlativeWorstCaseLabel(t *testing.T) {
 		t.Fatal("dashboard still uses the superlative 'Schlechtestes Worst-Case-Rating' label")
 	}
 	if strings.Contains(html, "Worst-Case") {
-		t.Fatal("dashboard still publishes an unsupported synthetic rating")
+		t.Fatal("dashboard still labels the model as a worst-case rating")
 	}
 	if !strings.Contains(html, "Keine Aussage über Betriebsqualität") {
-		t.Fatal("dashboard worst-case panel is missing the quality-disclaimer")
+		t.Fatal("dashboard is missing the quality disclaimer")
 	}
 }
 

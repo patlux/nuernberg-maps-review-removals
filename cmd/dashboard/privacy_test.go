@@ -82,7 +82,7 @@ func TestDatasetCoverageAndEstimateUseSourceValues(t *testing.T) {
 	}
 }
 
-func TestCompactRowsDoNotPublishSyntheticStars(t *testing.T) {
+func TestCompactRowsKeepScenarioInputsWithoutLegacyRatingField(t *testing.T) {
 	var payload compactClientData
 	if err := json.Unmarshal([]byte(compactClientDataJSON([]clientRow{{Name: "Example", HasBanner: true, RemovedRange: "21–50"}}, "Nürnberg")), &payload); err != nil {
 		t.Fatal(err)
