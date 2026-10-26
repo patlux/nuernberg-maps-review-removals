@@ -207,7 +207,7 @@ func datenschutzPage(a args) string {
 		post = "<h2>Zustellanschrift</h2><p>" + esc(a.LegalPostHandler) + " kann Post für den Verantwortlichen entgegennehmen und weiterleiten. Dafür werden die erforderlichen Absender-, Zustell- und Inhaltsdaten verarbeitet. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO; Interesse ist die zuverlässige Erreichbarkeit.</p>"
 	}
 	body := fmt.Sprintf(`<h1>Datenschutzerklärung</h1>
- <h2>Verantwortlicher</h2><p>%s<br>E-Mail: <!--email_off--><a href="mailto:%s">%s</a><!--/email_off--></p>%s
+ <h2 id="datenschutz-kontakt">Verantwortlicher</h2><p>%s<br>E-Mail: <!--email_off--><a href="mailto:%s">%s</a><!--/email_off--></p>%s
  <h2>Bereitstellung der Website</h2>
  <p>Die Website wird über GitHub Pages bereitgestellt. GitHub, Inc., USA, verarbeitet für Auslieferung und Sicherheit insbesondere IP-Adresse, Zeitpunkt, angeforderte Datei, technische Statusdaten sowie gegebenenfalls Referrer und Browserinformationen. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO; berechtigtes Interesse ist die sichere Bereitstellung des Informationsangebots.</p>
  <p>Weitere Angaben zu GitHubs Verarbeitung, Empfängern, Aufbewahrung und internationalen Übermittlungen stehen in der <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement" target="_blank" rel="noopener noreferrer">GitHub-Datenschutzerklärung</a>. Eine Übermittlung in die USA setzt eine anwendbare Grundlage nach Kapitel V DSGVO voraus; eine Berufung auf das EU-US Data Privacy Framework setzt eine gültige, die Verarbeitung erfassende Zertifizierung voraus. Diese Website behauptet keine eigene Prüfung sämtlicher Hostingverträge oder konkreter Log-Löschfristen.</p>
@@ -231,8 +231,17 @@ func datenschutzPage(a args) string {
  %s
  <h2>Kontakt und Korrekturanfragen</h2>
  <p>Per E-Mail übermittelte Kontaktdaten, Nachrichten und Profil-Links werden zur Bearbeitung und Dokumentation der Anfrage verarbeitet. Grundlage ist Art. 6 Abs. 1 lit. f DSGVO, bei Erfüllung gesetzlicher Pflichten Art. 6 Abs. 1 lit. c DSGVO. Daten werden nur so lange aufbewahrt, wie die Bearbeitung, gesetzliche Pflichten oder die erforderliche Rechtsverteidigung dies verlangen.</p>
+ <section aria-labelledby="widerspruch">
+ <h2 id="widerspruch">Widerspruchsrecht nach Art. 21 DSGVO</h2>
+ <p><strong>Du hast das Recht, aus Gründen, die sich aus deiner besonderen Situation ergeben, jederzeit gegen die Verarbeitung deiner personenbezogenen Daten auf Grundlage von Art. 6 Abs. 1 lit. f DSGVO Widerspruch einzulegen. Dies gilt auch für ein darauf gestütztes Profiling.</strong></p>
+ <p>Das betrifft insbesondere die Bereitstellung und Absicherung der Website über GitHub Pages und Cloudflare einschließlich Netzwerkfehlerdiagnose, die Darstellung personenbezogener Unternehmensprofile sowie die Bearbeitung von Kontaktanfragen und die Postweiterleitung, soweit diese Verarbeitungen auf berechtigten Interessen beruhen.</p>
+ <p>Nach einem Widerspruch werden die betroffenen Daten nicht weiterverarbeitet, es sei denn, es lassen sich zwingende schutzwürdige Gründe nachweisen, die deine Interessen, Rechte und Freiheiten überwiegen, oder die Verarbeitung dient der Geltendmachung, Ausübung oder Verteidigung von Rechtsansprüchen.</p>
+ <p>Du kannst den Widerspruch an die <a href="#datenschutz-kontakt">oben genannte E-Mail- oder Postadresse</a> richten. Bitte beschreibe die betroffene Verarbeitung und die Gründe aus deiner besonderen Situation.</p>
+ </section>
+ <h2>Widerruf von Einwilligungen</h2>
+ <p>Eine erteilte Einwilligung kannst du jederzeit mit Wirkung für die Zukunft widerrufen. Die Rechtmäßigkeit der Verarbeitung bis zum Widerruf bleibt unberührt. Die jeweiligen Bedienelemente sind bei Reichweitenanalyse, Karte und Standortfunktion beschrieben. Du kannst dich auch über die <a href="#datenschutz-kontakt">oben genannten Kontaktdaten</a> an den Verantwortlichen wenden.</p>
  <h2>Betroffenenrechte</h2>
- <p>Nach Maßgabe der gesetzlichen Voraussetzungen bestehen insbesondere Rechte auf Auskunft, Berichtigung, Löschung und Einschränkung. Bei Verarbeitung auf Grundlage berechtigter Interessen besteht ein Widerspruchsrecht nach Art. 21 DSGVO aus Gründen der besonderen Situation. Einwilligungen können jederzeit mit Wirkung für die Zukunft widerrufen werden. Anfragen können an die oben genannte E-Mail-Adresse gerichtet werden.</p>
+ <p>Nach Maßgabe der gesetzlichen Voraussetzungen bestehen insbesondere Rechte auf Auskunft, Berichtigung, Löschung und Einschränkung. Anfragen können an die oben genannte E-Mail-Adresse gerichtet werden.</p>
  <p>Es besteht ein Beschwerderecht nach Art. 77 DSGVO. Für nichtöffentliche Stellen in Bayern ist grundsätzlich das <a href="https://www.lda.bayern.de" target="_blank" rel="noopener noreferrer">Bayerische Landesamt für Datenschutzaufsicht</a> zuständig; besondere medienrechtliche Zuständigkeiten bleiben unberührt.</p>
  <h2>Journalistische Verarbeitung und Medienprivileg</h2>
  <p>Ob und in welchem Umfang § 23 MStV anwendbar ist, richtet sich nach seinen gesetzlichen Voraussetzungen, nicht allein nach der Bezeichnung des Angebots. Die Vorschrift enthält besondere Regeln für journalistische Datenverarbeitung, darunter Datengeheimnis, Datensicherheit, Auskunft, Berichtigung und ergänzende Darstellungen. Sie befreit Hosting, Besucheranalyse oder Kontaktverwaltung nicht pauschal von der DSGVO. Gesetzliche Rechte bleiben unberührt.</p>
