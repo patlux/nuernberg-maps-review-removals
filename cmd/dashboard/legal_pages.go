@@ -148,7 +148,7 @@ func methodikPage(a args) string {
 
 func korrekturPage(a args) string {
 	return legalShell("Korrektur melden", "Fehler, veraltete Daten und rechtliche Beanstandungen melden.", fmt.Sprintf(`<h1>Korrektur melden</h1>
- <p class="note">Hinweis fehlerhaft, veraltet oder missverständlich? Bitte sende den betroffenen Eintrag oder Google-Profil-Link und eine kurze Begründung an <a href="mailto:%s">%s</a>.</p>
+ <p class="note">Hinweis fehlerhaft, veraltet oder missverständlich? Bitte sende den betroffenen Eintrag oder Google-Profil-Link und eine kurze Begründung an <!--email_off--><a href="mailto:%s">%s</a><!--/email_off-->.</p>
  <h2>Prüfung und vorläufige Ausblendung</h2>
  <p>Geprüft werden konkrete Fehler, Verwechslungen, veraltete Zuordnungen und rechtliche Beanstandungen. Bitte nenne nach Möglichkeit den angezeigten Abrufzeitpunkt. Ein inzwischen fehlender Google-Hinweis kann für die Einordnung wichtig sein, widerlegt aber nicht automatisch eine frühere Beobachtung.</p>
  <p>Bei plausiblen Beanstandungen kann ein Eintrag bis zur Klärung vorläufig ausgeblendet werden. Das bedeutet kein Anerkenntnis einer Rechtsverletzung. Nach Prüfung wird berichtigt, entfernt oder nachvollziehbar wieder angezeigt. Gesetzliche Ansprüche bleiben unberührt.</p>
@@ -168,7 +168,7 @@ func impressumPage(a args) string {
   <section class="card" aria-label="Verantwortlich">
     <h2>Angaben gemäß § 5 DDG</h2>
     <p><strong>%s</strong><br>%s</p>
-    <p>E-Mail: <a href="mailto:%s">%s</a></p>%s
+    <p>E-Mail: <!--email_off--><a href="mailto:%s">%s</a><!--/email_off--></p>%s
     <h2>Verantwortlich für journalistisch-redaktionelle Inhalte</h2>
     <p>Verantwortlich im Sinne von § 18 Abs. 2 MStV:<br>%s</p>
   </section>
@@ -207,7 +207,7 @@ func datenschutzPage(a args) string {
 		post = "<h2>Zustellanschrift</h2><p>" + esc(a.LegalPostHandler) + " kann Post für den Verantwortlichen entgegennehmen und weiterleiten. Dafür werden die erforderlichen Absender-, Zustell- und Inhaltsdaten verarbeitet. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO; Interesse ist die zuverlässige Erreichbarkeit.</p>"
 	}
 	body := fmt.Sprintf(`<h1>Datenschutzerklärung</h1>
- <h2>Verantwortlicher</h2><p>%s<br>E-Mail: <a href="mailto:%s">%s</a></p>%s
+ <h2>Verantwortlicher</h2><p>%s<br>E-Mail: <!--email_off--><a href="mailto:%s">%s</a><!--/email_off--></p>%s
  <h2>Bereitstellung der Website</h2>
  <p>Die Website wird über GitHub Pages bereitgestellt. GitHub, Inc., USA, verarbeitet für Auslieferung und Sicherheit insbesondere IP-Adresse, Zeitpunkt, angeforderte Datei, technische Statusdaten sowie gegebenenfalls Referrer und Browserinformationen. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO; berechtigtes Interesse ist die sichere Bereitstellung des Informationsangebots.</p>
  <p>Weitere Angaben zu GitHubs Verarbeitung, Empfängern, Aufbewahrung und internationalen Übermittlungen stehen in der <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement" target="_blank" rel="noopener noreferrer">GitHub-Datenschutzerklärung</a>. Eine Übermittlung in die USA setzt eine anwendbare Grundlage nach Kapitel V DSGVO voraus; eine Berufung auf das EU-US Data Privacy Framework setzt eine gültige, die Verarbeitung erfassende Zertifizierung voraus. Diese Website behauptet keine eigene Prüfung sämtlicher Hostingverträge oder konkreter Log-Löschfristen.</p>
