@@ -80,7 +80,8 @@
           "Orte",
           "sichtbare Google-Hinweise",
           "Näherungswert aus Google-Spannen",
-          "Modellanteil (keine gemessene Quote)"
+          "Modellanteil (keine gemessene Quote)",
+          "1-Stern-Szenario (Was-wäre-wenn-Rechnung, kein tatsächliches Rating)"
         ]
       }
     ]
@@ -946,7 +947,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     .kpi:nth-child(5) { border-top-color: var(--green); }
     .kpi .value { display: block; color: var(--heading); font-size: clamp(30px, 3vw, 44px); font-weight: 400; line-height: 1; }
     .kpi .label { display: block; margin-top: 8px; color: var(--muted); font-size: 14px; }
-    .panel-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: stretch; margin-top: 18px; }
+    .panel-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: stretch; margin-top: 18px; }
     .panel { padding: 18px; min-height: 330px; }
     .panel h2, .dist h2 { margin: 0 0 8px; color: var(--heading); font-size: 22px; font-weight: 700; }
     .panel p { margin: 0 0 16px; color: var(--muted); font-size: 13px; }
@@ -1009,7 +1010,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     .table-head strong { color: var(--heading); font-size: 22px; }
     .table-wrap { overflow: auto; background: var(--surface); border: 1px solid var(--line); }
     table { width: 100%; min-width: 1570px; border-collapse: collapse; table-layout: fixed; }
-    col.rank { width: 70px; } col.name { width: 360px; } col.bezirk { width: 210px; } col.plz { width: 90px; } col.rating { width: 95px; } col.reviews { width: 125px; } col.banner { width: 100px; } col.removed { width: 120px; } col.estimate { width: 125px; } col.ratio { width: 120px; } col.checked { width: 130px; } col.category { width: 175px; }
+    col.rank { width: 70px; } col.name { width: 360px; } col.bezirk { width: 210px; } col.plz { width: 90px; } col.rating { width: 95px; } col.reviews { width: 125px; } col.banner { width: 100px; } col.removed { width: 120px; } col.estimate { width: 125px; } col.ratio { width: 120px; } col.scenario { width: 170px; } col.checked { width: 130px; } col.category { width: 175px; }
     th { position: sticky; top: 0; z-index: 2; padding: 0; background: var(--table-head-bg); border-bottom: 2px solid var(--line); color: var(--heading); font-size: 13px; text-align: left; }
     th button { display: flex; align-items: center; gap: 5px; width: 100%; min-height: 44px; padding: 12px; border: 0; background: transparent; color: inherit; font: inherit; font-weight: 700; text-align: inherit; cursor: pointer; }
     th.num button, th.rank button { justify-content: flex-end; text-align: right; }
@@ -1044,7 +1045,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     @media (min-width: 1600px) {
       .table-wrap { margin: 0 calc(-1 * (100vw - min(1320px, calc(100vw - 32px))) / 2); }
       table { min-width: 0; table-layout: auto; }
-      col.rank, col.name, col.bezirk, col.plz, col.rating, col.reviews, col.banner, col.removed, col.estimate, col.ratio, col.checked, col.category { width: auto; }
+      col.rank, col.name, col.bezirk, col.plz, col.rating, col.reviews, col.banner, col.removed, col.estimate, col.ratio, col.scenario, col.checked, col.category { width: auto; }
     }
     @media (max-width: 1200px) { .hero-inner { grid-template-columns: 1fr; } .appeal-box { width: min(760px, 100%); } .kpis, .panel-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .related-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } .controls { grid-template-columns: 1fr 1fr 1fr; } .search { grid-column: 1 / -1; } .theme-toggle { margin-left: auto; margin-right: 0; } .n-logo { position: relative; height: 76px; width: 150px; margin-left: 0; padding-top: 48px; } .n-logo::before { top: 40px; } .n-logo::after { top: 4px; } }
     @media (max-width: 720px) {
@@ -1132,7 +1133,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
 <section class="card seo-summary" aria-labelledby="data-overview-title">
       <h2 id="data-overview-title">Datenstand: Google-Maps-Bewertungen und Google-Hinweise in Nürnberg</h2>
-      <p>Dieses Dashboard macht öffentlich sichtbare Hinweise auf wegen Diffamierungsbeschwerden entfernte Google-Maps-Bewertungen in Nürnberg durchsuchbar. Die Karte, Filter und Ranglisten zeigen sichtbare Google-Hinweise, öffentlich angezeigte Spannen, Näherungswerte und ausdrücklich als Modell gekennzeichnete Anteile je Ort.</p>
+      <p>Dieses Dashboard macht öffentlich sichtbare Hinweise auf wegen Diffamierungsbeschwerden entfernte Google-Maps-Bewertungen in Nürnberg durchsuchbar. Die Karte, Filter und Ranglisten zeigen sichtbare Google-Hinweise, öffentlich angezeigte Spannen, Näherungswerte, ausdrücklich als Modell gekennzeichnete Anteile und ein hypothetisches 1-Stern-Szenario je Ort.</p>
       <ul class="seo-facts">
         <li><strong>5.667</strong> erfasste Orte</li>
         <li><strong>460</strong> mit beobachtetem Google-Hinweis</li>
@@ -1146,6 +1147,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     <section class="grid panel-grid" aria-label="Top-Rankings">
       <article class="card panel"><h2>Höchste Hinweisspannen</h2><p>Beobachtete Google-Spannen; innerhalb derselben Spanne alphabetisch. Keine Aussage über Betriebsqualität.</p><div class="bars" id="barsRemoved"></div></article>
       <article class="card panel"><h2>Geschätzter Modellanteil</h2><p>Modellanteil: Spannen-Näherungswert / (sichtbare Rezensionen + Näherungswert). Keine gemessene Löschquote; unterschiedliche Zeitbezüge.</p><div class="bars" id="barsRatio"></div></article>
+      <article class="card panel"><h2>1-Stern-Szenario</h2><p>So sähe die Bewertung rechnerisch aus, wenn die angenommene Zahl entfernter Rezensionen jeweils einen Stern hätte. Die tatsächliche Anzahl und Sternebewertung sind unbekannt.</p><p>Annahme: Spannenmittelpunkt; für „über 250“ der Rechenwert 300. Kein tatsächliches Rating und keine gesicherte Untergrenze. Niedrigste Szenariowerte zuerst; keine Aussage über Betriebsqualität.</p><div class="bars" id="barsScenario"></div></article>
       <article class="card panel"><h2>Ohne beobachteten Google-Hinweis</h2><p>Im Abruf war kein passender Google-Hinweis sichtbar. Sortiert nach Rating ab 100 Rezensionen. Keine Qualitätsaussage gegenüber anderen Orten.</p><div class="bars" id="barsClean"></div></article>
     </section>
 
@@ -1171,6 +1173,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     <nav class="tabs" aria-label="Tabellen-Presets">
       <button class="tab active" data-mode="removed">Höchste Spannen</button>
       <button class="tab" data-mode="ratio">Modellanteil</button>
+      <button class="tab" data-mode="scenario">1-Stern-Szenario</button>
       <button class="tab" data-mode="clean">Ohne Hinweis</button>
       <button class="tab" data-mode="nearby">In meiner Nähe</button>
     </nav>
@@ -1178,9 +1181,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
     <div class="nearby-status" id="nearbyStatus" role="status" aria-live="polite" hidden></div>
 
     <div class="table-head"><strong id="tableTitle">Höchste Hinweisspannen</strong><span id="resultCount">–</span></div>
+    <p id="scenarioExplanation">So sähe die Bewertung rechnerisch aus, wenn die angenommene Zahl entfernter Rezensionen jeweils einen Stern hätte. Die tatsächliche Anzahl und Sternebewertung sind unbekannt. Annahme: Spannenmittelpunkt; für „über 250“ der Rechenwert 300. Kein tatsächliches Rating und keine gesicherte Untergrenze.</p>
     <section class="table-wrap" aria-label="Daten-Explorer">
       <table id="placesTable">
-        <colgroup><col class="rank"><col class="name"><col class="bezirk"><col class="plz"><col class="rating"><col class="reviews"><col class="banner"><col class="removed"><col class="estimate"><col class="ratio"><col class="checked"><col class="category"></colgroup>
+        <colgroup><col class="rank"><col class="name"><col class="bezirk"><col class="plz"><col class="rating"><col class="reviews"><col class="banner"><col class="removed"><col class="estimate"><col class="ratio"><col class="scenario"><col class="checked"><col class="category"></colgroup>
         <thead><tr>
           <th class="rank"><button data-sort="rank">Rang <span class="arrow"></span></button></th>
           <th><button data-sort="name">Name / Google Maps <span class="arrow"></span></button></th>
@@ -1192,6 +1196,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <th class="num"><button data-sort="removedEstimate">Spanne <span class="arrow"></span></button></th>
           <th class="num"><button data-sort="removedEstimate">Näherungswert <span class="arrow"></span></button></th>
           <th class="num"><button data-sort="deletionRatioPct">Modellanteil <span class="arrow"></span></button></th>
+          <th class="num"><button data-sort="oneStarScenario" aria-describedby="scenarioExplanation" title="Was-wäre-wenn-Rechnung mit angenommener Anzahl entfernter Rezensionen und jeweils 1 Stern; kein tatsächliches Rating und keine gesicherte Untergrenze.">1-Stern-Szenario <span class="arrow"></span></button></th>
           <th><button data-sort="readAt">Datenabruf <span class="arrow"></span></button></th>
           <th><button data-sort="category">Kategorie <span class="arrow"></span></button></th>
         </tr></thead>
@@ -1279,7 +1284,7 @@ const state = { mode: 'removed', sortKey: 'removedEstimate', sortDir: 'desc', us
 const els = {
   themeToggle: document.getElementById('themeToggle'), controls: document.getElementById('dashboardFilterControls'), filterToggle: document.getElementById('filterToggle'), filterSummary: document.getElementById('filterSummary'), search: document.getElementById('searchInput'), postcode: document.getElementById('postcodeFilter'), bezirk: document.getElementById('bezirkFilter'), banner: document.getElementById('bannerFilter'), range: document.getElementById('rangeFilter'), category: document.getElementById('categoryFilter'), minReviews: document.getElementById('minReviews'), reset: document.getElementById('resetFilters'), tbody: document.querySelector('#placesTable tbody'), resultCount: document.getElementById('resultCount'), tableTitle: document.getElementById('tableTitle'), mapCount: document.getElementById('mapCount'), nearbyStatus: document.getElementById('nearbyStatus'), showMore: document.getElementById('showMoreRows')
 };
-const titles = { all: 'Alle Orte', removed: 'Höchste Hinweisspannen', ratio: 'Geschätzter Modellanteil', clean: 'Orte ohne beobachteten Google-Hinweis', nearby: 'In meiner Nähe' };
+const titles = { all: 'Alle Orte', removed: 'Höchste Hinweisspannen', ratio: 'Geschätzter Modellanteil', scenario: '1-Stern-Szenario', clean: 'Orte ohne beobachteten Google-Hinweis', nearby: 'In meiner Nähe' };
 
 function finiteNumber(value) { return Number.isFinite(value) ? value : null; }
 function decodeCoord(base, offset) { return Number.isFinite(offset) ? base + offset / COORD_SCALE : null; }
@@ -1295,11 +1300,16 @@ function decodeAddress(value, postcode) {
   if (value[0] === '!') return value.slice(1);
   return value + ', ' + postcode + ' ' + DASHBOARD_CITY;
 }
+function oneStarScenario(visibleRating, reviewCount, removedEstimate) {
+  if (![visibleRating, reviewCount, removedEstimate].every(Number.isFinite) || visibleRating < 1 || visibleRating > 5 || reviewCount <= 0 || removedEstimate <= 0) return null;
+  return (visibleRating * reviewCount + removedEstimate) / (reviewCount + removedEstimate);
+}
 function decodePlaceRow(row, index, dicts) {
   const postcode = dictValue(dicts, 0, row[2]);
   const hasBanner = row.length > 12;
+  const removedRange = hasBanner ? dictValue(dicts, 4, row[12]) : '';
   return {
-    id: String(index), name: row[1] || '', postcode, lat: decodeCoord(49, row[3]), lng: decodeCoord(11, row[4]), bezirkLabel: dictValue(dicts, 1, row[5]), rating: finiteNumber(row[6]), reviewCount: finiteNumber(row[7]), category: dictValue(dicts, 2, row[8]), parentCategory: dictValue(dicts, 3, row[9]), hasBanner, removedRange: hasBanner ? dictValue(dicts, 4, row[12]) : '', removedEstimate: hasBanner ? finiteNumber(row[13]) || 0 : 0, deletionRatioPct: hasBanner ? finiteNumber(row[14]) : null, address: decodeAddress(row[10] || '', postcode), readAt: Number.isFinite(row[11]) ? row[11] * 60000 : 0, url: googleMapsURL(row[0], row[1])
+    id: String(index), name: row[1] || '', postcode, lat: decodeCoord(49, row[3]), lng: decodeCoord(11, row[4]), bezirkLabel: dictValue(dicts, 1, row[5]), rating: finiteNumber(row[6]), reviewCount: finiteNumber(row[7]), category: dictValue(dicts, 2, row[8]), parentCategory: dictValue(dicts, 3, row[9]), hasBanner, removedRange, removedEstimate: hasBanner ? finiteNumber(row[13]) || 0 : 0, deletionRatioPct: hasBanner ? finiteNumber(row[14]) : null, oneStarScenario: removedRange ? oneStarScenario(row[6], row[7], row[13]) : null, address: decodeAddress(row[10] || '', postcode), readAt: Number.isFinite(row[11]) ? row[11] * 60000 : 0, url: googleMapsURL(row[0], row[1])
   };
 }
 function getBezirke() {
@@ -1483,11 +1493,13 @@ function requestUserLocation() {
 }
 const MIN_CLEAN_RANKING_REVIEWS = 100;
 function bannerRows(rows) { return rows.filter(row => row.hasBanner && Number.isFinite(row.removedEstimate)); }
+function scenarioRows(rows) { return bannerRows(rows).filter(row => Number.isFinite(row.oneStarScenario)); }
 function cleanRows(rows) { return rows.filter(row => !row.hasBanner); }
 function cleanRankingRows(rows) { return cleanRows(rows).filter(row => Number.isFinite(row.rating) && Number.isFinite(row.reviewCount) && row.reviewCount >= MIN_CLEAN_RANKING_REVIEWS); }
 function defaultSortFor(mode) {
   if (mode === 'removed') return ['removedEstimate', 'desc'];
   if (mode === 'ratio') return ['deletionRatioPct', 'desc'];
+  if (mode === 'scenario') return ['oneStarScenario', 'asc'];
   if (mode === 'clean') return ['rating', 'desc'];
   if (mode === 'nearby') return ['distanceKm', 'asc'];
   return ['rank', 'asc'];
@@ -1495,6 +1507,7 @@ function defaultSortFor(mode) {
 function modeRows(rows) {
   if (state.mode === 'removed') return bannerRows(rows);
   if (state.mode === 'ratio') return bannerRows(rows).filter(row => Number.isFinite(row.deletionRatioPct));
+  if (state.mode === 'scenario') return scenarioRows(rows);
   if (state.mode === 'clean') return cleanRows(rows);
   if (state.mode === 'nearby') return rows.filter(hasCoords);
   return rows;
@@ -1509,10 +1522,15 @@ function value(row, key, index) {
 }
 function sortRows(rows) {
   return rows.map((row, index) => ({ row, index })).sort((a, b) => {
+    if (state.sortKey === 'oneStarScenario') {
+      const aMissing = !Number.isFinite(a.row.oneStarScenario);
+      const bMissing = !Number.isFinite(b.row.oneStarScenario);
+      if (aMissing || bMissing) return Number(aMissing) - Number(bMissing);
+    }
     const av = value(a.row, state.sortKey, a.index);
     const bv = value(b.row, state.sortKey, b.index);
     const result = typeof av === 'string' ? av.localeCompare(bv, 'de') : av - bv;
-    if (result === 0 && state.sortKey === 'removedEstimate') return a.row.name.localeCompare(b.row.name, 'de');
+    if (result === 0 && ['removedEstimate', 'oneStarScenario'].includes(state.sortKey)) return a.row.name.localeCompare(b.row.name, 'de');
     return state.sortDir === 'asc' ? result : -result;
   }).map(item => item.row);
 }
@@ -1818,6 +1836,7 @@ function updatePanels(rows) {
   const banners = bannerRows(rows);
   renderBars('barsRemoved', 'removed', [...banners].sort((a,b) => b.removedEstimate - a.removedEstimate || a.name.localeCompare(b.name, 'de')), row => row.removedEstimate, row => esc(row.removedRange), '', 300);
   renderBars('barsRatio', 'ratio', [...banners].sort((a,b) => (b.deletionRatioPct ?? -1) - (a.deletionRatioPct ?? -1)), row => row.deletionRatioPct || 0, row => pct(row.deletionRatioPct), '', Math.max(10, ...banners.map(row => row.deletionRatioPct || 0)));
+  renderBars('barsScenario', 'scenario', [...scenarioRows(rows)].sort((a,b) => a.oneStarScenario - b.oneStarScenario || a.name.localeCompare(b.name, 'de')), row => row.oneStarScenario, row => 'Google ' + rating(row.rating) + '★ · Szenario ' + rating(row.oneStarScenario, 2) + '★', '', 5);
   renderBars('barsClean', 'clean', [...cleanRankingRows(rows)].sort((a,b) => b.rating - a.rating || b.reviewCount - a.reviewCount), row => row.rating, row => rating(row.rating) + '★ · ' + n(row.reviewCount) + ' Rezensionen', 'green', 5);
   renderDistribution(rows);
   renderRatioHistogram(rows);
@@ -1846,7 +1865,7 @@ function renderTable(rows) {
     const rank = index + 1;
     const distance = state.mode === 'nearby' ? '<span class="entry-address">Entfernung: ' + esc(distanceLabel(rowDistanceKm(row))) + '</span>' : '';
     const address = row.address ? '<span class="entry-address">' + esc(row.address) + '</span>' : '';
-    return '<tr data-entry-id="' + esc(row.id) + '"><td class="rank">' + rank + '</td><td class="name"><a href="' + esc(row.url) + '" target="_blank" rel="noopener noreferrer">' + esc(row.name) + '</a>' + distance + address + '</td><td>' + esc(row.bezirkLabel || '–') + '</td><td>' + esc(row.postcode) + '</td><td class="num">' + rating(row.rating) + '</td><td class="num">' + n(row.reviewCount) + '</td><td>' + (row.hasBanner ? '<span class="pill bad">Google-Hinweis</span>' : '<span class="pill">beim Abruf kein Hinweis</span>') + '</td><td class="num">' + (row.hasBanner ? esc(row.removedRange) : '–') + '</td><td class="num">' + (row.hasBanner ? rating(row.removedEstimate) : '–') + '</td><td class="num">' + pct(row.deletionRatioPct) + '</td><td>' + esc(readAtLabel(row.readAt)) + '</td><td>' + esc(row.category) + '</td></tr>';
+    return '<tr data-entry-id="' + esc(row.id) + '"><td class="rank">' + rank + '</td><td class="name"><a href="' + esc(row.url) + '" target="_blank" rel="noopener noreferrer">' + esc(row.name) + '</a>' + distance + address + '</td><td>' + esc(row.bezirkLabel || '–') + '</td><td>' + esc(row.postcode) + '</td><td class="num">' + rating(row.rating) + '</td><td class="num">' + n(row.reviewCount) + '</td><td>' + (row.hasBanner ? '<span class="pill bad">Google-Hinweis</span>' : '<span class="pill">beim Abruf kein Hinweis</span>') + '</td><td class="num">' + (row.hasBanner ? esc(row.removedRange) : '–') + '</td><td class="num">' + (row.hasBanner ? rating(row.removedEstimate) : '–') + '</td><td class="num">' + pct(row.deletionRatioPct) + '</td><td class="num">' + rating(row.oneStarScenario, 2) + '</td><td>' + esc(readAtLabel(row.readAt)) + '</td><td>' + esc(row.category) + '</td></tr>';
   }).join('');
   document.querySelectorAll('th button[data-sort]').forEach(button => {
     const active = button.dataset.sort === state.sortKey;
@@ -1915,7 +1934,7 @@ document.querySelectorAll('.tab').forEach(button => button.addEventListener('cli
 document.querySelectorAll('th button[data-sort]').forEach(button => button.addEventListener('click', () => {
   const next = button.dataset.sort;
   if (next === state.sortKey) state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
-  else { state.sortKey = next; state.sortDir = ['name','postcode','bezirkLabel','category','rank'].includes(next) ? 'asc' : 'desc'; }
+  else { state.sortKey = next; state.sortDir = ['name','postcode','bezirkLabel','category','rank','oneStarScenario'].includes(next) ? 'asc' : 'desc'; }
   resetTableLimit();
   renderTable(filtered());
 }));
@@ -1989,6 +2008,12 @@ function updateSubChips(mode) {
       { label: '🍽️ Nur Gastro', test: () => els.category.value === 'parent:Gastronomie', apply: v => { els.category.value = v ? 'parent:Gastronomie' : ''; } },
       { label: '🏨 Nur Hotels', test: () => els.category.value === 'parent:Beherbergung', apply: v => { els.category.value = v ? 'parent:Beherbergung' : ''; } },
       { label: 'Spanne 51–100', test: () => els.range.value === '51–100', apply: v => { els.range.value = v ? '51–100' : ''; } },
+    ],
+    scenario: [
+      { label: 'Min. 50 Rez.', test: () => Number(els.minReviews.value) === 50, apply: v => { els.minReviews.value = v ? 50 : 0; } },
+      { label: 'Min. 100 Rez.', test: () => Number(els.minReviews.value) === 100, apply: v => { els.minReviews.value = v ? 100 : 0; } },
+      { label: 'Min. 200 Rez.', test: () => Number(els.minReviews.value) === 200, apply: v => { els.minReviews.value = v ? 200 : 0; } },
+      { label: '🍽️ Nur Gastro', test: () => els.category.value === 'parent:Gastronomie', apply: v => { els.category.value = v ? 'parent:Gastronomie' : ''; } },
     ],
     clean: [
       { label: 'Min. 200 Rez.', test: () => Number(els.minReviews.value) === 200, apply: v => { els.minReviews.value = v ? 200 : 0; } },
