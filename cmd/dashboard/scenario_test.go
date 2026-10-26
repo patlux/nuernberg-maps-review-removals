@@ -19,12 +19,15 @@ func TestDashboardRestoresExplicitOneStarScenario(t *testing.T) {
 		`aria-describedby="scenarioExplanation"`,
 		`Kein tatsächliches Rating und keine gesicherte Untergrenze`,
 		`Spannenmittelpunkt; für „über 250“ der Rechenwert 300`,
+		`So sähe die Bewertung rechnerisch aus, wenn die angenommene Zahl entfernter Rezensionen jeweils einen Stern hätte.`,
+		`Die tatsächliche Anzahl und Sternebewertung sind unbekannt.`,
+		`>1-Stern-Szenario <span class="arrow">`,
 	} {
 		if !strings.Contains(page, want) {
 			t.Errorf("missing scenario UI/context %q", want)
 		}
 	}
-	for _, forbidden := range []string{"Worst-Case-Rating", "realRatingAdjusted", "Schlechtestes", "Mathematische Untergrenze"} {
+	for _, forbidden := range []string{"Worst-Case-Rating", "realRatingAdjusted", "Schlechtestes", "Mathematische Untergrenze", "1-Stern-Szenario (Modell)", "Niedrigste Modellwerte"} {
 		if strings.Contains(page, forbidden) {
 			t.Errorf("unsupported label %q", forbidden)
 		}
@@ -56,7 +59,7 @@ func TestScenarioInputsSurviveCompactSerialization(t *testing.T) {
 
 func TestMethodologyExplainsScenarioInsteadOfDenyingPublication(t *testing.T) {
 	page := methodikPage(args{City: "Nürnberg"})
-	for _, want := range []string{"1-Stern-Szenario", "(Google-Rating × sichtbare Rezensionen + Näherungswert × 1)", "keine gesicherte Untergrenze", "3,58", "3,33"} {
+	for _, want := range []string{"1-Stern-Szenario", "Was-wäre-wenn-Rechnung", "(Google-Rating × sichtbare Rezensionen + Näherungswert × 1)", "keine gesicherte Untergrenze", "3,58", "3,33"} {
 		if !strings.Contains(page, want) {
 			t.Errorf("missing scenario method %q", want)
 		}

@@ -79,7 +79,7 @@ test('overview uses scenario mode and table renders the model value', () => {
   const scenario = calls.find(([id]) => id === 'barsScenario');
   assert.ok(scenario);
   assert.equal(scenario[1], 'scenario');
-  assert.match(scenario[4](row), /Modell 3\.58/);
+  assert.equal(scenario[4](row), 'Google 4.5★ · Szenario 3.58★');
 
   h.tableLimit = 500;
   h.TABLE_PAGE_SIZE = 500;

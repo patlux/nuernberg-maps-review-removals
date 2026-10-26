@@ -1169,7 +1169,7 @@ __SEO_SUMMARY__
     <section class="grid panel-grid" aria-label="Top-Rankings">
       <article class="card panel"><h2>Höchste Hinweisspannen</h2><p>Beobachtete Google-Spannen; innerhalb derselben Spanne alphabetisch. Keine Aussage über Betriebsqualität.</p><div class="bars" id="barsRemoved"></div></article>
       <article class="card panel"><h2>Geschätzter Modellanteil</h2><p>Modellanteil: Spannen-Näherungswert / (sichtbare Rezensionen + Näherungswert). Keine gemessene Löschquote; unterschiedliche Zeitbezüge.</p><div class="bars" id="barsRatio"></div></article>
-      <article class="card panel"><h2>1-Stern-Szenario</h2><p>Modell: Spannenmittelpunkt; für „über 250“ der Rechenwert 300. Jeweils 1 Stern angenommen, nicht beobachtet. Kein tatsächliches Rating und keine gesicherte Untergrenze. Niedrigste Modellwerte zuerst; keine Aussage über Betriebsqualität.</p><div class="bars" id="barsScenario"></div></article>
+      <article class="card panel"><h2>1-Stern-Szenario</h2><p>So sähe die Bewertung rechnerisch aus, wenn die angenommene Zahl entfernter Rezensionen jeweils einen Stern hätte. Die tatsächliche Anzahl und Sternebewertung sind unbekannt.</p><p>Annahme: Spannenmittelpunkt; für „über 250“ der Rechenwert 300. Kein tatsächliches Rating und keine gesicherte Untergrenze. Niedrigste Szenariowerte zuerst; keine Aussage über Betriebsqualität.</p><div class="bars" id="barsScenario"></div></article>
       <article class="card panel"><h2>Ohne beobachteten Google-Hinweis</h2><p>Im Abruf war kein passender Google-Hinweis sichtbar. Sortiert nach Rating ab 100 Rezensionen. Keine Qualitätsaussage gegenüber anderen Orten.</p><div class="bars" id="barsClean"></div></article>
     </section>
 
@@ -1203,7 +1203,7 @@ __SEO_SUMMARY__
     <div class="nearby-status" id="nearbyStatus" role="status" aria-live="polite" hidden></div>
 
     <div class="table-head"><strong id="tableTitle">Höchste Hinweisspannen</strong><span id="resultCount">–</span></div>
-    <p id="scenarioExplanation">1-Stern-Szenario: angenommene Anzahl entfernter Rezensionen (Spannenmittelpunkt; für „über 250“ der Rechenwert 300), jeweils mit 1 Stern. Kein tatsächliches Rating und keine gesicherte Untergrenze. Anzahl und Sterne der entfernten Rezensionen sind unbekannt.</p>
+    <p id="scenarioExplanation">So sähe die Bewertung rechnerisch aus, wenn die angenommene Zahl entfernter Rezensionen jeweils einen Stern hätte. Die tatsächliche Anzahl und Sternebewertung sind unbekannt. Annahme: Spannenmittelpunkt; für „über 250“ der Rechenwert 300. Kein tatsächliches Rating und keine gesicherte Untergrenze.</p>
     <section class="table-wrap" aria-label="Daten-Explorer">
       <table id="placesTable">
         <colgroup><col class="rank"><col class="name"><col class="bezirk"><col class="plz"><col class="rating"><col class="reviews"><col class="banner"><col class="removed"><col class="estimate"><col class="ratio"><col class="scenario"><col class="checked"><col class="category"></colgroup>
@@ -1218,7 +1218,7 @@ __SEO_SUMMARY__
           <th class="num"><button data-sort="removedEstimate">Spanne <span class="arrow"></span></button></th>
           <th class="num"><button data-sort="removedEstimate">Näherungswert <span class="arrow"></span></button></th>
           <th class="num"><button data-sort="deletionRatioPct">Modellanteil <span class="arrow"></span></button></th>
-          <th class="num"><button data-sort="oneStarScenario" aria-describedby="scenarioExplanation" title="Modell mit angenommener Anzahl entfernter Rezensionen und jeweils 1 Stern; kein tatsächliches Rating und keine gesicherte Untergrenze.">1-Stern-Szenario (Modell) <span class="arrow"></span></button></th>
+          <th class="num"><button data-sort="oneStarScenario" aria-describedby="scenarioExplanation" title="Was-wäre-wenn-Rechnung mit angenommener Anzahl entfernter Rezensionen und jeweils 1 Stern; kein tatsächliches Rating und keine gesicherte Untergrenze.">1-Stern-Szenario <span class="arrow"></span></button></th>
           <th><button data-sort="readAt">Datenabruf <span class="arrow"></span></button></th>
           <th><button data-sort="category">Kategorie <span class="arrow"></span></button></th>
         </tr></thead>
@@ -1638,7 +1638,7 @@ func structuredDataJSON(stats seoStats, snapshot time.Time, city string, meta da
 					"sichtbare Google-Hinweise",
 					"Näherungswert aus Google-Spannen",
 					"Modellanteil (keine gemessene Quote)",
-					"1-Stern-Szenario (Modellwert, kein tatsächliches Rating)",
+					"1-Stern-Szenario (Was-wäre-wenn-Rechnung, kein tatsächliches Rating)",
 				},
 				"size": fmt.Sprintf("%d Orte, %d sichtbare Google-Hinweise", stats.Total, stats.Banners),
 				"creator": map[string]interface{}{

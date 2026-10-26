@@ -569,7 +569,7 @@ function updatePanels(rows) {
   const banners = bannerRows(rows);
   renderBars('barsRemoved', 'removed', [...banners].sort((a,b) => b.removedEstimate - a.removedEstimate || a.name.localeCompare(b.name, 'de')), row => row.removedEstimate, row => esc(row.removedRange), '', 300);
   renderBars('barsRatio', 'ratio', [...banners].sort((a,b) => (b.deletionRatioPct ?? -1) - (a.deletionRatioPct ?? -1)), row => row.deletionRatioPct || 0, row => pct(row.deletionRatioPct), '', Math.max(10, ...banners.map(row => row.deletionRatioPct || 0)));
-  renderBars('barsScenario', 'scenario', [...scenarioRows(rows)].sort((a,b) => a.oneStarScenario - b.oneStarScenario || a.name.localeCompare(b.name, 'de')), row => row.oneStarScenario, row => 'Google ' + rating(row.rating) + '★ · Modell ' + rating(row.oneStarScenario, 2) + '★', '', 5);
+  renderBars('barsScenario', 'scenario', [...scenarioRows(rows)].sort((a,b) => a.oneStarScenario - b.oneStarScenario || a.name.localeCompare(b.name, 'de')), row => row.oneStarScenario, row => 'Google ' + rating(row.rating) + '★ · Szenario ' + rating(row.oneStarScenario, 2) + '★', '', 5);
   renderBars('barsClean', 'clean', [...cleanRankingRows(rows)].sort((a,b) => b.rating - a.rating || b.reviewCount - a.reviewCount), row => row.rating, row => rating(row.rating) + '★ · ' + n(row.reviewCount) + ' Rezensionen', 'green', 5);
   renderDistribution(rows);
   renderRatioHistogram(rows);
