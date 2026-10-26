@@ -89,7 +89,7 @@ func GroupByPostcode(rows []Place) []PostcodeGroup {
 
 func BinFor(row Place) string {
 	if !row.HasDefamationNotice {
-		return "Keine Löschung"
+		return "Kein Google-Hinweis beim Abruf"
 	}
 	min := IntValue(row.RemovedMin)
 	max := min
@@ -119,7 +119,7 @@ func BinFor(row Place) string {
 }
 
 var BinOrder = []string{
-	"Keine Löschung", "Eine gelöscht", "2–5 gelöscht", "6–10 gelöscht",
+	"Kein Google-Hinweis beim Abruf", "Eine gelöscht", "2–5 gelöscht", "6–10 gelöscht",
 	"11–20 gelöscht", "21–50 gelöscht", "51–100 gelöscht", "101–200 gelöscht",
 	"201–250 gelöscht", "Über 250 gelöscht",
 }

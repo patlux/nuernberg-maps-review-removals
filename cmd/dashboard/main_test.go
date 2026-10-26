@@ -120,6 +120,7 @@ func TestMakeClientRowsSkipsRowsWithoutRating(t *testing.T) {
 	rows := []mapsreview.Place{
 		{ID: "with-rating", Name: "Rated", Rating: mapsreview.FloatPtr(4.5), ReviewCount: mapsreview.IntPtr(10), Status: "success"},
 		{ID: "no-rating", Name: "No rating", Rating: nil, ReviewCount: mapsreview.IntPtr(0), Status: "success", PlaceState: mapsreview.PlaceStateNoPublicReviews},
+		{ID: "no-count", Name: "No count", Rating: mapsreview.FloatPtr(4.5), Status: "success"},
 	}
 
 	got := makeClientRows(rows)
@@ -147,7 +148,7 @@ func TestMakeHTMLIncludesSEOMetadataAndSummary(t *testing.T) {
 
 	html := makeHTML(args{City: mapsreview.DefaultCity, SiteURL: "https://nuernberg-maps-review-removals.patwoz.dev"}, data)
 	checks := []string{
-		`<meta name="description" content="Interaktives Nürnberg-Dashboard`,
+		`<meta name="description" content="Historische Momentaufnahme öffentlich beobachteter Google-Maps-Hinweise im Raum Nürnberg`,
 		`<link rel="canonical" href="https://nuernberg-maps-review-removals.patwoz.dev/">`,
 		`<meta property="og:type" content="website">`,
 		`<script type="application/ld+json">`,
@@ -156,9 +157,9 @@ func TestMakeHTMLIncludesSEOMetadataAndSummary(t *testing.T) {
 		`Eigene Bewertung entfernt?`,
 		`Google-Einspruch`,
 		`EU-Streitbeilegung`,
-		`Journalistische Recherche-Momentaufnahme`,
+		`Historische Recherche-Momentaufnahme`,
 		`Dashboard basiert auf der MIT-lizenzierten Vorlage von Patrick Wozniak.`,
-		`Hinweis-Anteil im Vergleich`,
+		`Modellanteile im Vergleich`,
 		`ratioHistogram`,
 		`Weitere regionale Dashboards`,
 		`https://bewertungsradar-saar.de/`,
@@ -199,7 +200,7 @@ func TestMakeHTMLShowsMapConsentPlaceholder(t *testing.T) {
 	for _, check := range []string{
 		`id="mapConsentLoad"`,
 		`Karte laden`,
-		`Leaflet von unpkg`,
+		`Leaflet wird mit dieser Website ausgeliefert`,
 		`CARTO`,
 	} {
 		if !strings.Contains(html, check) {
@@ -217,8 +218,8 @@ func TestMakeHTMLAvoidsSuperlativeWorstCaseLabel(t *testing.T) {
 	if strings.Contains(html, "Schlechtestes Worst-Case-Rating") {
 		t.Fatal("dashboard still uses the superlative 'Schlechtestes Worst-Case-Rating' label")
 	}
-	if !strings.Contains(html, "Hypothetisches Worst-Case-Rating") {
-		t.Fatal("dashboard is missing the neutral 'Hypothetisches Worst-Case-Rating' label")
+	if strings.Contains(html, "Worst-Case") {
+		t.Fatal("dashboard still publishes an unsupported synthetic rating")
 	}
 	if !strings.Contains(html, "Keine Aussage über Betriebsqualität") {
 		t.Fatal("dashboard worst-case panel is missing the quality-disclaimer")
@@ -229,8 +230,8 @@ func TestMakeHTMLUsesNeutralLegendAndPanels(t *testing.T) {
 	html := makeHTML(args{City: mapsreview.DefaultCity}, nil)
 	for _, want := range []string{
 		`Anteil mit Hinweis`,
-		`Worst-Case (hyp.)`,
-		`Pro Ort: entfernt / (sichtbar + entfernt)`,
+		`Modellanteil`,
+		`Keine gemessene Löschquote; unterschiedliche Zeitbezüge`,
 		`Keine Qualitätsaussage gegenüber anderen Orten`,
 		`#3c4e6b`,
 		`#5b7b8e`,
@@ -261,7 +262,7 @@ func TestMethodikPageHasHeilberufeNotice(t *testing.T) {
 	page := methodikPage(a)
 	for _, check := range []string{
 		"Heilberufe und personenbezogene Einzelpraxen",
-		"BGH-Jameda-Entscheidungen",
+		"§ 19 Abs. 1 Satz 3 MStV",
 		"keine Aussage über fachliche Qualität",
 		"§ 19 MStV",
 		"Journalistische Sorgfalt",
@@ -281,10 +282,10 @@ func TestKorrekturPageHasGegendarstellung(t *testing.T) {
 	page := korrekturPage(a)
 	for _, check := range []string{
 		"Gegendarstellungsanspruch",
-		"§ 9 MStV",
-		"Art. 10 BayPrG",
+		"§ 20 MStV",
+		"sechs Wochen",
 		"drei Monate",
-		"eigenhändiger Unterschrift",
+		"schriftlichen Zugang mit Unterschrift",
 	} {
 		if !strings.Contains(page, check) {
 			t.Fatalf("korrekturPage missing %q", check)
@@ -302,9 +303,9 @@ func TestDatenschutzPageHasMedienprivileg(t *testing.T) {
 	for _, check := range []string{
 		"Medienprivileg",
 		"§ 23 MStV",
-		"www.dataprivacyframework.gov",
-		"Art. 49 Abs. 1 lit. a DSGVO",
-		"kein dem Unionsrecht gleichwertiges Datenschutzniveau",
+		"Kapitel V DSGVO",
+		"Art. 14 DSGVO",
+		"nicht pauschal von der DSGVO",
 	} {
 		if !strings.Contains(page, check) {
 			t.Fatalf("datenschutzPage missing %q", check)
@@ -322,15 +323,16 @@ func TestDatenschutzPageHasMedienprivileg(t *testing.T) {
 	}
 }
 
-func TestMapConsentDisclosesArt49Risk(t *testing.T) {
-	html := makeHTML(args{City: mapsreview.DefaultCity}, nil)
-	for _, check := range []string{
-		"DPF-zertifiziert",
-		"ohne DPF-Zertifizierung",
-		"gleichwertiges Datenschutzniveau ist nicht garantiert",
-	} {
-		if !strings.Contains(html, check) {
-			t.Fatalf("map consent box missing risk disclosure %q", check)
+func TestMapConsentDefaultsToLocalOnly(t *testing.T) {
+	page := mapConsentHTML(args{City: mapsreview.DefaultCity})
+	for _, want := range []string{"Externe Kartenkacheln sind deaktiviert", "keine Kartenanbieter kontaktiert", "Karte deaktivieren"} {
+		if !strings.Contains(page, want) {
+			t.Fatalf("missing local-only disclosure %q", want)
+		}
+	}
+	for _, unsupported := range []string{"Art. 49", "DPF-zertifiziert", "unpkg"} {
+		if strings.Contains(page, unsupported) {
+			t.Fatalf("unsupported provider/transfer claim %q", unsupported)
 		}
 	}
 }
@@ -343,12 +345,12 @@ func TestDatenschutzPageMentionsKeyDisclosures(t *testing.T) {
 	}
 	page := datenschutzPage(a)
 	for _, check := range []string{
-		"GitHub Inc.",
+		"GitHub, Inc.",
 		"EU-US Data Privacy Framework",
-		"Plausible Insights OÜ",
+		"kein Plausible-Skript geladen",
 		"§ 25 Abs. 2 Nr. 2 TDDDG",
-		"Karte laden",
-		"Bayerisches Landesamt für Datenschutzaufsicht",
+		"Externe Kartenkacheln sind in dieser Ausgabe deaktiviert",
+		"Bayerische Landesamt für Datenschutzaufsicht",
 		"Art. 77 DSGVO",
 	} {
 		if !strings.Contains(page, check) {

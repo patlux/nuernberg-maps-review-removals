@@ -25,7 +25,11 @@ note = "Example GmbH ist nicht Betreiberin dieses Angebots. Sie dient ausschlie√
 post_handler = "Example GmbH"
 
 [analytics]
-# Optional Plausible Analytics settings. Remove this section to disable analytics.
+# Disabled by default, including legacy configurations containing only src/domain.
+# Enable only after verifying hosting, recipients, retention and transfer safeguards.
+# Visitors must additionally opt in before the script is loaded.
+enabled = false
+privacy_text = ""
 src = "https://a.patwoz.dev/js/script.js"
 domain = "nuernberg-maps-review-removals.patwoz.dev"
 
@@ -33,6 +37,10 @@ domain = "nuernberg-maps-review-removals.patwoz.dev"
 # Get one at https://carto.com/basemaps/apikey and restrict it to your site domain.
 # Store the full config as the GitHub Actions secret DASHBOARD_CONFIG_TOML.
 [carto]
+# External tiles are disabled by default. The local map still works.
+# Enabling requires legal pages and verified provider/transfer information.
+enabled = false
+privacy_text = ""
 api_key = ""
 
 [places_api]

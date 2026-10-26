@@ -11,7 +11,7 @@ Reproduzierbarer lokaler Go-Workflow, um öffentlich sichtbare Google-Maps-Ortsd
 - Nur für private Recherche / Journalismus gedacht. Google-Maps-Bedingungen und geltendes Recht beachten.
 - Der Scraper speichert nur, was zum Scrape-Zeitpunkt öffentlich sichtbar ist. Manuell geprüfte Abweichungen können als Overrides in `internal/mapsreview/data/place_overrides.json` gepflegt werden.
 - Kein Banner ≠ definitiv keine entfernten Bewertungen. Es bedeutet nur: Beim Scrape wurde kein passender sichtbarer Hinweis erkannt.
-- Das angepasste Rating nimmt an, dass alle entfernten Bewertungen 1-Stern-Bewertungen waren. Das ist ein Worst-Case-Modell, keine Tatsache.
+- Das Dashboard und die Diagramme veröffentlichen keine berechneten Ersatz-Sterne-Ratings. Sterne und genaue Anzahl entfernter Rezensionen sind unbekannt. Ältere Quelldaten können das frühere Modellfeld noch enthalten; sie werden durch diese Änderung nicht nachträglich verändert.
 - Langsame Delays verwenden. Wenn Google ein CAPTCHA zeigt: stoppen oder im sichtbaren Browser manuell lösen.
 
 ## Einrichtung
@@ -19,6 +19,7 @@ Reproduzierbarer lokaler Go-Workflow, um öffentlich sichtbare Google-Maps-Ortsd
 Voraussetzungen:
 
 - Go 1.25+
+- Node.js 22+ für die browserfreien Consent-Regressionstests
 - Chrome oder Chromium im `PATH` oder an einem Standard-Installationsort
 - Optional als experimentelles CDP-Backend: Lightpanda
 - Optional für Places-API-Discovery: Google Places API (New)-API-Key in `config.toml`
@@ -222,11 +223,18 @@ note = "Example GmbH ist nicht Betreiberin dieses Angebots. Sie dient ausschlie�
 post_handler = "Example GmbH"
 
 [analytics]
-# Optional: Plausible Analytics. Abschnitt entfernen, um Analytics zu deaktivieren.
+# Standardmäßig aus. Vor Aktivierung Empfänger, Hosting, Aufbewahrung und
+# Drittlandgrundlage prüfen und in privacy_text dokumentieren.
+# Zusätzlich ist die Einwilligung des Besuchers nötig.
+enabled = false
+privacy_text = ""
 src = "https://a.patwoz.dev/js/script.js"
 domain = "nuernberg-maps-review-removals.patwoz.dev"
 
 [carto]
+# Externe Kacheln bleiben aus, bis die Datenschutzangaben geprüft sind.
+enabled = false
+privacy_text = ""
 # Erforderlich für Dashboard/Site. Veröffentlicht im erzeugten HTML.
 # Auf die eigene Website beschränken: https://carto.com/basemaps/apikey
 api_key = ""
@@ -251,11 +259,11 @@ Ausgaben:
 - `output/charts/nuernberg_most_removed.md`
 - `output/charts/nuernberg_most_removed.html`
 
-Wenn ImageMagick nicht installiert ist, überspringt `--png` die PNG-Dateien und schreibt weiterhin SVGs.
+Ein ausdrücklich angeforderter PNG-Export bricht bei einem Exportfehler ab, statt einen erfolgreichen Build mit alten PNG-Dateien vorzutäuschen. `make site` benötigt keine PNG-Exporte.
 
 Die erzeugten Diagramm- und Dashboard-Dateien unter `output/charts/` werden von git ignoriert. Im Repository bleiben nur die Scrape-Snapshots (`output/places.json`, `output/places.csv`, `output/metadata.json`, optional `output/discovery.json`) versioniert; `make site` ruft `cmd/dashboard --site` auf und baut daraus `public/` für GitHub Pages. `site_domain`, `site_url` und `site_output` kommen dabei ausschließlich aus `config.toml`.
 
-Die Dashboard-Karte nutzt Leaflet mit CARTO-Kartenkacheln auf Basis von OpenStreetMap-Daten. Beim Öffnen der HTML-Datei ist deshalb Internetzugriff für Kartenkacheln nötig. Das Dashboard gruppiert, filtert und überlagert Einträge außerdem nach Nürnberger statistischem Bezirk (`Bezirk`).
+Leaflet 1.9.4 und seine BSD-Lizenz sind eingebettet. Die Karte zeigt nach Aktivierung Orte und Bezirksflächen ohne Kontakt zu UNPKG oder Kartenanbietern. Externe CARTO-Kacheln bleiben standardmäßig deaktiviert. Für `[carto].enabled = true` sind aktivierte Legal-Seiten und vollständige, geprüfte `privacy_text`-Angaben nötig: verantwortlicher Anbieter und Empfänger, Datenarten, Zweck, Aufbewahrung und gegebenenfalls Drittlandgrundlage. Ein nichtleerer Text ist nur eine technische Voraussetzung, keine juristische Validierung. Besucher aktivieren die Karte separat und können sie wieder deaktivieren. Kachelanfragen verraten den betrachteten Ausschnitt, gegebenenfalls den ungefähren Standort.
 
 ## Veröffentlichung mit GitHub Pages
 
@@ -267,10 +275,10 @@ Lokale Vorschau des Veröffentlichungs-Artefakts:
 
 ```bash
 make site
-python3 -m http.server --directory public 8080
+python3 -m http.server --bind 127.0.0.1 --directory public 8080
 ```
 
-Optionale Plausible-Analytics werden eingebunden, wenn sie in `config.toml` unter `[analytics]` stehen.
+Plausible ist auch bei vorhandener alter `src`/`domain`-Konfiguration standardmäßig aus. Eine Aktivierung braucht `[analytics].enabled = true`, Legal-Seiten und geprüfte `privacy_text`-Angaben zu tatsächlichem Betreiber/Hosting, Empfängern, Datenarten, Zweck, Aufbewahrung und Übermittlungsgrundlage. Erst nach zusätzlicher Einwilligung im Footer wird das Skript geladen. Die Einwilligung gilt pro Tab; der Widerruf lädt die Seite ohne Analytics neu. Ein einzelnes Ereignis kann auch bei rein aggregierten Berichten verarbeitet werden.
 
 Für GitHub Actions muss die Dashboard-Konfiguration einschließlich `[carto].api_key` als Repository-Secret `DASHBOARD_CONFIG_TOML` hinterlegt werden. Ein optionaler `[places_api]`-Key ist nur für API-Discovery erforderlich und gehört nicht in die reine Deployment-Konfiguration.
 
@@ -305,22 +313,26 @@ make test
 make check
 # oder direkt:
 go test ./...
+node --test cmd/dashboard/*.test.cjs
 go run ./cmd/validate
 ```
 
 ## Was die Diagramme zeigen
 
-1. **Höchste Lösch-Quote**  
-   `removed_midpoint / (visible_reviews + removed_midpoint)`
+1. **Beobachtete Spannen**: Google-Spannen, bei gleicher Spanne alphabetisch. Die Balken verwenden Spannenmittelpunkte und für über 250 den frei gewählten Rechenwert 300.
+2. **Hinweise nach Kategorie**: Anzahl erfasster Orte mit Hinweis; keine Bewertung einzelner Betriebe.
+3. **Ohne beobachteten Hinweis**: nach angezeigtem Google-Rating und Rezensionszahl, ab konfigurierter Mindestzahl. Kein Hinweis ist kein Beleg für fehlende Entfernungen.
+4. **Verteilung der Google-Spannen**: Häufigkeiten in der erfassten Stichprobe.
 
-2. **Schlechtestes „echtes“ Rating**  
-   Annahme: Jede entfernte Bewertung war eine 1-Stern-Bewertung.
+Jede Grafik enthält den Datenzeitraum aus den gespeicherten Abrufzeiten und die wesentlichen Einschränkungen. Das Erstellungsdatum wird nicht als neuer Datenstand ausgegeben. Die lokalen HTML-/Markdown-Exporte zeigen Spannen und Abrufzeitpunkte statt synthetischer Sterne-Ratings.
 
-3. **Beste Orte ohne Löschbanner**  
-   Ohne sichtbaren Diffamierungs-Löschbanner, sortiert nach Rating und danach Rezensionszahl.
+Das Dashboard enthält zusätzlich einen ausdrücklich bezeichneten **Modellanteil**: `Spannen-Näherungswert / (sichtbare Rezensionen + Näherungswert)`. Das ist keine gemessene Löschquote: Hinweiszeitraum und sichtbarer Rezensionsbestand haben unterschiedliche Zeitbezüge.
 
-4. **Verteilung der Lösch-Stufen**  
-   Zählt Orte nach Googles sichtbaren Löschbereichen.
+## Veröffentlichungsgrenzen und offene Prüfungen
+
+`make site` veröffentlicht ausschließlich Dashboard, konfigurierte Informationsseiten, CNAME, robots.txt und Sitemap. Separate Diagramme, alte Ranglisten, Metadaten und CSV-Dateien werden nicht kopiert. Ein neu gebautes Artefakt enthält auch keine alten Dateien aus einem vorherigen Build. Die HTML-Daten des Dashboards bleiben technisch auslesbar; die versionierten Quelldaten im Repository sind davon unabhängig. Vorhandene Downloads, Suchmaschinen- und Social-Media-Caches werden dadurch nicht zurückgerufen. Eine Veröffentlichung muss das alte Hosting-Artefakt vollständig ersetzen.
+
+Vor Veröffentlichung müssen weiterhin Hostingverträge/Empfänger, internationale Übermittlungen und Aufbewahrung, die rechtliche Tragfähigkeit der Zustellanschrift sowie Interessenabwägung, Informationspflichten und Anwendbarkeit des Medienprivilegs geprüft werden. Die korrigierten Texte bestätigen diese Voraussetzungen nicht. Konkrete Beanstandungen müssen tatsächlich bearbeitet und historische Beobachtungen bei Bedarf nachgeprüft werden.
 
 ## Nürnberger statistische Bezirke
 

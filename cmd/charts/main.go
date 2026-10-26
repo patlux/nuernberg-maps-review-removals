@@ -91,7 +91,7 @@ func run(args args) error {
 		if args.PNG {
 			pngFile := filepath.Join(args.OutDir, base+".png")
 			if err := exportPNG(svgFile, pngFile); err != nil {
-				fmt.Printf("skip png %s: %v\n", pngFile, err)
+				return fmt.Errorf("export png %s: %w", pngFile, err)
 			} else {
 				fmt.Printf("wrote %s\n", pngFile)
 			}
@@ -154,78 +154,101 @@ Options:
   --png                       Export PNGs with ImageMagick's magick command, when available.\n`, mapsreview.DefaultCity)
 }
 
-func makeChart(rows []mapsreview.Place, scope string, args args) string {
-	cleanRows := mapsreview.ValidRows(rows)
-	removedRows := filter(cleanRows, func(row mapsreview.Place) bool { return row.HasDefamationNotice && row.DeletionRatioPct != nil })
-
-	highestRatio := append([]mapsreview.Place(nil), removedRows...)
-	sort.SliceStable(highestRatio, func(i, j int) bool {
-		return mapsreview.FloatValue(highestRatio[i].DeletionRatioPct) > mapsreview.FloatValue(highestRatio[j].DeletionRatioPct)
-	})
-	highestRatio = take(highestRatio, args.Top)
-
-	worstAdjusted := append([]mapsreview.Place(nil), removedRows...)
-	sort.SliceStable(worstAdjusted, func(i, j int) bool {
-		return mapsreview.FloatValue(worstAdjusted[i].RealRatingAdjusted) < mapsreview.FloatValue(worstAdjusted[j].RealRatingAdjusted)
-	})
-	worstAdjusted = take(worstAdjusted, args.Top)
-
-	cleanRanking := filter(cleanRows, func(row mapsreview.Place) bool {
-		return !row.HasDefamationNotice && mapsreview.IntValue(row.ReviewCount) >= args.MinCleanReviews
-	})
-	sort.SliceStable(cleanRanking, func(i, j int) bool {
-		if mapsreview.FloatValue(cleanRanking[i].Rating) != mapsreview.FloatValue(cleanRanking[j].Rating) {
-			return mapsreview.FloatValue(cleanRanking[i].Rating) > mapsreview.FloatValue(cleanRanking[j].Rating)
+func makeChart(rows []mapsreview.Place, scope string, a args) string {
+	valid := mapsreview.ValidRows(rows)
+	observed := filter(valid, func(row mapsreview.Place) bool { return row.HasDefamationNotice })
+	highest := append([]mapsreview.Place(nil), observed...)
+	sort.SliceStable(highest, func(i, j int) bool {
+		if mapsreview.RemovedSortValue(highest[i]) != mapsreview.RemovedSortValue(highest[j]) {
+			return mapsreview.RemovedSortValue(highest[i]) > mapsreview.RemovedSortValue(highest[j])
 		}
-		return mapsreview.IntValue(cleanRanking[i].ReviewCount) > mapsreview.IntValue(cleanRanking[j].ReviewCount)
+		return highest[i].Name < highest[j].Name
 	})
-	cleanRanking = take(cleanRanking, args.Top)
-
-	title := fmt.Sprintf("%s — Gesamtstadt", args.City)
-	subtitle := "Alle erfassten PLZ — gelöschte Rezensionen wegen „Diffamierung“"
-	if scope != "overall" {
-		title = fmt.Sprintf("Postleitzahl %s — %s", scope, args.City)
-		subtitle = "Google-Maps-Orte: gelöschte Rezensionen wegen „Diffamierung“"
+	highest = take(highest, a.Top)
+	categories := map[string]int{}
+	for _, row := range observed {
+		category := mapsreview.StringValue(row.Category)
+		if category == "" {
+			category = "Ohne Kategorie"
+		}
+		categories[category]++
 	}
-	stats := fmt.Sprintf("%s Orte erfasst · %s mit sichtbarem Banner (%s%%) · %s in der „Über“-Stufe",
-		mapsreview.FormatGermanInt(len(cleanRows)),
-		mapsreview.FormatGermanInt(len(removedRows)),
-		mapsreview.FormatGermanFloat((float64(len(removedRows))/math.Max(float64(len(cleanRows)), 1))*100, 1),
-		mapsreview.FormatGermanInt(countRows(removedRows, func(row mapsreview.Place) bool { return row.RemovedMax == nil })),
-	)
-
+	groups := []mapsreview.Place{}
+	for category, count := range categories {
+		groups = append(groups, mapsreview.Place{Name: category, ReviewCount: mapsreview.IntPtr(count)})
+	}
+	sort.Slice(groups, func(i, j int) bool {
+		if *groups[i].ReviewCount != *groups[j].ReviewCount {
+			return *groups[i].ReviewCount > *groups[j].ReviewCount
+		}
+		return groups[i].Name < groups[j].Name
+	})
+	groups = take(groups, a.Top)
+	clean := filter(valid, func(row mapsreview.Place) bool {
+		return !row.HasDefamationNotice && mapsreview.IntValue(row.ReviewCount) >= a.MinCleanReviews
+	})
+	sort.SliceStable(clean, func(i, j int) bool {
+		if *clean[i].Rating != *clean[j].Rating {
+			return *clean[i].Rating > *clean[j].Rating
+		}
+		if *clean[i].ReviewCount != *clean[j].ReviewCount {
+			return *clean[i].ReviewCount > *clean[j].ReviewCount
+		}
+		return clean[i].Name < clean[j].Name
+	})
+	clean = take(clean, a.Top)
+	title := a.City + " — erfasste Orte"
+	if scope != "overall" {
+		title = fmt.Sprintf("Postleitzahl %s — %s", scope, a.City)
+	}
+	stats := fmt.Sprintf("%s Orte mit Rating und Rezensionszahl · %s mit beobachtetem Google-Hinweis (%s%%)", mapsreview.FormatGermanInt(len(valid)), mapsreview.FormatGermanInt(len(observed)), mapsreview.FormatGermanFloat(float64(len(observed))/math.Max(float64(len(valid)), 1)*100, 1))
 	var b strings.Builder
-	b.WriteString(fmt.Sprintf(`<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" viewBox="0 0 %d %d">`, width, height, width, height))
-	b.WriteString(chartFrame(title, subtitle, stats))
-	b.WriteString(drawBarChart(80, 230, 470, "1. Höchste Lösch-Quote", "Anteil gelöschter Rezensionen", highestRatio, red,
-		func(row mapsreview.Place) float64 { return mapsreview.FloatValue(row.DeletionRatioPct) },
-		maxFloat(10, values(highestRatio, func(row mapsreview.Place) float64 { return mapsreview.FloatValue(row.DeletionRatioPct) })),
+	fmt.Fprintf(&b, `<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" viewBox="0 0 %d %d">`, width, height, width, height)
+	b.WriteString(chartFrame(title, "Historische Momentaufnahme · Google-Hinweise auf Entfernungen wegen Diffamierungsbeschwerden", stats))
+	b.WriteString(drawBarChart(80, 230, 470, "1. Beobachtete Spannen", "Gleiche Spanne: alphabetisch, nicht nach Qualität", highest, "#5b7b8e",
+		mapsreview.RemovedSortValue, maxFloat(1, values(highest, mapsreview.RemovedSortValue)), mapsreview.RemovedRange, "Balken: Spannenmittelpunkt; über 250 = 300"))
+	b.WriteString(drawBarChart(665, 230, 470, "2. Hinweise nach Kategorie", "Anzahl erfasster Orte mit Hinweis je Kategorie", groups, "#5b7b8e",
+		func(row mapsreview.Place) float64 { return float64(*row.ReviewCount) }, maxFloat(1, values(groups, func(row mapsreview.Place) float64 { return float64(*row.ReviewCount) })),
+		func(row mapsreview.Place) string { return mapsreview.FormatPtrInt(row.ReviewCount) + " Orte" }, "Anzahl Orte, nicht Anzahl Entfernungen"))
+	b.WriteString(drawBarChart(1250, 230, 470, "3. Ohne beobachteten Hinweis", fmt.Sprintf("Nach Google-Rating; ab %d Rezensionen", a.MinCleanReviews), clean, "#8a8e94",
+		func(row mapsreview.Place) float64 { return *row.Rating }, 5,
 		func(row mapsreview.Place) string {
-			return mapsreview.FormatPtrFloat(row.DeletionRatioPct, 1) + "%  (" + mapsreview.RemovedRange(row) + " von " + mapsreview.FormatPtrInt(row.ReviewCount) + ")"
-		},
-		fmt.Sprintf("Lösch-Quote (%%) · Top %d", args.Top),
-	))
-	b.WriteString(drawBarChart(665, 230, 470, "2. Schlechtestes „echtes“ Rating", "Modell: gelöschte Rezensionen waren 1★", worstAdjusted, orange,
-		func(row mapsreview.Place) float64 { return 5 - mapsreview.FloatValue(row.RealRatingAdjusted) },
-		maxFloat(1, values(worstAdjusted, func(row mapsreview.Place) float64 { return 5 - mapsreview.FloatValue(row.RealRatingAdjusted) })),
-		func(row mapsreview.Place) string {
-			return mapsreview.FormatPtrFloat(row.RealRatingAdjusted, 2) + "★  (vorher " + mapsreview.FormatPtrFloat(row.Rating, 1) + "★)"
-		},
-		"Punkte unter 5★",
-	))
-	b.WriteString(drawBarChart(1250, 230, 470, "3. Beste Orte ohne Löschbanner", fmt.Sprintf("kein sichtbarer Diffamierungs-Löschbanner — ab %d Rezensionen", args.MinCleanReviews), cleanRanking, green,
-		func(row mapsreview.Place) float64 { return mapsreview.FloatValue(row.Rating) },
-		5,
-		func(row mapsreview.Place) string {
-			return mapsreview.FormatPtrFloat(row.Rating, 1) + "★  (" + mapsreview.FormatPtrInt(row.ReviewCount) + " Rezensionen)"
-		},
-		"Rating (★)",
-	))
-	b.WriteString(drawDistribution(cleanRows, 120, 1660, fmt.Sprintf("Verteilung der Lösch-Stufen über alle %s Orte", mapsreview.FormatGermanInt(len(cleanRows)))))
-	b.WriteString(fmt.Sprintf(`<text x="40" y="2460" font-family="Arial, sans-serif" font-size="13" fill="#8a8f94">Quelle: Google Maps, öffentlich sichtbare Banner; Analyse-Snapshot %s</text>`, time.Now().Format("02.01.2006")))
-	b.WriteString(`<text x="1760" y="2460" text-anchor="end" font-family="Arial, sans-serif" font-size="13" fill="#8a8f94">© <a href="https://patwoz.dev" target="_blank" style="fill:#8a8f94;text-decoration:none">Patrick Wozniak</a></text><text x="1760" y="2480" text-anchor="end" font-family="Arial, sans-serif" font-size="11" fill="#aab0b5">patwoz.dev</text>`)
-	b.WriteString("</svg>\n")
+			return mapsreview.FormatPtrFloat(row.Rating, 1) + "★ · " + mapsreview.FormatPtrInt(row.ReviewCount) + " Rez."
+		}, "Kein Hinweis bedeutet nicht: keine Entfernungen"))
+	b.WriteString(drawDistribution(valid, 120, 1660, "Beobachtete Google-Spannen in der erfassten Stichprobe"))
+	for i, line := range []string{
+		"Historische Momentaufnahme · Datenabrufe: " + chartDataPeriod(rows) + ". Kein aktueller Status und keine vollständige Stadterhebung.",
+		"Die Google-Hinweise belegen weder rechtswidriges Verhalten noch missbräuchliche Beschwerden oder unterdrückte berechtigte Kritik.",
+		"Spannen beziehen sich auf den damaligen Google-Hinweis; die genaue Zahl und Sterne entfernter Rezensionen sind unbekannt.",
+		"Quelle: Google Maps. Kein Hinweis beim Abruf erlaubt keinen Rückschluss auf die Anzahl entfernter Rezensionen.",
+	} {
+		fmt.Fprintf(&b, `<text x="120" y="%d" font-family="Arial, sans-serif" font-size="18" fill="#4b5055">%s</text>`, 2320+i*32, esc(line))
+	}
+	b.WriteString(`<text x="1680" y="2480" text-anchor="end" font-family="Arial, sans-serif" font-size="15" fill="#687078">Patrick Wozniak · patwoz.dev</text></svg>`)
 	return b.String()
+}
+
+func chartDataPeriod(rows []mapsreview.Place) string {
+	var first, last time.Time
+	for _, row := range rows {
+		t, err := time.Parse(time.RFC3339Nano, row.ReadAt)
+		if err != nil {
+			continue
+		}
+		if first.IsZero() || t.Before(first) {
+			first = t
+		}
+		if last.IsZero() || t.After(last) {
+			last = t
+		}
+	}
+	if first.IsZero() {
+		return "unbekannt"
+	}
+	if first.Format("02.01.2006") == last.Format("02.01.2006") {
+		return first.Format("02.01.2006")
+	}
+	return first.Format("02.01.2006") + "–" + last.Format("02.01.2006")
 }
 
 func chartFrame(title, subtitle, stats string) string {
@@ -263,11 +286,11 @@ func drawBarChart(x, y, chartWidth int, titleText, subtitle string, rows []mapsr
 	}
 	for i, row := range rows {
 		yy := float64(plotY) + 24 + float64(i)*rowH
-		barW := math.Max(3, math.Min(float64(plotW), value(row)/max*float64(plotW)))
+		barW := math.Max(3, math.Min(float64(plotW-160), value(row)/max*float64(plotW-160)))
 		b.WriteString(fmt.Sprintf(`<text x="%d" y="%.1f" text-anchor="end" font-family="Arial, sans-serif" font-size="13" fill="#83888d">%d.</text>`, x-8, yy+15, i+1))
 		b.WriteString(fmt.Sprintf(`<text x="%d" y="%.1f" font-family="Arial, sans-serif" font-size="14" fill="%s">%s</text>`, plotX, yy-4, text, esc(trunc(row.Name, 45))))
 		b.WriteString(fmt.Sprintf(`<rect x="%d" y="%.1f" width="%.1f" height="18" fill="%s"/>`, plotX, yy, barW, color))
-		b.WriteString(fmt.Sprintf(`<text x="%.1f" y="%.1f" font-family="Arial, sans-serif" font-size="13" fill="%s">%s</text>`, float64(plotX)+barW+8, yy+15, text, esc(label(row))))
+		b.WriteString(fmt.Sprintf(`<text x="%.1f" y="%.1f" text-anchor="end" font-family="Arial, sans-serif" font-size="13" fill="%s">%s</text>`, float64(plotX+plotW), yy+15, text, esc(label(row))))
 	}
 	if axisLabel != "" {
 		b.WriteString(fmt.Sprintf(`<text x="%d" y="%.1f" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="%s">%s</text>`, plotX+plotW/2, float64(plotY)+actualH+18, muted, esc(axisLabel)))
@@ -291,7 +314,7 @@ func drawDistribution(rows []mapsreview.Place, x, y int, titleText string) strin
 		}
 	}
 	colors := map[string]string{
-		"Keine Löschung": green, "Eine gelöscht": "#8bc34a", "2–5 gelöscht": "#cddc39", "6–10 gelöscht": "#ffca28",
+		"Kein Google-Hinweis beim Abruf": "#8a8e94", "Eine gelöscht": "#8bc34a", "2–5 gelöscht": "#cddc39", "6–10 gelöscht": "#ffca28",
 		"11–20 gelöscht": "#ff9f1c", "21–50 gelöscht": "#ff6d00", "51–100 gelöscht": "#e5391b", "101–200 gelöscht": "#c62828",
 		"201–250 gelöscht": "#8e1919", "Über 250 gelöscht": "#5b0f0f",
 	}
@@ -303,7 +326,7 @@ func drawDistribution(rows []mapsreview.Place, x, y int, titleText string) strin
 		pct := float64(count) / math.Max(float64(len(rows)), 1) * 100
 		yy := y + 105 + i*45
 		barW := float64(count) / float64(maxCount) * 900
-		b.WriteString(fmt.Sprintf(`<text x="%d" y="%d" font-family="Arial, sans-serif" font-size="18" fill="%s">%s</text>`, x+30, yy+16, text, esc(bin)))
+		b.WriteString(fmt.Sprintf(`<text x="%d" y="%d" font-family="Arial, sans-serif" font-size="16" fill="%s">%s</text>`, x+30, yy+16, text, esc(bin)))
 		b.WriteString(fmt.Sprintf(`<rect x="%d" y="%d" width="900" height="24" fill="#edf2f5"/>`, x+330, yy))
 		b.WriteString(fmt.Sprintf(`<rect x="%d" y="%d" width="%.1f" height="24" fill="%s"/>`, x+330, yy, barW, colors[bin]))
 		b.WriteString(fmt.Sprintf(`<text x="%d" y="%d" font-family="Arial, sans-serif" font-size="18" fill="%s">%s (%s%%)</text>`, x+1260, yy+18, text, mapsreview.FormatGermanInt(count), mapsreview.FormatGermanFloat(pct, 1)))
@@ -320,9 +343,6 @@ func writeMostRemovedList(rows []mapsreview.Place, args args) error {
 		}
 		if mapsreview.IntValue(ranked[i].RemovedMin) != mapsreview.IntValue(ranked[j].RemovedMin) {
 			return mapsreview.IntValue(ranked[i].RemovedMin) > mapsreview.IntValue(ranked[j].RemovedMin)
-		}
-		if mapsreview.IntValue(ranked[i].ReviewCount) != mapsreview.IntValue(ranked[j].ReviewCount) {
-			return mapsreview.IntValue(ranked[i].ReviewCount) > mapsreview.IntValue(ranked[j].ReviewCount)
 		}
 		return ranked[i].Name < ranked[j].Name
 	})
@@ -352,13 +372,13 @@ func writeMostRemovedCSV(file string, rows []mapsreview.Place) error {
 	}
 	defer f.Close()
 	w := csv.NewWriter(f)
-	columns := []string{"rank", "name", "postcode", "address", "rating", "reviewCount", "removedRange", "removedMin", "removedMax", "removedEstimate", "deletionRatioPct", "realRatingAdjusted", "removedText", "url"}
+	columns := []string{"rank", "name", "postcode", "address", "rating", "reviewCount", "removedRange", "removedMin", "removedMax", "removedEstimate", "deletionRatioPct", "readAt", "url"}
 	if err := w.Write(columns); err != nil {
 		return err
 	}
 	for i, row := range rows {
 		if err := w.Write([]string{
-			strconv.Itoa(i + 1), row.Name, mapsreview.StringValue(row.Postcode), mapsreview.StringValue(row.Address), floatCSV(row.Rating), intCSV(row.ReviewCount), mapsreview.RemovedRange(row), intCSV(row.RemovedMin), intCSV(row.RemovedMax), strconv.FormatFloat(mapsreview.RemovedSortValue(row), 'f', -1, 64), floatCSV(row.DeletionRatioPct), floatCSV(row.RealRatingAdjusted), mapsreview.StringValue(row.RemovedText), row.URL,
+			strconv.Itoa(i + 1), row.Name, mapsreview.StringValue(row.Postcode), mapsreview.StringValue(row.Address), floatCSV(row.Rating), intCSV(row.ReviewCount), mapsreview.RemovedRange(row), intCSV(row.RemovedMin), intCSV(row.RemovedMax), strconv.FormatFloat(mapsreview.RemovedSortValue(row), 'f', -1, 64), floatCSV(row.DeletionRatioPct), row.ReadAt, row.URL,
 		}); err != nil {
 			return err
 		}
@@ -367,38 +387,28 @@ func writeMostRemovedCSV(file string, rows []mapsreview.Place) error {
 	return w.Error()
 }
 
-func writeMostRemovedMD(file string, rows []mapsreview.Place, args args) error {
+func writeMostRemovedMD(file string, rows []mapsreview.Place, a args) error {
 	lines := []string{
-		fmt.Sprintf("# %s — Orte sortiert nach geschätzter Anzahl entfernter Bewertungen", esc(args.City)),
-		"",
-		"Quelle: Google Maps, öffentlich sichtbare Diffamierungs-Banner. Snapshot: " + time.Now().Format("02.01.2006") + ".",
-		"",
-		"Sortierung: geschätzter Mittelpunkt der Google-Bereiche absteigend. „Über 250“ wird als 300 geschätzt.",
-		"",
-		"Einträge mit Banner: " + mapsreview.FormatGermanInt(len(rows)),
-		"",
-		"| Rang | Name | PLZ | Rating | Rezensionen | Gelöscht | Schätzwert | Löschquote | Worst-Case-Rating |",
-		"|---:|---|---:|---:|---:|---:|---:|---:|---:|",
+		fmt.Sprintf("# %s — beobachtete Google-Hinweisspannen", esc(a.City)), "",
+		"Historische Momentaufnahme. Datenabrufe: " + chartDataPeriod(rows) + ". Quelle: Google Maps.", "",
+		"Die Spannen sind keine exakten Zahlen. Gleiche Spanne: alphabetisch. Keine Aussage über Betriebsqualität, Rechtswidrigkeit, Missbrauch oder unterdrückte berechtigte Kritik.", "",
+		"| Position | Name | PLZ | Google-Rating | Rezensionen | Beobachtete Spanne | Datenabruf |",
+		"|---:|---|---|---:|---:|---|---|",
 	}
 	for i, row := range rows {
-		name := strings.ReplaceAll(row.Name, "|", "\\|")
-		lines = append(lines, fmt.Sprintf("| %d | %s | %s | %s | %s | %s | %s | %s%% | %s |",
-			i+1, name, mapsreview.StringValue(row.Postcode), mapsreview.FormatPtrFloat(row.Rating, 1), mapsreview.FormatPtrInt(row.ReviewCount), mapsreview.RemovedRange(row), mapsreview.FormatGermanFloat(mapsreview.RemovedSortValue(row), 1), mapsreview.FormatPtrFloat(row.DeletionRatioPct, 1), mapsreview.FormatPtrFloat(row.RealRatingAdjusted, 2)))
+		name := strings.ReplaceAll(esc(row.Name), "|", "&#124;")
+		lines = append(lines, fmt.Sprintf("| %d | %s | %s | %s | %s | %s | %s |", i+1, name, esc(mapsreview.StringValue(row.Postcode)), mapsreview.FormatPtrFloat(row.Rating, 1), mapsreview.FormatPtrInt(row.ReviewCount), esc(mapsreview.RemovedRange(row)), esc(row.ReadAt)))
 	}
 	return os.WriteFile(file, []byte(strings.Join(lines, "\n")+"\n"), 0o644)
 }
 
-func writeMostRemovedHTML(file string, ranked []mapsreview.Place, allRows []mapsreview.Place, args args) error {
+func writeMostRemovedHTML(file string, ranked []mapsreview.Place, allRows []mapsreview.Place, a args) error {
 	var body strings.Builder
 	for i, row := range ranked {
-		body.WriteString(fmt.Sprintf(`<tr><td class="num">%d</td><td><a href="%s" target="_blank" rel="noopener noreferrer">%s</a><small>%s</small></td><td>%s</td><td class="num">%s</td><td class="num">%s</td><td class="num">%s</td><td class="num">%s</td><td class="num">%s%%</td><td class="num">%s</td></tr>`,
-			i+1, esc(row.URL), esc(row.Name), esc(mapsreview.StringValue(row.Address)), esc(mapsreview.StringValue(row.Postcode)), mapsreview.FormatPtrFloat(row.Rating, 1), mapsreview.FormatPtrInt(row.ReviewCount), esc(mapsreview.RemovedRange(row)), mapsreview.FormatGermanFloat(mapsreview.RemovedSortValue(row), 1), mapsreview.FormatPtrFloat(row.DeletionRatioPct, 1), mapsreview.FormatPtrFloat(row.RealRatingAdjusted, 2)))
+		fmt.Fprintf(&body, `<tr><td>%d</td><td><a href="%s" target="_blank" rel="noopener noreferrer">%s</a></td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>`, i+1, esc(row.URL), esc(row.Name), esc(mapsreview.StringValue(row.Postcode)), mapsreview.FormatPtrFloat(row.Rating, 1), mapsreview.FormatPtrInt(row.ReviewCount), esc(mapsreview.RemovedRange(row)), esc(row.ReadAt))
 	}
-	htmlText := fmt.Sprintf(`<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>%s — meist entfernte Google-Maps-Bewertungen</title><style>
-:root{--red:#c9332c;--text:#202124;--muted:#687078;--line:#dce5eb;--bg:#eef6fa}*{box-sizing:border-box}body{margin:0;font-family:Georgia,serif;background:linear-gradient(180deg,#d9e8f2,#f7fbfd 48%%,#e1e7ec);color:var(--text)}main{width:min(1450px,calc(100vw - 40px));margin:42px auto 80px}h1{font-size:clamp(34px,5vw,64px);line-height:1;margin:0 0 12px;letter-spacing:-.04em}.lead{max-width:900px;color:var(--muted);font:18px/1.5 system-ui,sans-serif}.stats{display:flex;gap:12px;flex-wrap:wrap;margin:24px 0}.stat{background:#fff;border:1px solid var(--line);border-left:8px solid var(--red);padding:14px 18px}.stat strong{display:block;font:700 30px/1 system-ui,sans-serif}.table-wrap{overflow:auto;background:#fff;border:1px solid var(--line);box-shadow:0 14px 42px rgba(60,80,95,.16)}table{width:100%%;border-collapse:collapse;min-width:1100px}th,td{padding:12px 14px;border-bottom:1px solid #edf2f5;text-align:left;font:14px system-ui,sans-serif}th{position:sticky;top:0;background:#f8fbfd;font-weight:800}.num{text-align:right;font-variant-numeric:tabular-nums}a{color:var(--red);font-weight:800;text-decoration:none}a:hover{text-decoration:underline}small{display:block;color:var(--muted);margin-top:4px}</style></head><body><main><h1>%s — meist entfernte Google-Maps-Bewertungen</h1><p class="lead">Orte mit sichtbarem Google-Maps-Hinweis auf entfernte Bewertungen wegen Beschwerden wegen Diffamierung. Namen sind direkt zur jeweiligen Google-Maps-Seite verlinkt.</p><div class="stats"><div class="stat"><strong>%s</strong><span>Einträge mit Banner</span></div><div class="stat"><strong>%s</strong><span>erfasste Orte</span></div><div class="stat"><strong>%s%%</strong><span>mit sichtbarem Banner</span></div></div><section class="table-wrap"><table><thead><tr><th class="num">Rang</th><th>Name / Google Maps</th><th>PLZ</th><th class="num">Rating</th><th class="num">Rezensionen</th><th class="num">Gelöscht</th><th class="num">Schätzwert</th><th class="num">Löschquote</th><th class="num">Worst-Case</th></tr></thead><tbody>%s</tbody></table></section></main></body></html>`,
-		esc(args.City), esc(args.City),
-		mapsreview.FormatGermanInt(len(ranked)), mapsreview.FormatGermanInt(len(mapsreview.ValidRows(allRows))), mapsreview.FormatGermanFloat(float64(len(ranked))/math.Max(float64(len(mapsreview.ValidRows(allRows))), 1)*100, 1), body.String())
-	return os.WriteFile(file, []byte(htmlText), 0o644)
+	page := fmt.Sprintf(`<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex"><title>%s — historische Google-Hinweisspannen</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:32px;color:#202124}main{max-width:1400px;margin:auto}.table{overflow:auto}table{border-collapse:collapse;width:100%%}th,td{padding:12px;text-align:left;border-bottom:1px solid #ddd}a{color:#305b72}</style></head><body><main><h1>%s — historische Google-Hinweisspannen</h1><p>Lokaler Recherche-Export; nicht Bestandteil der Website-Veröffentlichung.</p><p><strong>Historische Momentaufnahme. Datenabrufe: %s.</strong> Quelle: Google Maps. Kein aktueller Status.</p><p>Beobachtete Spannen, innerhalb derselben Spanne alphabetisch. Keine Aussage über Betriebsqualität, rechtswidriges Verhalten, missbräuchliche Beschwerden oder unterdrückte berechtigte Kritik.</p><div class="table"><table><thead><tr><th>Position</th><th>Name / Google Maps</th><th>PLZ</th><th>Google-Rating</th><th>Rezensionen</th><th>Beobachtete Spanne</th><th>Datenabruf</th></tr></thead><tbody>%s</tbody></table></div></main></body></html>`, esc(a.City), esc(a.City), esc(chartDataPeriod(allRows)), body.String())
+	return os.WriteFile(file, []byte(page), 0o644)
 }
 
 func chartFilePrefix(city string) string {

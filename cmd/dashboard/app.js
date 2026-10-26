@@ -13,11 +13,11 @@ const fmtDateTime = new Intl.DateTimeFormat('de-DE', { dateStyle: 'short', timeS
 const TABLE_PAGE_SIZE = 500;
 let tableLimit = TABLE_PAGE_SIZE;
 let lastSortedRows = [];
-const state = { mode: 'ratio', sortKey: 'deletionRatioPct', sortDir: 'desc', userLocation: null };
+const state = { mode: 'removed', sortKey: 'removedEstimate', sortDir: 'desc', userLocation: null };
 const els = {
   themeToggle: document.getElementById('themeToggle'), controls: document.getElementById('dashboardFilterControls'), filterToggle: document.getElementById('filterToggle'), filterSummary: document.getElementById('filterSummary'), search: document.getElementById('searchInput'), postcode: document.getElementById('postcodeFilter'), bezirk: document.getElementById('bezirkFilter'), banner: document.getElementById('bannerFilter'), range: document.getElementById('rangeFilter'), category: document.getElementById('categoryFilter'), minReviews: document.getElementById('minReviews'), reset: document.getElementById('resetFilters'), tbody: document.querySelector('#placesTable tbody'), resultCount: document.getElementById('resultCount'), tableTitle: document.getElementById('tableTitle'), mapCount: document.getElementById('mapCount'), nearbyStatus: document.getElementById('nearbyStatus'), showMore: document.getElementById('showMoreRows')
 };
-const titles = { all: 'Alle Orte', removed: 'Höchste Hinweisspannen', ratio: 'Geschätzter Hinweis-Anteil', worst: 'Hypothetisches Worst-Case-Rating', clean: 'Orte ohne sichtbaren Hinweis', nearby: 'In meiner Nähe' };
+const titles = { all: 'Alle Orte', removed: 'Höchste Hinweisspannen', ratio: 'Geschätzter Modellanteil', clean: 'Orte ohne beobachteten Google-Hinweis', nearby: 'In meiner Nähe' };
 
 function finiteNumber(value) { return Number.isFinite(value) ? value : null; }
 function decodeCoord(base, offset) { return Number.isFinite(offset) ? base + offset / COORD_SCALE : null; }
@@ -37,7 +37,7 @@ function decodePlaceRow(row, index, dicts) {
   const postcode = dictValue(dicts, 0, row[2]);
   const hasBanner = row.length > 12;
   return {
-    id: String(index), name: row[1] || '', postcode, lat: decodeCoord(49, row[3]), lng: decodeCoord(11, row[4]), bezirkLabel: dictValue(dicts, 1, row[5]), rating: finiteNumber(row[6]), reviewCount: finiteNumber(row[7]), category: dictValue(dicts, 2, row[8]), parentCategory: dictValue(dicts, 3, row[9]), hasBanner, removedRange: hasBanner ? dictValue(dicts, 4, row[12]) : '', removedEstimate: hasBanner ? finiteNumber(row[13]) || 0 : 0, deletionRatioPct: hasBanner ? finiteNumber(row[14]) : null, realRatingAdjusted: hasBanner ? finiteNumber(row[15]) : null, address: decodeAddress(row[10] || '', postcode), readAt: Number.isFinite(row[11]) ? row[11] * 60000 : 0, url: googleMapsURL(row[0], row[1])
+    id: String(index), name: row[1] || '', postcode, lat: decodeCoord(49, row[3]), lng: decodeCoord(11, row[4]), bezirkLabel: dictValue(dicts, 1, row[5]), rating: finiteNumber(row[6]), reviewCount: finiteNumber(row[7]), category: dictValue(dicts, 2, row[8]), parentCategory: dictValue(dicts, 3, row[9]), hasBanner, removedRange: hasBanner ? dictValue(dicts, 4, row[12]) : '', removedEstimate: hasBanner ? finiteNumber(row[13]) || 0 : 0, deletionRatioPct: hasBanner ? finiteNumber(row[14]) : null, address: decodeAddress(row[10] || '', postcode), readAt: Number.isFinite(row[11]) ? row[11] * 60000 : 0, url: googleMapsURL(row[0], row[1])
   };
 }
 function getBezirke() {
@@ -198,7 +198,7 @@ function geolocationErrorMessage(error) {
 }
 function nearbySuccessStatus() {
   const accuracy = state.userLocation && Number.isFinite(state.userLocation.accuracy) ? ' · Genauigkeit ca. ' + n(Math.round(state.userLocation.accuracy)) + ' m' : '';
-  return 'Standort gesetzt. Orte werden nach Entfernung sortiert.' + accuracy;
+  return 'Standort gesetzt. Orte werden nach Entfernung sortiert. Bei externen Kartenkacheln kann der Ausschnitt den ungefähren Standort offenlegen.' + accuracy;
 }
 function requestUserLocation() {
   if (!navigator.geolocation) {
@@ -206,7 +206,7 @@ function requestUserLocation() {
     return;
   }
   setNearbyPending(true);
-  setNearbyStatus('Standort wird angefragt und nur lokal im Browser verwendet …');
+  setNearbyStatus('Standort wird angefragt. Entfernungen werden lokal berechnet; bei aktivierten externen Kacheln wird der Kartenausschnitt an CARTO übertragen …');
   navigator.geolocation.getCurrentPosition(position => {
     state.userLocation = { lat: position.coords.latitude, lng: position.coords.longitude, accuracy: position.coords.accuracy };
     setNearbyPending(false);
@@ -226,7 +226,6 @@ function cleanRankingRows(rows) { return cleanRows(rows).filter(row => Number.is
 function defaultSortFor(mode) {
   if (mode === 'removed') return ['removedEstimate', 'desc'];
   if (mode === 'ratio') return ['deletionRatioPct', 'desc'];
-  if (mode === 'worst') return ['realRatingAdjusted', 'asc'];
   if (mode === 'clean') return ['rating', 'desc'];
   if (mode === 'nearby') return ['distanceKm', 'asc'];
   return ['rank', 'asc'];
@@ -234,7 +233,6 @@ function defaultSortFor(mode) {
 function modeRows(rows) {
   if (state.mode === 'removed') return bannerRows(rows);
   if (state.mode === 'ratio') return bannerRows(rows).filter(row => Number.isFinite(row.deletionRatioPct));
-  if (state.mode === 'worst') return bannerRows(rows).filter(row => Number.isFinite(row.realRatingAdjusted));
   if (state.mode === 'clean') return cleanRows(rows);
   if (state.mode === 'nearby') return rows.filter(hasCoords);
   return rows;
@@ -252,6 +250,7 @@ function sortRows(rows) {
     const av = value(a.row, state.sortKey, a.index);
     const bv = value(b.row, state.sortKey, b.index);
     const result = typeof av === 'string' ? av.localeCompare(bv, 'de') : av - bv;
+    if (result === 0 && state.sortKey === 'removedEstimate') return a.row.name.localeCompare(b.row.name, 'de');
     return state.sortDir === 'asc' ? result : -result;
   }).map(item => item.row);
 }
@@ -322,29 +321,7 @@ function setupMapGestureGate(root) {
   });
 }
 function loadLeaflet() {
-  if (typeof L !== 'undefined') return Promise.resolve();
-  return new Promise((resolve, reject) => {
-    if (!document.querySelector('link[data-leaflet-css]')) {
-      const link = document.createElement('link');
-      link.dataset.leafletCss = 'true';
-      link.rel = 'stylesheet';
-      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-      document.head.insertBefore(link, document.querySelector('style'));
-    }
-    const existing = document.querySelector('script[data-leaflet-js]');
-    if (existing) {
-      existing.addEventListener('load', resolve, { once: true });
-      existing.addEventListener('error', reject, { once: true });
-      return;
-    }
-    const script = document.createElement('script');
-    script.dataset.leafletJs = 'true';
-    script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-    script.async = true;
-    script.onload = resolve;
-    script.onerror = reject;
-    document.head.appendChild(script);
-  });
+  return typeof L !== 'undefined' ? Promise.resolve() : Promise.reject(new Error('Lokale Kartenbibliothek fehlt'));
 }
 function startMapLoad(rows, allFilteredRows) {
   pendingMapRows = rows;
@@ -353,14 +330,30 @@ function startMapLoad(rows, allFilteredRows) {
   const root = document.getElementById('placesMap');
   mapLoadStarted = true;
   root.innerHTML = '<div class="map-empty">Karte wird geladen …</div>';
-  loadLeaflet().then(() => renderMap(pendingMapRows || [], pendingMapAllRows || pendingMapRows || [])).catch(() => {
+  loadLeaflet().then(() => {
+    if (!mapConsentGranted) return;
+    renderMap(pendingMapRows || [], pendingMapAllRows || pendingMapRows || []);
+    document.getElementById('mapConsentRevoke').hidden = false;
+  }).catch(() => {
     mapUnavailable = true;
-    root.innerHTML = '<div class="map-empty">Karte konnte nicht geladen werden. Internetzugriff auf Leaflet/Kartenkacheln prüfen.</div>';
+    root.innerHTML = '<div class="map-empty">Karte konnte nicht geladen werden. Lokale Kartenbibliothek konnte nicht initialisiert werden.</div>';
   });
 }
 function setupMapConsent() {
   const root = document.getElementById('placesMap');
   if (!root) return;
+  const placeholder = root.innerHTML;
+  setupMapGestureGate(root);
+  document.getElementById('mapConsentRevoke').addEventListener('click', () => {
+    mapConsentGranted = false;
+    if (placesMap) placesMap.remove();
+    placesMap = bezirkLayer = markerLayer = tileLayer = null;
+    mapLoadStarted = mapUnavailable = false;
+    root.classList.remove('map-active', 'map-needs-key');
+    root.innerHTML = placeholder;
+    document.getElementById('mapConsentRevoke').hidden = true;
+    root.querySelector('#mapConsentLoad').focus();
+  });
   root.addEventListener('click', event => {
     const btn = event.target.closest('#mapConsentLoad');
     if (!btn) return;
@@ -374,15 +367,16 @@ function initMap() {
   const root = document.getElementById('placesMap');
   if (typeof L === 'undefined') return false;
   root.innerHTML = '';
-  placesMap = L.map(root, { preferCanvas: true, scrollWheelZoom: false, touchZoom: true }).setView([49.4521, 11.0767], 12);
+  placesMap = L.map(root, { preferCanvas: true, scrollWheelZoom: false, touchZoom: true, minZoom: 1, maxZoom: 20 }).setView([49.4521, 11.0767], 12);
   placesMap.createPane('bezirkPane');
   placesMap.getPane('bezirkPane').style.zIndex = 350;
   placesMap.createPane('placeMarkerPane');
   placesMap.getPane('placeMarkerPane').style.zIndex = 650;
-  tileLayer = L.tileLayer(tileURL(), { maxZoom: 20, subdomains: 'abcd', attribution: '&copy; OpenStreetMap-Mitwirkende &copy; CARTO' }).addTo(placesMap);
+  if (CONFIG.cartoEnabled === 'true') {
+    tileLayer = L.tileLayer(tileURL(), { maxZoom: 20, subdomains: 'abcd', attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions" target="_blank" rel="noopener noreferrer">CARTO</a>' }).addTo(placesMap);
+  }
   bezirkLayer = L.layerGroup().addTo(placesMap);
   markerLayer = L.layerGroup().addTo(placesMap);
-  setupMapGestureGate(root);
   return true;
 }
 function selectedBezirkLabel() {
@@ -467,7 +461,7 @@ function renderMap(rows, allFilteredRows) {
   for (const row of mapped) {
     const marker = L.circleMarker([row.lat, row.lng], { pane: 'placeMarkerPane', radius: row.hasBanner ? 7 : 5, color: '#fff', weight: 1.5, fillColor: markerColor(row), fillOpacity: .9 });
     const distance = state.mode === 'nearby' ? ' · ' + distanceLabel(rowDistanceKm(row)) : '';
-    marker.bindTooltip(row.name + distance + (row.bezirkLabel ? ' · ' + row.bezirkLabel : '') + (row.hasBanner ? ' · ' + row.removedRange : ''), { direction: 'top' });
+    marker.bindTooltip(esc(row.name + distance + (row.bezirkLabel ? ' · ' + row.bezirkLabel : '') + (row.hasBanner ? ' · ' + row.removedRange : '')), { direction: 'top' });
     marker.on('click', () => {
       activateMode(markerMode(row));
       render();
@@ -519,7 +513,7 @@ function renderRatioHistogram(rows) {
     { label: '2–5%', min: 2, max: 5 },
     { label: '5–10%', min: 5, max: 10 },
     { label: '10–20%', min: 10, max: 20 },
-    { label: '> 20%', min: 20, max: Infinity }
+    { label: '≥ 20%', min: 20, max: Infinity }
   ];
   const counts = bins.map(bin => ({
     label: bin.label,
@@ -560,9 +554,8 @@ function renderParentSummary(rows) {
 }
 function updatePanels(rows) {
   const banners = bannerRows(rows);
-  renderBars('barsRemoved', 'removed', [...banners].sort((a,b) => b.removedEstimate - a.removedEstimate), row => row.removedEstimate, row => row.removedRange + ' · ' + n(row.removedEstimate), '', 300);
+  renderBars('barsRemoved', 'removed', [...banners].sort((a,b) => b.removedEstimate - a.removedEstimate || a.name.localeCompare(b.name, 'de')), row => row.removedEstimate, row => esc(row.removedRange), '', 300);
   renderBars('barsRatio', 'ratio', [...banners].sort((a,b) => (b.deletionRatioPct ?? -1) - (a.deletionRatioPct ?? -1)), row => row.deletionRatioPct || 0, row => pct(row.deletionRatioPct), '', Math.max(10, ...banners.map(row => row.deletionRatioPct || 0)));
-  renderBars('barsWorst', 'worst', [...banners].filter(row => Number.isFinite(row.realRatingAdjusted)).sort((a,b) => a.realRatingAdjusted - b.realRatingAdjusted), row => 5 - row.realRatingAdjusted, row => rating(row.rating) + '★ → ' + rating(row.realRatingAdjusted, 2) + '★', 'orange', 4);
   renderBars('barsClean', 'clean', [...cleanRankingRows(rows)].sort((a,b) => b.rating - a.rating || b.reviewCount - a.reviewCount), row => row.rating, row => rating(row.rating) + '★ · ' + n(row.reviewCount) + ' Rezensionen', 'green', 5);
   renderDistribution(rows);
   renderRatioHistogram(rows);
@@ -591,7 +584,7 @@ function renderTable(rows) {
     const rank = index + 1;
     const distance = state.mode === 'nearby' ? '<span class="entry-address">Entfernung: ' + esc(distanceLabel(rowDistanceKm(row))) + '</span>' : '';
     const address = row.address ? '<span class="entry-address">' + esc(row.address) + '</span>' : '';
-    return '<tr data-entry-id="' + esc(row.id) + '"><td class="rank">' + rank + '</td><td class="name"><a href="' + esc(row.url) + '" target="_blank" rel="noopener noreferrer">' + esc(row.name) + '</a>' + distance + address + '</td><td>' + esc(row.bezirkLabel || '–') + '</td><td>' + esc(row.postcode) + '</td><td class="num">' + rating(row.rating) + '</td><td class="num">' + n(row.reviewCount) + '</td><td>' + (row.hasBanner ? '<span class="pill bad">Google-Hinweis</span>' : '<span class="pill">kein Hinweis</span>') + '</td><td class="num">' + (row.hasBanner ? esc(row.removedRange) : '–') + '</td><td class="num">' + (row.hasBanner ? rating(row.removedEstimate) : '–') + '</td><td class="num">' + pct(row.deletionRatioPct) + '</td><td class="num">' + rating(row.realRatingAdjusted, 2) + '</td><td>' + esc(readAtLabel(row.readAt)) + '</td><td>' + esc(row.category) + '</td></tr>';
+    return '<tr data-entry-id="' + esc(row.id) + '"><td class="rank">' + rank + '</td><td class="name"><a href="' + esc(row.url) + '" target="_blank" rel="noopener noreferrer">' + esc(row.name) + '</a>' + distance + address + '</td><td>' + esc(row.bezirkLabel || '–') + '</td><td>' + esc(row.postcode) + '</td><td class="num">' + rating(row.rating) + '</td><td class="num">' + n(row.reviewCount) + '</td><td>' + (row.hasBanner ? '<span class="pill bad">Google-Hinweis</span>' : '<span class="pill">beim Abruf kein Hinweis</span>') + '</td><td class="num">' + (row.hasBanner ? esc(row.removedRange) : '–') + '</td><td class="num">' + (row.hasBanner ? rating(row.removedEstimate) : '–') + '</td><td class="num">' + pct(row.deletionRatioPct) + '</td><td>' + esc(readAtLabel(row.readAt)) + '</td><td>' + esc(row.category) + '</td></tr>';
   }).join('');
   document.querySelectorAll('th button[data-sort]').forEach(button => {
     const active = button.dataset.sort === state.sortKey;
@@ -686,7 +679,7 @@ const renderDebounced = debounce(renderReset, 140);
 [els.postcode, els.bezirk, els.banner, els.range, els.category].forEach(input => input.addEventListener('change', renderReset));
 els.reset.addEventListener('click', () => {
   els.search.value = ''; els.postcode.value = ''; els.bezirk.value = ''; els.banner.value = 'all'; els.range.value = ''; els.category.value = ''; els.minReviews.value = 0;
-  activateMode('ratio');
+  activateMode('removed');
   document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
   render();
 });
@@ -733,13 +726,7 @@ function updateSubChips(mode) {
       { label: 'Min. 200 Rez.', test: () => Number(els.minReviews.value) === 200, apply: v => { els.minReviews.value = v ? 200 : 0; } },
       { label: '🍽️ Nur Gastro', test: () => els.category.value === 'parent:Gastronomie', apply: v => { els.category.value = v ? 'parent:Gastronomie' : ''; } },
       { label: '🏨 Nur Hotels', test: () => els.category.value === 'parent:Beherbergung', apply: v => { els.category.value = v ? 'parent:Beherbergung' : ''; } },
-      { label: '> 50 Näherungswert', test: () => els.range.value === '51–100', apply: v => { els.range.value = v ? '51–100' : ''; } },
-    ],
-    worst: [
-      { label: 'Min. 50 Rez.', test: () => Number(els.minReviews.value) === 50, apply: v => { els.minReviews.value = v ? 50 : 0; } },
-      { label: 'Min. 100 Rez.', test: () => Number(els.minReviews.value) === 100, apply: v => { els.minReviews.value = v ? 100 : 0; } },
-      { label: 'Min. 200 Rez.', test: () => Number(els.minReviews.value) === 200, apply: v => { els.minReviews.value = v ? 200 : 0; } },
-      { label: '🍽️ Nur Gastro', test: () => els.category.value === 'parent:Gastronomie', apply: v => { els.category.value = v ? 'parent:Gastronomie' : ''; } },
+      { label: 'Spanne 51–100', test: () => els.range.value === '51–100', apply: v => { els.range.value = v ? '51–100' : ''; } },
     ],
     clean: [
       { label: 'Min. 200 Rez.', test: () => Number(els.minReviews.value) === 200, apply: v => { els.minReviews.value = v ? 200 : 0; } },

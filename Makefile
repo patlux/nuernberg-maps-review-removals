@@ -1,13 +1,15 @@
-.PHONY: setup test check validate scrape backfill charts dashboard dashboard-build site deploy-pages all
+.PHONY: setup test test-js check validate scrape backfill charts dashboard dashboard-build site deploy-pages all
 
 setup:
 	go mod download
 
-test:
+test: test-js
 	go test ./...
 
-check:
-	go test ./...
+test-js:
+	node --test cmd/dashboard/*.test.cjs
+
+check: test
 	go run ./cmd/validate
 
 validate:
@@ -28,7 +30,6 @@ dashboard-build:
 	go run ./cmd/dashboard $(ARGS)
 
 site:
-	go run ./cmd/charts --png $(ARGS)
 	go run ./cmd/dashboard --site $(ARGS)
 
 deploy-pages: site

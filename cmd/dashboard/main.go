@@ -19,6 +19,18 @@ import (
 //go:embed app.js
 var dashboardJS string
 
+//go:embed analytics.js
+var analyticsJS string
+
+//go:embed vendor/leaflet/leaflet.js
+var leafletJS string
+
+//go:embed vendor/leaflet/leaflet.css
+var leafletCSS string
+
+//go:embed vendor/leaflet/LICENSE
+var leafletLicense string
+
 const (
 	defaultInput      = mapsreview.ResultsJSON
 	defaultOutput     = "output/charts/nuernberg_dashboard.html"
@@ -26,21 +38,25 @@ const (
 )
 
 type args struct {
-	City              string
-	Input             string
-	Output            string
-	LegalName         string
-	LegalEmail        string
-	LegalAddressLines []string
-	LegalNote         string
-	LegalPostHandler  string
-	AnalyticsSrc      string
-	AnalyticsDomain   string
-	SiteDomain        string
-	SiteURL           string
-	SiteOutput        string
-	BuildSite         bool
-	CartoAPIKey       string
+	City                 string
+	Input                string
+	Output               string
+	LegalName            string
+	LegalEmail           string
+	LegalAddressLines    []string
+	LegalNote            string
+	LegalPostHandler     string
+	AnalyticsSrc         string
+	AnalyticsDomain      string
+	SiteDomain           string
+	SiteURL              string
+	SiteOutput           string
+	BuildSite            bool
+	CartoAPIKey          string
+	CartoEnabled         bool
+	CartoPrivacyText     string
+	AnalyticsEnabled     bool
+	AnalyticsPrivacyText string
 }
 
 type dashboardConfig struct {
@@ -59,42 +75,44 @@ type dashboardConfig struct {
 		PostHandler  string
 	}
 	Analytics struct {
-		Src    string
-		Domain string
+		Src         string
+		Domain      string
+		Enabled     bool
+		PrivacyText string
 	}
 	PlacesAPI struct {
 		APIKey string
 	}
 	Carto struct {
-		APIKey string
+		APIKey      string
+		Enabled     bool
+		PrivacyText string
 	}
 }
 
 type clientRow struct {
-	ID                 string   `json:"id"`
-	Name               string   `json:"name"`
-	Postcode           string   `json:"postcode"`
-	Lat                *float64 `json:"lat,omitempty"`
-	Lng                *float64 `json:"lng,omitempty"`
-	BezirkID           string   `json:"bezirkId"`
-	BezirkName         string   `json:"bezirkName"`
-	BezirkLabel        string   `json:"bezirkLabel"`
-	Rating             *float64 `json:"rating"`
-	ReviewCount        *int     `json:"reviewCount"`
-	Category           string   `json:"category"`
-	ParentCategory     string   `json:"parentCategory"`
-	HasBanner          bool     `json:"hasBanner"`
-	RemovedRange       string   `json:"removedRange"`
-	RemovedMin         *int     `json:"removedMin"`
-	RemovedMax         *int     `json:"removedMax"`
-	RemovedEstimate    float64  `json:"removedEstimate"`
-	DeletionRatioPct   *float64 `json:"deletionRatioPct"`
-	RealRatingAdjusted *float64 `json:"realRatingAdjusted"`
-	RemovedText        string   `json:"removedText"`
-	URL                string   `json:"url"`
-	Address            string   `json:"address"`
-	ReadAt             string   `json:"readAt"`
-	PlaceState         string   `json:"placeState,omitempty"`
+	ID               string   `json:"id"`
+	Name             string   `json:"name"`
+	Postcode         string   `json:"postcode"`
+	Lat              *float64 `json:"lat,omitempty"`
+	Lng              *float64 `json:"lng,omitempty"`
+	BezirkID         string   `json:"bezirkId"`
+	BezirkName       string   `json:"bezirkName"`
+	BezirkLabel      string   `json:"bezirkLabel"`
+	Rating           *float64 `json:"rating"`
+	ReviewCount      *int     `json:"reviewCount"`
+	Category         string   `json:"category"`
+	ParentCategory   string   `json:"parentCategory"`
+	HasBanner        bool     `json:"hasBanner"`
+	RemovedRange     string   `json:"removedRange"`
+	RemovedMin       *int     `json:"removedMin"`
+	RemovedMax       *int     `json:"removedMax"`
+	RemovedEstimate  float64  `json:"removedEstimate"`
+	DeletionRatioPct *float64 `json:"deletionRatioPct"`
+	URL              string   `json:"url"`
+	Address          string   `json:"address"`
+	ReadAt           string   `json:"readAt"`
+	PlaceState       string   `json:"placeState,omitempty"`
 }
 
 type seoStats struct {
@@ -103,6 +121,7 @@ type seoStats struct {
 	Clean           int
 	RemovedEstimate int
 	Snapshot        string
+	Coverage        string
 	Top             []clientRow
 }
 
@@ -111,8 +130,6 @@ type dashboardMetadata struct {
 	PageTitle       string
 	PageDescription string
 	CanonicalURL    string
-	SocialImageURL  string
-	SocialImageAlt  string
 }
 
 func dashboardMeta(args args, city string) dashboardMetadata {
@@ -120,40 +137,9 @@ func dashboardMeta(args args, city string) dashboardMetadata {
 	return dashboardMetadata{
 		SiteName:        fmt.Sprintf("%s Maps Review Removals", city),
 		PageTitle:       fmt.Sprintf("%s Google-Maps-Bewertungen: Dashboard zu Google-Hinweisen", city),
-		PageDescription: fmt.Sprintf("Interaktives %s-Dashboard zu öffentlich sichtbaren Google-Maps-Hinweisen auf entfernte Bewertungen: Spannen, Näherungswerte, Karte und Daten-Explorer.", city),
+		PageDescription: fmt.Sprintf("Historische Momentaufnahme öffentlich beobachteter Google-Maps-Hinweise im Raum %s: Spannen, Näherungswerte, Karte und Daten-Explorer.", city),
 		CanonicalURL:    siteURL,
-		SocialImageURL:  siteURL + "charts/" + dashboardChartFilePrefix(city) + "_overall_summary.png",
-		SocialImageAlt:  fmt.Sprintf("Diagramm zur Auswertung sichtbarer Google-Maps-Hinweise in %s", city),
 	}
-}
-
-func dashboardChartFilePrefix(city string) string {
-	if mapsreview.IsDefaultCity(city) {
-		return "nuernberg"
-	}
-	city = strings.ToLower(strings.TrimSpace(city))
-	city = strings.NewReplacer(
-		"ä", "ae", "ö", "oe", "ü", "ue", "ß", "ss",
-	).Replace(city)
-	var b strings.Builder
-	lastDash := false
-	for _, r := range city {
-		isASCIIAlnum := (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9')
-		if isASCIIAlnum {
-			b.WriteRune(r)
-			lastDash = false
-			continue
-		}
-		if !lastDash && b.Len() > 0 {
-			b.WriteByte('-')
-			lastDash = true
-		}
-	}
-	prefix := strings.Trim(b.String(), "-")
-	if prefix == "" {
-		return "city"
-	}
-	return prefix
 }
 
 func main() {
@@ -282,6 +268,12 @@ Options:
 	if out.City == "" {
 		return out, fmt.Errorf("--city must not be empty")
 	}
+	if out.CartoEnabled && (out.CartoPrivacyText == "" || !legalPagesEnabled(out)) {
+		return out, fmt.Errorf("enabled CARTO tiles require legal pages and verified carto.privacy_text")
+	}
+	if out.AnalyticsEnabled && (out.AnalyticsPrivacyText == "" || out.AnalyticsSrc == "" || !legalPagesEnabled(out)) {
+		return out, fmt.Errorf("enabled analytics require legal pages, analytics.src and verified analytics.privacy_text")
+	}
 	if err := validateLegalArgs(out); err != nil {
 		return out, err
 	}
@@ -370,6 +362,10 @@ func readDashboardConfig(path string, base args) (args, error) {
 		base.AnalyticsDomain = cfg.Analytics.Domain
 	}
 	base.CartoAPIKey = strings.TrimSpace(cfg.Carto.APIKey)
+	base.CartoEnabled = cfg.Carto.Enabled
+	base.CartoPrivacyText = strings.TrimSpace(cfg.Carto.PrivacyText)
+	base.AnalyticsEnabled = cfg.Analytics.Enabled
+	base.AnalyticsPrivacyText = strings.TrimSpace(cfg.Analytics.PrivacyText)
 	return base, nil
 }
 
@@ -497,6 +493,11 @@ func setDashboardConfigValue(cfg *dashboardConfig, section string, key string, v
 			return fmt.Errorf("unknown legal config key %q", key)
 		}
 	case "analytics":
+		if key == "enabled" {
+			v, err := strconv.ParseBool(value)
+			cfg.Analytics.Enabled = v
+			return err
+		}
 		v, err := parseTomlString(value)
 		if err != nil {
 			return err
@@ -506,10 +507,22 @@ func setDashboardConfigValue(cfg *dashboardConfig, section string, key string, v
 			cfg.Analytics.Src = v
 		case "domain":
 			cfg.Analytics.Domain = v
+		case "privacy_text":
+			cfg.Analytics.PrivacyText = v
 		default:
 			return fmt.Errorf("unknown analytics config key %q", key)
 		}
 	case "carto":
+		if key == "enabled" {
+			v, err := strconv.ParseBool(value)
+			cfg.Carto.Enabled = v
+			return err
+		}
+		if key == "privacy_text" {
+			v, err := parseTomlString(value)
+			cfg.Carto.PrivacyText = v
+			return err
+		}
 		if key != "api_key" {
 			return fmt.Errorf("unknown carto config key %q", key)
 		}
@@ -604,7 +617,7 @@ func splitArg(argv []string, index int) (key string, value string, consume bool)
 func makeClientRows(rows []mapsreview.Place) []clientRow {
 	out := make([]clientRow, 0, len(rows))
 	for _, row := range rows {
-		if row.Status != "success" || row.Name == "" || row.Rating == nil {
+		if row.Status != "success" || row.Name == "" || row.Rating == nil || row.ReviewCount == nil {
 			continue
 		}
 		mapsreview.EnrichPlaceLocation(&row)
@@ -622,30 +635,28 @@ func makeClientRows(rows []mapsreview.Place) []clientRow {
 			bezirkLabel = bezirkID + " " + bezirkName
 		}
 		out = append(out, clientRow{
-			ID:                 row.ID,
-			Name:               row.Name,
-			Postcode:           mapsreview.StringValue(row.Postcode),
-			Lat:                lat,
-			Lng:                lng,
-			BezirkID:           bezirkID,
-			BezirkName:         bezirkName,
-			BezirkLabel:        bezirkLabel,
-			Rating:             row.Rating,
-			ReviewCount:        row.ReviewCount,
-			Category:           mapsreview.StringValue(row.Category),
-			ParentCategory:     mapsreview.StringValue(row.ParentCategory),
-			HasBanner:          row.HasDefamationNotice,
-			RemovedRange:       mapsreview.RemovedRange(row),
-			RemovedMin:         row.RemovedMin,
-			RemovedMax:         row.RemovedMax,
-			RemovedEstimate:    removedEstimate,
-			DeletionRatioPct:   row.DeletionRatioPct,
-			RealRatingAdjusted: row.RealRatingAdjusted,
-			RemovedText:        mapsreview.StringValue(row.RemovedText),
-			URL:                row.URL,
-			Address:            mapsreview.StringValue(row.Address),
-			ReadAt:             row.ReadAt,
-			PlaceState:         row.PlaceState,
+			ID:               row.ID,
+			Name:             row.Name,
+			Postcode:         mapsreview.StringValue(row.Postcode),
+			Lat:              lat,
+			Lng:              lng,
+			BezirkID:         bezirkID,
+			BezirkName:       bezirkName,
+			BezirkLabel:      bezirkLabel,
+			Rating:           row.Rating,
+			ReviewCount:      row.ReviewCount,
+			Category:         mapsreview.StringValue(row.Category),
+			ParentCategory:   mapsreview.StringValue(row.ParentCategory),
+			HasBanner:        row.HasDefamationNotice,
+			RemovedRange:     mapsreview.RemovedRange(row),
+			RemovedMin:       row.RemovedMin,
+			RemovedMax:       row.RemovedMax,
+			RemovedEstimate:  removedEstimate,
+			DeletionRatioPct: row.DeletionRatioPct,
+			URL:              row.URL,
+			Address:          mapsreview.StringValue(row.Address),
+			ReadAt:           row.ReadAt,
+			PlaceState:       row.PlaceState,
 		})
 	}
 	return out
@@ -671,7 +682,10 @@ func makeHTML(args args, data []clientRow) string {
 		return maxEstimateForRange(data, ranges[i]) > maxEstimateForRange(data, ranges[j])
 	})
 	snapshot := snapshotTime(data)
-	snapshotDisplay := snapshot.Format("02.01.2006")
+	snapshotDisplay := "unbekannt"
+	if !snapshot.IsZero() {
+		snapshotDisplay = snapshot.Format("02.01.2006")
+	}
 	stats := makeSEOStats(data, snapshotDisplay)
 	meta := dashboardMeta(args, city)
 	structuredData := structuredDataJSON(stats, snapshot, city, meta)
@@ -680,7 +694,7 @@ func makeHTML(args args, data []clientRow) string {
 	bezirkText := compactBezirkDataJSON(bezirkBoundaries)
 	// A domain-restricted CARTO Basemaps key is necessarily visible to browsers.
 	// Only export this publishable key, never the separate Google Places API key.
-	configText := safeJSON(map[string]string{"city": city, "cartoApiKey": args.CartoAPIKey})
+	configText := safeJSON(map[string]string{"city": city, "cartoApiKey": args.CartoAPIKey, "cartoEnabled": strconv.FormatBool(cartoTilesEnabled(args))})
 
 	postcodeOptions := ""
 	for _, postcode := range postcodes {
@@ -761,20 +775,14 @@ func makeHTML(args args, data []clientRow) string {
   <meta property="og:title" content="__PAGE_TITLE__">
   <meta property="og:description" content="__PAGE_DESCRIPTION__">
   <meta property="og:url" content="__CANONICAL_URL__">
-  <meta property="og:image" content="__SOCIAL_IMAGE__">
-  <meta property="og:image:width" content="1800">
-  <meta property="og:image:height" content="2500">
-  <meta property="og:image:alt" content="__SOCIAL_IMAGE_ALT__">
-  <meta property="og:updated_time" content="__MODIFIED_TIME__">
-  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="__PAGE_TITLE__">
   <meta name="twitter:description" content="__PAGE_DESCRIPTION__">
-  <meta name="twitter:image" content="__SOCIAL_IMAGE__">
-  <meta name="twitter:image:alt" content="__SOCIAL_IMAGE_ALT__">
   <script type="application/ld+json">
 __STRUCTURED_DATA__
   </script>
 __ANALYTICS__
+  <style>__LEAFLET_CSS__</style>
   <script>
     (function () {
       try {
@@ -972,7 +980,7 @@ __ANALYTICS__
     .kpi:nth-child(5) { border-top-color: var(--green); }
     .kpi .value { display: block; color: var(--heading); font-size: clamp(30px, 3vw, 44px); font-weight: 400; line-height: 1; }
     .kpi .label { display: block; margin-top: 8px; color: var(--muted); font-size: 14px; }
-    .panel-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: stretch; margin-top: 18px; }
+    .panel-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: stretch; margin-top: 18px; }
     .panel { padding: 18px; min-height: 330px; }
     .panel h2, .dist h2 { margin: 0 0 8px; color: var(--heading); font-size: 22px; font-weight: 700; }
     .panel p { margin: 0 0 16px; color: var(--muted); font-size: 13px; }
@@ -1014,8 +1022,8 @@ __ANALYTICS__
     .map-consent { display: grid; place-items: center; height: 100%; padding: 24px; color: var(--muted); text-align: center; }
     .map-consent-inner { max-width: 520px; }
     .map-consent .map-consent-text { margin: 0 0 18px; color: var(--text); font-size: 14px; line-height: 1.5; }
-    .map-consent .map-consent-btn { display: inline-flex; align-items: center; min-height: 38px; padding: 0 16px; border: 0; border-radius: 4px; background: var(--red); color: #fff; font-size: 14px; font-weight: 700; cursor: pointer; }
-    .map-consent .map-consent-btn:hover, .map-consent .map-consent-btn:focus-visible { background: var(--red-dark); outline: none; }
+    .map-consent-btn:not([hidden]) { display: inline-flex; align-items: center; min-height: 38px; padding: 0 16px; border: 0; border-radius: 4px; background: var(--red); color: #fff; font-size: 14px; font-weight: 700; cursor: pointer; }
+    .map-consent-btn:hover, .map-consent-btn:focus-visible { background: var(--red-dark); outline: none; }
     .map-consent .map-consent-link { margin: 22px 0 0; font-size: 12px; line-height: 1.5; }
     .map-legend { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 10px; color: var(--muted); font-size: 13px; }
     .legend-dot { display: inline-block; width: 12px; height: 12px; margin-right: 6px; border-radius: 50%; vertical-align: -1px; }
@@ -1035,7 +1043,7 @@ __ANALYTICS__
     .table-head strong { color: var(--heading); font-size: 22px; }
     .table-wrap { overflow: auto; background: var(--surface); border: 1px solid var(--line); }
     table { width: 100%; min-width: 1570px; border-collapse: collapse; table-layout: fixed; }
-    col.rank { width: 70px; } col.name { width: 360px; } col.bezirk { width: 210px; } col.plz { width: 90px; } col.rating { width: 95px; } col.reviews { width: 125px; } col.banner { width: 100px; } col.removed { width: 120px; } col.estimate { width: 125px; } col.ratio { width: 120px; } col.real { width: 160px; } col.checked { width: 130px; } col.category { width: 175px; }
+    col.rank { width: 70px; } col.name { width: 360px; } col.bezirk { width: 210px; } col.plz { width: 90px; } col.rating { width: 95px; } col.reviews { width: 125px; } col.banner { width: 100px; } col.removed { width: 120px; } col.estimate { width: 125px; } col.ratio { width: 120px; } col.checked { width: 130px; } col.category { width: 175px; }
     th { position: sticky; top: 0; z-index: 2; padding: 0; background: var(--table-head-bg); border-bottom: 2px solid var(--line); color: var(--heading); font-size: 13px; text-align: left; }
     th button { display: flex; align-items: center; gap: 5px; width: 100%; min-height: 44px; padding: 12px; border: 0; background: transparent; color: inherit; font: inherit; font-weight: 700; text-align: inherit; cursor: pointer; }
     th.num button, th.rank button { justify-content: flex-end; text-align: right; }
@@ -1070,7 +1078,7 @@ __ANALYTICS__
     @media (min-width: 1600px) {
       .table-wrap { margin: 0 calc(-1 * (100vw - min(1320px, calc(100vw - 32px))) / 2); }
       table { min-width: 0; table-layout: auto; }
-      col.rank, col.name, col.bezirk, col.plz, col.rating, col.reviews, col.banner, col.removed, col.estimate, col.ratio, col.real, col.checked, col.category { width: auto; }
+      col.rank, col.name, col.bezirk, col.plz, col.rating, col.reviews, col.banner, col.removed, col.estimate, col.ratio, col.checked, col.category { width: auto; }
     }
     @media (max-width: 1200px) { .hero-inner { grid-template-columns: 1fr; } .appeal-box { width: min(760px, 100%); } .kpis, .panel-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .related-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } .controls { grid-template-columns: 1fr 1fr 1fr; } .search { grid-column: 1 / -1; } .theme-toggle { margin-left: auto; margin-right: 0; } .n-logo { position: relative; height: 76px; width: 150px; margin-left: 0; padding-top: 48px; } .n-logo::before { top: 40px; } .n-logo::after { top: 4px; } }
     @media (max-width: 720px) {
@@ -1120,6 +1128,7 @@ __ANALYTICS__
       </div>
       <section class="context-note" aria-label="Einordnung">
         <strong>Einordnung</strong>
+        <p><strong>Historische Momentaufnahme</strong> Letzter enthaltener Datenabruf: __SNAPSHOT__. Keine Live-Auskunft; der Zeitpunkt pro Eintrag ist maßgeblich.</p>
         <p class="context-desktop">Diese Seite dokumentiert öffentlich sichtbare Google-Hinweise. Sie behauptet nicht, dass Betriebe rechtswidrig gehandelt, Bewertungen missbräuchlich entfernen ließen oder legitime Kritik unterdrückt wurde. Die Daten sind eine Momentaufnahme.</p>
         <p class="context-mobile">Dokumentation öffentlich sichtbarer Google-Hinweise. Keine Aussage über Rechtswidrigkeit, Missbrauch oder unterdrückte Kritik. Momentaufnahme.</p>
         __LEGAL_NAV__
@@ -1149,53 +1158,52 @@ __ANALYTICS__
 
     <section class="grid kpis" aria-label="Kennzahlen">
       <div class="card kpi"><span class="value" id="kpiPlaces">–</span><span class="label">Orte im Filter</span></div>
-      <div class="card kpi"><span class="value" id="kpiBanners">–</span><span class="label">mit sichtbarem Google-Hinweis</span></div>
-      <div class="card kpi"><span class="value" id="kpiBannerPct">–</span><span class="label">Anteil mit Hinweis</span></div>
+      <div class="card kpi"><span class="value" id="kpiBanners">–</span><span class="label">mit beobachtetem Google-Hinweis</span></div>
+      <div class="card kpi"><span class="value" id="kpiBannerPct">–</span><span class="label">Anteil mit Hinweis (Orte)</span></div>
       <div class="card kpi"><span class="value" id="kpiRemoved">–</span><span class="label">Näherungswert aus Spannen</span></div>
-      <div class="card kpi"><span class="value" id="kpiClean">–</span><span class="label">ohne sichtbaren Hinweis</span></div>
+      <div class="card kpi"><span class="value" id="kpiClean">–</span><span class="label">ohne Hinweis beim Abruf</span></div>
     </section>
 
 __SEO_SUMMARY__
 
     <section class="grid panel-grid" aria-label="Top-Rankings">
-      <article class="card panel"><h2>Höchste Hinweisspannen</h2><p>Sortiert nach dem Mittelpunkt der öffentlich angezeigten Google-Spanne.</p><div class="bars" id="barsRemoved"></div></article>
-      <article class="card panel"><h2>Geschätzter Hinweis-Anteil</h2><p>Pro Ort: entfernt / (sichtbar + entfernt). Näherungswert, nicht als exakte Quote interpretieren.</p><div class="bars" id="barsRatio"></div></article>
-      <article class="card panel"><h2>Hypothetisches Worst-Case-Rating</h2><p>Mathematische Untergrenze unter der Annahme, dass alle entfernten Bewertungen 1★ waren. Keine Aussage über Betriebsqualität.</p><div class="bars" id="barsWorst"></div></article>
-      <article class="card panel"><h2>Ohne sichtbaren Hinweis</h2><p>Im Abruf war kein passender Google-Hinweis sichtbar. Sortiert nach Rating ab 100 Rezensionen. Keine Qualitätsaussage gegenüber anderen Orten.</p><div class="bars" id="barsClean"></div></article>
+      <article class="card panel"><h2>Höchste Hinweisspannen</h2><p>Beobachtete Google-Spannen; innerhalb derselben Spanne alphabetisch. Keine Aussage über Betriebsqualität.</p><div class="bars" id="barsRemoved"></div></article>
+      <article class="card panel"><h2>Geschätzter Modellanteil</h2><p>Modellanteil: Spannen-Näherungswert / (sichtbare Rezensionen + Näherungswert). Keine gemessene Löschquote; unterschiedliche Zeitbezüge.</p><div class="bars" id="barsRatio"></div></article>
+      <article class="card panel"><h2>Ohne beobachteten Google-Hinweis</h2><p>Im Abruf war kein passender Google-Hinweis sichtbar. Sortiert nach Rating ab 100 Rezensionen. Keine Qualitätsaussage gegenüber anderen Orten.</p><div class="bars" id="barsClean"></div></article>
     </section>
 
     <section class="card dist" aria-label="Verteilungen">
       <div class="dist-grid">
         <div class="dist-panel"><h2>Verteilung der Spannen</h2><div id="distribution"></div></div>
-        <div class="dist-panel"><h2>Hinweis-Anteil im Vergleich</h2><p>Nur Orte mit sichtbarem Google-Hinweis und mindestens 50 sichtbaren Rezensionen im aktuellen Filter.</p><div id="ratioHistogram"></div></div>
+        <div class="dist-panel"><h2>Modellanteile im Vergleich</h2><p>Keine gemessene Löschquote. Nur Orte mit beobachtetem Google-Hinweis und mindestens 50 sichtbaren Rezensionen im aktuellen Filter.</p><div id="ratioHistogram"></div></div>
       </div>
     </section>
 
-    <section class="card bezirk-summary" aria-label="Bezirks-Gruppen"><h2>Gruppierung nach statistischem Bezirk</h2><p>Top-Bezirke im aktuellen Filter, sortiert nach Hinweis-Anteil. Anklicken setzt den Bezirksfilter.</p><div class="bezirk-list" id="bezirkSummary"></div></section>
+    <section class="card bezirk-summary" aria-label="Bezirks-Gruppen"><h2>Gruppierung nach statistischem Bezirk</h2><p>Bezirke im aktuellen Filter, sortiert nach Anteil der Orte mit Hinweis (nicht nach Modellanteil). Anklicken setzt den Bezirksfilter.</p><div class="bezirk-list" id="bezirkSummary"></div></section>
 
-    <section class="card bezirk-summary" aria-label="Kategorie-Gruppen"><h2>Gruppierung nach Kategorie</h2><p>Übergeordnete Kategorie-Gruppen im aktuellen Filter, sortiert nach Hinweis-Anteil.</p><div class="bezirk-list" id="parentSummary"></div></section>
+    <section class="card bezirk-summary" aria-label="Kategorie-Gruppen"><h2>Gruppierung nach Kategorie</h2><p>Kategorie-Gruppen im aktuellen Filter, sortiert nach Anteil der Orte mit Hinweis (nicht nach Modellanteil).</p><div class="bezirk-list" id="parentSummary"></div></section>
 
     <section class="card map-panel" aria-label="Karte">
       <h2>Karte der erfassten Orte</h2>
       <p><span id="mapCount">–</span> Orte mit Koordinaten im aktuellen Filter. Marker anklicken markiert Einträge; Bezirksflächen anklicken setzt den Bezirkfilter.</p>
       <div id="placesMap">__MAP_CONSENT__</div>
-      <div class="map-legend"><span><i class="legend-area"></i>Bezirk, klickbar</span><span><i class="legend-dot" style="background:#1f6f8b"></i>dein Standort</span><span><i class="legend-dot" style="background:#3c4e6b"></i>hoher Hinweis-Anteil</span><span><i class="legend-dot" style="background:#5b7b8e"></i>sichtbarer Hinweis</span><span><i class="legend-dot" style="background:#8a8e94"></i>kein sichtbarer Hinweis</span></div>
+      <button id="mapConsentRevoke" class="map-consent-btn" type="button" hidden>Karte deaktivieren</button>
+      <div class="map-legend"><span><i class="legend-area"></i>Bezirk, klickbar</span><span><i class="legend-dot" style="background:#1f6f8b"></i>dein Standort</span><span><i class="legend-dot" style="background:#3c4e6b"></i>hoher Modellanteil</span><span><i class="legend-dot" style="background:#5b7b8e"></i>sichtbarer Hinweis</span><span><i class="legend-dot" style="background:#8a8e94"></i>kein sichtbarer Hinweis</span></div>
     </section>
 
     <nav class="tabs" aria-label="Tabellen-Presets">
-      <button class="tab" data-mode="removed">Höchste Spannen</button>
-      <button class="tab active" data-mode="ratio">Hinweis-Anteil</button>
-      <button class="tab" data-mode="worst">Worst-Case-Rating</button>
+      <button class="tab active" data-mode="removed">Höchste Spannen</button>
+      <button class="tab" data-mode="ratio">Modellanteil</button>
       <button class="tab" data-mode="clean">Ohne Hinweis</button>
       <button class="tab" data-mode="nearby">In meiner Nähe</button>
     </nav>
     <div class="sub-chips" id="subChips"></div>
     <div class="nearby-status" id="nearbyStatus" role="status" aria-live="polite" hidden></div>
 
-    <div class="table-head"><strong id="tableTitle">Hinweis-Anteil</strong><span id="resultCount">–</span></div>
+    <div class="table-head"><strong id="tableTitle">Höchste Hinweisspannen</strong><span id="resultCount">–</span></div>
     <section class="table-wrap" aria-label="Daten-Explorer">
       <table id="placesTable">
-        <colgroup><col class="rank"><col class="name"><col class="bezirk"><col class="plz"><col class="rating"><col class="reviews"><col class="banner"><col class="removed"><col class="estimate"><col class="ratio"><col class="real"><col class="checked"><col class="category"></colgroup>
+        <colgroup><col class="rank"><col class="name"><col class="bezirk"><col class="plz"><col class="rating"><col class="reviews"><col class="banner"><col class="removed"><col class="estimate"><col class="ratio"><col class="checked"><col class="category"></colgroup>
         <thead><tr>
           <th class="rank"><button data-sort="rank">Rang <span class="arrow"></span></button></th>
           <th><button data-sort="name">Name / Google Maps <span class="arrow"></span></button></th>
@@ -1206,9 +1214,8 @@ __SEO_SUMMARY__
           <th><button data-sort="hasBanner">Google-Hinweis <span class="arrow"></span></button></th>
           <th class="num"><button data-sort="removedEstimate">Spanne <span class="arrow"></span></button></th>
           <th class="num"><button data-sort="removedEstimate">Näherungswert <span class="arrow"></span></button></th>
-          <th class="num"><button data-sort="deletionRatioPct">Hinweis-Anteil <span class="arrow"></span></button></th>
-          <th class="num"><button data-sort="realRatingAdjusted" title="Hypothetische Modellrechnung: nimmt an, alle entfernten Bewertungen wären 1★ gewesen.">Worst-Case (hyp.) <span class="arrow"></span></button></th>
-          <th><button data-sort="readAt">Geprüft <span class="arrow"></span></button></th>
+          <th class="num"><button data-sort="deletionRatioPct">Modellanteil <span class="arrow"></span></button></th>
+          <th><button data-sort="readAt">Datenabruf <span class="arrow"></span></button></th>
           <th><button data-sort="category">Kategorie <span class="arrow"></span></button></th>
         </tr></thead>
         <tbody></tbody>
@@ -1229,8 +1236,8 @@ __SEO_SUMMARY__
     </section>
 
     <footer>
-      <div>Journalistische Recherche-Momentaufnahme; keine Rezensionstexte und keine Rohdaten-CSV in dieser Veröffentlichung. Dashboard basiert auf der MIT-lizenzierten Vorlage von Patrick Wozniak.</div>
-      <div>Quelle: Google Maps, öffentlich sichtbare Hinweise. „Kein Hinweis“ heißt nur: im Abruf war kein passender Hinweis sichtbar. Datenabruf: __SNAPSHOT__.</div>
+      <div>Historische Recherche-Momentaufnahme; keine Rezensionstexte und keine separate Rohdaten-CSV. Die im Dashboard enthaltenen Profildaten bleiben technisch auslesbar. Dashboard basiert auf der MIT-lizenzierten Vorlage von Patrick Wozniak.</div>
+      <div>Quelle: Google Maps, öffentlich sichtbare Hinweise. „Kein Hinweis“ heißt nur: im Abruf war kein passender Hinweis sichtbar. Letzter enthaltener Datenabruf: __SNAPSHOT__.</div>
 __ANALYTICS_PRIVACY__
       __FOOTER_LEGAL_LINKS__
       <div class="footer-credit">© 2026 Patrick Wozniak · <a href="https://patwoz.dev" target="_blank" rel="noopener noreferrer">patwoz.dev</a></div>
@@ -1240,6 +1247,10 @@ __ANALYTICS_PRIVACY__
   <script id="dashboardConfig" type="application/json">__CONFIG__</script>
   <script id="placesData" type="application/json">__DATA__</script>
   <script id="bezirkData" type="application/json">__BEZIRK_DATA__</script>
+  <script>
+/* __LEAFLET_LICENSE__ */
+__LEAFLET_JS__
+  </script>
   <script>
 __DASHBOARD_JS__
   </script>
@@ -1251,9 +1262,6 @@ __DASHBOARD_JS__
 		"__PAGE_DESCRIPTION__", escAttr(meta.PageDescription),
 		"__CANONICAL_URL__", escAttr(meta.CanonicalURL),
 		"__SITE_NAME__", esc(meta.SiteName),
-		"__SOCIAL_IMAGE__", escAttr(meta.SocialImageURL),
-		"__SOCIAL_IMAGE_ALT__", escAttr(meta.SocialImageAlt),
-		"__MODIFIED_TIME__", snapshot.Format(time.RFC3339),
 		"__STRUCTURED_DATA__", structuredData,
 		"__CITY__", esc(city),
 		"__LEGAL_NAV__", legalNavHTML(args),
@@ -1265,6 +1273,9 @@ __DASHBOARD_JS__
 		"__RANGE_OPTIONS__", rangeOptions,
 		"__CATEGORY_OPTIONS__", categoryOptions,
 		"__DASHBOARD_JS__", dashboardJS,
+		"__LEAFLET_CSS__", leafletCSS,
+		"__LEAFLET_JS__", strings.ReplaceAll(leafletJS, "//# sourceMappingURL=leaflet.js.map", ""),
+		"__LEAFLET_LICENSE__", leafletLicense,
 		"__ANALYTICS__", plausibleAnalyticsSnippet(args),
 		"__ANALYTICS_PRIVACY__", plausiblePrivacyNotice(args),
 		"__SNAPSHOT__", snapshotDisplay,
@@ -1314,7 +1325,6 @@ func compactClientDataJSON(data []clientRow, city string) string {
 				ranges.Add(row.RemovedRange),
 				compactFloat(row.RemovedEstimate, 1),
 				compactFloatPtr(row.DeletionRatioPct, 2),
-				compactFloatPtr(row.RealRatingAdjusted, 3),
 			)
 		}
 		rows = append(rows, compactRow)
@@ -1464,23 +1474,35 @@ func snapshotTime(data []clientRow) time.Time {
 			latest = parsed
 		}
 	}
-	if latest.IsZero() {
-		return time.Now().UTC()
-	}
 	return latest.UTC()
 }
 
 func makeSEOStats(data []clientRow, snapshot string) seoStats {
 	stats := seoStats{Total: len(data), Snapshot: snapshot}
+	estimate := 0.0
+	var first, last time.Time
 	for _, row := range data {
+		if t, err := time.Parse(time.RFC3339Nano, row.ReadAt); err == nil {
+			if first.IsZero() || t.Before(first) {
+				first = t
+			}
+			if last.IsZero() || t.After(last) {
+				last = t
+			}
+		}
 		if row.HasBanner {
 			stats.Banners++
-			stats.RemovedEstimate += int(row.RemovedEstimate + 0.5)
+			estimate += row.RemovedEstimate
+			// Sum before rounding; rounding every row inflates the total.
 		} else {
 			stats.Clean++
 		}
 	}
 
+	if !first.IsZero() {
+		stats.Coverage = first.UTC().Format("2006-01-02") + "/" + last.UTC().Format("2006-01-02")
+	}
+	stats.RemovedEstimate = int(math.Round(estimate))
 	top := make([]clientRow, 0, len(data))
 	for _, row := range data {
 		if row.HasBanner && row.RemovedEstimate > 0 {
@@ -1503,12 +1525,12 @@ func makeSEOStats(data []clientRow, snapshot string) seoStats {
 func seoSummaryHTML(stats seoStats, city string) string {
 	return fmt.Sprintf(`<section class="card seo-summary" aria-labelledby="data-overview-title">
       <h2 id="data-overview-title">Datenstand: Google-Maps-Bewertungen und Google-Hinweise in %s</h2>
-      <p>Dieses Dashboard macht öffentlich sichtbare Hinweise auf wegen Diffamierungsbeschwerden entfernte Google-Maps-Bewertungen in %s durchsuchbar. Die Karte, Filter und Ranglisten zeigen sichtbare Google-Hinweise, öffentlich angezeigte Spannen, Näherungswerte, Hinweis-Anteile und Worst-Case-Ratings je Ort.</p>
+      <p>Dieses Dashboard macht öffentlich sichtbare Hinweise auf wegen Diffamierungsbeschwerden entfernte Google-Maps-Bewertungen in %s durchsuchbar. Die Karte, Filter und Ranglisten zeigen sichtbare Google-Hinweise, öffentlich angezeigte Spannen, Näherungswerte und ausdrücklich als Modell gekennzeichnete Anteile je Ort.</p>
       <ul class="seo-facts">
         <li><strong>%s</strong> erfasste Orte</li>
-        <li><strong>%s</strong> mit sichtbarem Google-Hinweis</li>
+        <li><strong>%s</strong> mit beobachtetem Google-Hinweis</li>
         <li><strong>%s</strong> Näherungswert aus Spannen</li>
-        <li><strong>%s</strong> ohne sichtbaren Hinweis</li>
+        <li><strong>%s</strong> ohne Hinweis beim Abruf</li>
       </ul>
       <p class="seo-meta">Datenstand: %s. Kein sichtbarer Hinweis bedeutet nur, dass beim Abruf kein passender Hinweis sichtbar war.</p>
 %s
@@ -1587,12 +1609,7 @@ func structuredDataJSON(stats seoStats, snapshot time.Time, city string, meta da
 				"mainEntity": map[string]interface{}{
 					"@id": meta.CanonicalURL + "#dataset",
 				},
-				"primaryImageOfPage": map[string]interface{}{
-					"@type": "ImageObject",
-					"url":   meta.SocialImageURL,
-				},
-				"dateModified": snapshot.Format("2006-01-02"),
-				"inLanguage":   "de-DE",
+				"inLanguage": "de-DE",
 			},
 			{
 				"@type":                "Dataset",
@@ -1600,8 +1617,6 @@ func structuredDataJSON(stats seoStats, snapshot time.Time, city string, meta da
 				"name":                 fmt.Sprintf("%s Google-Maps-Bewertungen mit sichtbaren Google-Hinweisen", city),
 				"description":          meta.PageDescription,
 				"url":                  meta.CanonicalURL,
-				"dateModified":         snapshot.Format("2006-01-02"),
-				"temporalCoverage":     snapshot.Format("2006-01-02"),
 				"measurementTechnique": "Scrape öffentlich sichtbarer Google-Maps-Ortsseiten",
 				"keywords": []string{
 					city,
@@ -1618,8 +1633,7 @@ func structuredDataJSON(stats seoStats, snapshot time.Time, city string, meta da
 					"Orte",
 					"sichtbare Google-Hinweise",
 					"Näherungswert aus Google-Spannen",
-					"Hinweis-Anteil",
-					"Worst-Case-Rating",
+					"Modellanteil (keine gemessene Quote)",
 				},
 				"size": fmt.Sprintf("%d Orte, %d sichtbare Google-Hinweise", stats.Total, stats.Banners),
 				"creator": map[string]interface{}{
@@ -1630,45 +1644,34 @@ func structuredDataJSON(stats seoStats, snapshot time.Time, city string, meta da
 			},
 		},
 	}
+	if !snapshot.IsZero() {
+		graph := data["@graph"].([]map[string]interface{})
+		graph[2]["temporalCoverage"] = stats.Coverage
+	}
 	jsonData, _ := json.MarshalIndent(data, "  ", "  ")
 	return strings.ReplaceAll(string(jsonData), "<", "\\u003c")
 }
 
-func plausibleAnalyticsSnippet(args args) string {
-	src := plausibleAnalyticsSrc(args)
+func plausibleAnalyticsSnippet(a args) string {
+	src := plausibleAnalyticsSrc(a)
 	if src == "" {
 		return ""
 	}
-	domain := plausibleAnalyticsDomain(args)
-	if domain != "" {
-		return fmt.Sprintf(`  <!-- Privacy-friendly analytics by Plausible -->
-  <script defer data-domain="%s" src="%s"></script>`, escAttr(domain), escAttr(src))
-	}
-	return fmt.Sprintf(`  <!-- Privacy-friendly analytics by Plausible -->
-  <script async src="%s"></script>
-  <script>
-    window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
-    plausible.init()
-  </script>`, escAttr(src))
+	config := safeJSON(map[string]string{"src": src, "domain": plausibleAnalyticsDomain(a)})
+	return `<script id="analyticsConfig" type="application/json">` + config + `</script><script>` + analyticsJS + `</script>`
 }
 
-func plausiblePrivacyNotice(args args) string {
-	src := plausibleAnalyticsSrc(args)
-	if src == "" {
+func plausiblePrivacyNotice(a args) string {
+	if plausibleAnalyticsSrc(a) == "" {
 		return ""
 	}
-	host := analyticsHost(src)
-	hostText := ""
-	if host != "" {
-		hostText = fmt.Sprintf(` Anbieter-Domain: <code>%s</code>.`, esc(host))
-	}
-	if legalPagesEnabled(args) {
-		return fmt.Sprintf(`<div class="footer-privacy">Diese Website nutzt Plausible Analytics, eine datenschutzfreundliche Webanalyse ohne Cookies. Details stehen in der <a href="datenschutz.html">Datenschutzerklärung</a>.%s</div>`, hostText)
-	}
-	return fmt.Sprintf(`<div class="footer-privacy">Diese Website nutzt Plausible Analytics, eine datenschutzfreundliche Webanalyse ohne Cookies.%s</div>`, hostText)
+	return fmt.Sprintf(`<div class="footer-privacy">Optionale Reichweitenanalyse mit Plausible. Erst nach Einwilligung werden Nutzungsereignisse an <code>%s</code> übertragen. %s <a href="datenschutz.html">Datenschutzdetails</a>. Die Auswahl gilt für diesen Tab; Widerruf beendet weitere Erfassung, nicht bereits erfolgte Übermittlungen. <button id="analyticsConsent" type="button">Analytics erlauben</button><span id="analyticsConsentStatus" role="status"></span></div>`, esc(analyticsHost(a.AnalyticsSrc)), esc(a.AnalyticsPrivacyText))
 }
 
 func plausibleAnalyticsSrc(args args) string {
+	if !args.AnalyticsEnabled || args.AnalyticsPrivacyText == "" || !legalPagesEnabled(args) {
+		return ""
+	}
 	return strings.TrimSpace(args.AnalyticsSrc)
 }
 
