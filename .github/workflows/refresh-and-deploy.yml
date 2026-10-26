@@ -45,6 +45,7 @@ jobs:
           DASHBOARD_CONFIG_TOML_SECRET: ${{ secrets.DASHBOARD_CONFIG_TOML }}
           DASHBOARD_CONFIG_TOML_VAR: ${{ vars.DASHBOARD_CONFIG_TOML }}
         run: |
+          umask 077
           if [ -n "$DASHBOARD_CONFIG_TOML_SECRET" ]; then
             printf '%s' "$DASHBOARD_CONFIG_TOML_SECRET" > config.toml
           elif [ -n "$DASHBOARD_CONFIG_TOML_VAR" ]; then

@@ -29,6 +29,12 @@ post_handler = "Example GmbH"
 src = "https://a.patwoz.dev/js/script.js"
 domain = "nuernberg-maps-review-removals.patwoz.dev"
 
+# Required for dashboard/site builds. This publishable key is embedded in HTML.
+# Get one at https://carto.com/basemaps/apikey and restrict it to your site domain.
+# Store the full config as the GitHub Actions secret DASHBOARD_CONFIG_TOML.
+[carto]
+api_key = ""
+
 [places_api]
 # Optional. Required only for `make scrape ARGS="--places-api-discovery ..."`.
 api_key = ""

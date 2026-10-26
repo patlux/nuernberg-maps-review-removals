@@ -183,7 +183,9 @@ make dashboard
 
 ### Dashboard-Konfiguration
 
-Optional kann `cmd/dashboard` eine lokale TOML-Konfiguration laden. Wenn `config.toml` im Projektroot existiert, wird sie automatisch verwendet; alternativ kann ein Pfad explizit übergeben werden:
+`cmd/dashboard` benötigt einen CARTO-Basemaps-Key in `[carto].api_key`. Ohne Key bricht der Dashboard-/Site-Build vor dem Schreiben von HTML ab.
+
+`cmd/dashboard` lädt dafür eine lokale TOML-Konfiguration. Wenn `config.toml` im Projektroot existiert, wird sie automatisch verwendet; alternativ kann ein Pfad explizit übergeben werden:
 
 ```bash
 cp .config.toml.example config.toml
@@ -224,10 +226,17 @@ post_handler = "Example GmbH"
 src = "https://a.patwoz.dev/js/script.js"
 domain = "nuernberg-maps-review-removals.patwoz.dev"
 
+[carto]
+# Erforderlich für Dashboard/Site. Veröffentlicht im erzeugten HTML.
+# Auf die eigene Website beschränken: https://carto.com/basemaps/apikey
+api_key = ""
+
 [places_api]
 # Optional. Nur für --places-api-discovery erforderlich.
 api_key = ""
 ```
+
+Der CARTO-Key ist ein Browser-Key und steht zwangsläufig im erzeugten HTML sowie in den Kachelanfragen. Beschränke ihn im CARTO-Dashboard auf die Produktionsdomain. Für lokale HTTP-Vorschauen verlangt CARTO einen separaten Key mit `localhost`/`127.0.0.1` als erlaubten Hosts. `file://` sendet keinen passenden Referer für Websitebeschränkungen. Ein Google-Places-Key ersetzt den CARTO-Key nicht und wird nicht ins HTML übernommen.
 
 Wenn `[legal]` fehlt oder `enabled = false` gesetzt ist, erzeugt das Dashboard keine `methodik.html`, `korrektur.html`, `impressum.html` und `datenschutz.html` und verlinkt diese Seiten nicht. Sobald Legal-Seiten aktiviert sind, müssen `name`, `email` und `address_lines` gesetzt sein.
 
@@ -263,7 +272,11 @@ python3 -m http.server --directory public 8080
 
 Optionale Plausible-Analytics werden eingebunden, wenn sie in `config.toml` unter `[analytics]` stehen.
 
-Für GitHub Actions muss der Inhalt der lokalen `config.toml` als Repository-Secret `DASHBOARD_CONFIG_TOML` hinterlegt werden. Der Workflow schreibt daraus zur Laufzeit eine temporäre `config.toml`; der Inhalt wird nicht ins Repository oder nach `gh-pages` kopiert. Alternativ funktioniert auch eine Repository-Variable gleichen Namens, falls die Daten nicht geheim sind.
+Für GitHub Actions muss die Dashboard-Konfiguration einschließlich `[carto].api_key` als Repository-Secret `DASHBOARD_CONFIG_TOML` hinterlegt werden. Ein optionaler `[places_api]`-Key ist nur für API-Discovery erforderlich und gehört nicht in die reine Deployment-Konfiguration.
+
+Der Workflow schreibt daraus bei jedem Lauf eine private temporäre `config.toml` (Dateirechte `0600`). Die Konfigurationsdatei bleibt außerhalb des Repositorys. Nur die für die Website bestimmten Werte, einschließlich des CARTO-Browser-Keys, gelangen in das erzeugte HTML und damit nach `gh-pages`. Fehlt der CARTO-Key, stoppt der Build vor der Veröffentlichung. Eine Repository-Variable gleichen Namens bleibt für Konfigurationen ohne vertrauliche Daten unterstützt.
+
+Bei einer Key-Rotation müssen die lokale `[carto].api_key`-Einstellung und das Secret `DASHBOARD_CONFIG_TOML` aktualisiert werden. Der nächste Deployment-Build verwendet dann automatisch den neuen Key für helle und dunkle Kartenkacheln.
 
 Veröffentlichen:
 

@@ -100,7 +100,7 @@ function currentTheme() {
   if (explicit === 'dark' || explicit === 'light') return explicit;
   return prefersDark.matches ? 'dark' : 'light';
 }
-function tileURL() { return 'https://{s}.basemaps.cartocdn.com/' + (currentTheme() === 'dark' ? 'dark_all' : 'light_all') + '/{z}/{x}/{y}{r}.png'; }
+function tileURL() { return 'https://{s}.basemaps.cartocdn.com/' + (currentTheme() === 'dark' ? 'dark_all' : 'light_all') + '/{z}/{x}/{y}{r}.png?key=' + encodeURIComponent(CONFIG.cartoApiKey); }
 function colorVar(name, fallback) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback; }
 function updateThemeToggle() {
   const isDark = currentTheme() === 'dark';

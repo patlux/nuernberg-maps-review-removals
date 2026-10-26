@@ -40,6 +40,7 @@ type args struct {
 	SiteURL           string
 	SiteOutput        string
 	BuildSite         bool
+	CartoAPIKey       string
 }
 
 type dashboardConfig struct {
@@ -62,6 +63,9 @@ type dashboardConfig struct {
 		Domain string
 	}
 	PlacesAPI struct {
+		APIKey string
+	}
+	Carto struct {
 		APIKey string
 	}
 }
@@ -165,6 +169,9 @@ func main() {
 }
 
 func run(args args) error {
+	if strings.TrimSpace(args.CartoAPIKey) == "" {
+		return fmt.Errorf("carto.api_key is required: configure a CARTO Basemaps key in config.toml before building the dashboard")
+	}
 	rows, err := mapsreview.ReadJSON(args.Input, []mapsreview.Place{})
 	if err != nil {
 		return err
@@ -362,6 +369,7 @@ func readDashboardConfig(path string, base args) (args, error) {
 	if strings.TrimSpace(cfg.Analytics.Domain) != "" {
 		base.AnalyticsDomain = cfg.Analytics.Domain
 	}
+	base.CartoAPIKey = strings.TrimSpace(cfg.Carto.APIKey)
 	return base, nil
 }
 
@@ -501,6 +509,15 @@ func setDashboardConfigValue(cfg *dashboardConfig, section string, key string, v
 		default:
 			return fmt.Errorf("unknown analytics config key %q", key)
 		}
+	case "carto":
+		if key != "api_key" {
+			return fmt.Errorf("unknown carto config key %q", key)
+		}
+		v, err := parseTomlString(value)
+		if err != nil {
+			return fmt.Errorf("invalid quoted string for carto.api_key")
+		}
+		cfg.Carto.APIKey = v
 	case "places_api", "placesAPI":
 		v, err := parseTomlString(value)
 		if err != nil {
@@ -661,7 +678,9 @@ func makeHTML(args args, data []clientRow) string {
 
 	jsonText := compactClientDataJSON(data, city)
 	bezirkText := compactBezirkDataJSON(bezirkBoundaries)
-	configText := safeJSON(map[string]string{"city": city})
+	// A domain-restricted CARTO Basemaps key is necessarily visible to browsers.
+	// Only export this publishable key, never the separate Google Places API key.
+	configText := safeJSON(map[string]string{"city": city, "cartoApiKey": args.CartoAPIKey})
 
 	postcodeOptions := ""
 	for _, postcode := range postcodes {
